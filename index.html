@@ -1,0 +1,574 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Conclusões de Serviços</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="Sistema de Conclusões de Serviços da ETECC Telecom" />
+  <meta name="theme-color" content="#dc2626" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ETECC Conclusões" />
+  <meta name="msapplication-TileColor" content="#dc2626" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- PWA Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/E_vermelha_nova.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/E_vermelha_nova.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/E_vermelha_nova.png" />
+  <link rel="shortcut icon" href="/assets/icons/favicon.ico" />
+  <link rel="apple-touch-icon" href="/assets/icons/apple-icon-180.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-icon-180.png" />
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1290-2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2796-1290.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1284-2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2778-1284.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1179-2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2556-1179.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1170-2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2532-1170.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1125-2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2436-1125.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1242-2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2688-1242.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-828-1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1792-828.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-750-1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1334-750.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-640-1136.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1136-640.jpg" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2048-2732.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2732-2048.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1668-2388.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2388-1668.jpg" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1668-2224.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2224-1668.jpg" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1640-2360.jpg" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2360-1640.jpg" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1620-2160.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2160-1620.jpg" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1536-2048.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2048-1536.jpg" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1488-2266.jpg" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2266-1488.jpg" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1320-2868.jpg" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2868-1320.jpg" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-1206-2622.jpg" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/icons/apple-splash-2622-1206.jpg" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/theme.css" />
+  <link rel="stylesheet" href="assets/css/loading.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="page page-enter">
+  <!-- Tela de Carregamento -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-container">
+      <div class="loading-logo">
+        <img src="assets/images/logo_vermelha_nova.png" alt="ETECC" />
+      </div>
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+      </div>
+      <div class="loading-text">
+        <div class="loading-subtitle">Carregando aplicativo...</div>
+        <div class="loading-version">Versão <span id="loadingVersion">4.0.0</span></div>
+      </div>
+    </div>
+  </div>
+  <header class="topbar" id="topbar">
+    <button class="topbar__back" id="btnBack" aria-label="Voltar">
+      <i class="fa-solid fa-angle-left"></i>
+    </button>
+    <div class="brand">
+      <div class="brand__logo">
+        <img src="assets/images/E_vermelha_nova.png" alt="ETECC" />
+      </div>
+      <div class="brand__text">
+        <div class="brand__title">ETECC Telecom</div>
+        <div class="brand__subtitle">Conclusões de Serviços</div>
+      </div>
+    </div>
+    <div class="topbar__right">
+      <button id="btnTemaTopo" class="btn-theme-square" aria-label="Alternar tema"><i id="btnTemaTopoIcon" class="fa-solid"></i></button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div id="view-home" class="view is-active">
+    <section class="hero">
+      <h1 class="hero__title"><img class="hero__logo" src="assets/images/logo_vermelha_nova.png" /></h1>
+      <p class="hero__subtitle">Selecione sua equipe e acesse aos Formulários de Conclusões de Serviços</p>
+    </section>
+    <section class="cards">
+      <a class="card card--team" href="#/conclusoes" data-team="moto">
+        <div class="card__header">
+          <div class="card__badge"><i class="fa-solid fa-motorcycle"></i></div>
+          <div>
+            <div class="card__title-row"><span class="card__title">Equipe Moto</span><i class="fa-solid fa-angle-right card__titlechev"></i></div>
+            <div class="card__subtitle">Atendimento rápido e ágil</div>
+          </div>
+        </div>
+        <div class="card__stats">
+          <div class="stat">
+            <div class="stat__value" id="count-moto">0</div>
+            <div class="stat__label">Formulários</div>
+          </div>
+        </div>
+      </a>
+            <a class="card card--team" href="#/conclusoes" data-team="carro">
+        <div class="card__header">
+          <div class="card__badge"><i class="fa-solid fa-car"></i></div>
+          <div>
+            <div class="card__title-row"><span class="card__title">Equipe Carro</span><i class="fa-solid fa-angle-right card__titlechev"></i></div>
+            <div class="card__subtitle">Atendimento completo e detalhado</div>
+          </div>
+        </div>
+        <div class="card__stats">
+          <div class="stat">
+            <div class="stat__value" id="count-carro">0</div>
+            <div class="stat__label">Formulários</div>
+          </div>
+        </div>
+      </a>
+    </section>
+
+    <section class="recent section--spaced-lg">
+      <div class="section__title"><i class="fa-solid fa-wave-square"></i> Atividade Recente</div>
+      <div class="recent__panel">
+        <div class="recent__header">
+          <div class="section__caption">Filtros</div>
+          <button id="btnLimparFiltros" class="btn-ghost" aria-label="Limpar filtros"><i class="fa-solid fa-broom"></i> Limpar filtros</button>
+        </div>
+        <div class="recent__filters" id="recentFilters">
+          <div class="filter">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="fltBusca" type="search" placeholder="Buscar por cliente..." />
+          </div>
+          <div class="filter">
+            <i class="fa-solid fa-users"></i>
+            <select id="fltEquipe">
+              <option value="todos">Todas as equipes</option>
+              <option value="moto">Equipe Moto</option>
+              <option value="carro">Equipe Carro</option>
+            </select>
+          </div>
+          <div class="filter">
+            <i class="fa-solid fa-sort"></i>
+            <select id="fltOrdenacao">
+              <option value="desc">Mais recentes</option>
+              <option value="asc">Mais antigos</option>
+            </select>
+          </div>
+        </div>
+        <ul id="listaAtividades" class="recent__list"></ul>
+        <div id="recentEmpty" class="recent__empty">
+          <div class="recent__icon"><i class="fa-regular fa-file-lines"></i></div>
+          <div class="recent__text-lg">Nenhuma conclusão de serviço registrada ainda</div>
+          <div class="recent__text-sm">Selecione uma equipe acima para começar a registrar conclusões</div>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <div id="view-conclusoes" class="view">
+      <section class="hero hero--sub">
+        <h1 class="hero__title">Formulários de Conclusões de Serviços</h1>
+        <p class="hero__subtitle">Escolha o formulário a ser utilizado.</p>
+        <div class="chip" id="chipEquipe" hidden>
+          <i class="fa-solid" id="chipIcon"></i>
+          <span id="chipText"></span>
+        </div>
+      </section>
+      <section>
+        <div class="section__title">Disponíveis</div>
+        <div class="forms-grid" id="listaConclusoes"></div>
+        <div id="conclusoesEmpty" class="recent__empty" style="text-align:center;">Nenhum Formulário de conclusão disponível no momento.</div>
+      </section>
+    </div>
+
+    <!-- View: Formulário (SPA) -->
+    <div id="view-form" class="view">
+      <section class="hero hero--sub">
+        <h1 class="hero__title" id="formHeaderTitle">Formulário</h1>
+        <p class="hero__subtitle" id="formHeaderDesc">Descrição do Formulário</p>
+      </section>
+      <div class="menu-divider"></div>
+      <div id="formContainer" class="form-page"></div>
+    </div>
+    <div class="app-credit" aria-label="Créditos do aplicativo">Fylipinho © Torre de Serviços — ETECC Telecom</div>
+  </main>
+
+  <!-- Navegação inferior -->
+  <nav class="bottombar">
+    <a class="bottombar__item is-active" href="#/">
+      <i class="fa-solid fa-house"></i>
+      <span>Início</span>
+    </a>
+    <a class="bottombar__item" id="btnBottomConclusoes" href="#/conclusoes" aria-label="Ir para formulários" hidden>
+      <i class="fa-solid fa-list-check"></i>
+      <span>Formulários</span>
+    </a>
+    <button class="bottombar__item" id="btnAbrirMenu" aria-label="Abrir menu">
+      <i class="fa-solid fa-bars"></i>
+      <span>Menu</span>
+    </button>
+  </nav>
+
+  <!-- Menu lateral (conteúdo trazido do Projeto - Moto, adaptado) -->
+  <aside id="menuOverlay" class="menu-overlay" aria-hidden="true">
+    <div class="menu-panel">
+      <div class="menu-panel__header">
+        <span class="menu-panel__title">Menu</span>
+        <button id="btnFecharMenu" class="menu-panel__close" aria-label="Fechar menu">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="menu-panel__content">
+        <div class="menu-caption">FUNÇÕES</div>
+        <a class="menu-item" id="menuEditarNome" href="#">
+          <i class="fa-solid fa-user-pen"></i>
+          <span>Editar nome do usuário</span>
+        </a>
+        <div class="menu-divider"></div>
+        <div class="menu-caption">Ramais</div>
+        <!-- Ligações -->
+        <a class="menu-item" id="menuRamalTorre" href="tel:34211999,,,399">
+          <i class="fa-solid fa-phone"></i>
+          <span>Ramal da Torre</span>
+        </a>
+        <a class="menu-item" id="menuRamalRetencao" href="tel:34211999,,,299">
+          <i class="fa-solid fa-phone"></i>
+          <span>Ramal da Retenção</span>
+        </a>
+        <div class="menu-divider"></div>
+        <div class="menu-caption">Grupos do WhatsApp</div>
+        <a class="menu-item" href="https://chat.whatsapp.com/EXbLCcI8PtUIjjzsbIu8Jb" target="_blank" rel="noopener">
+          <i class="fa-brands fa-whatsapp"></i>
+          <span>Equipe Técnica</span>
+        </a>
+        <a class="menu-item" href="https://chat.whatsapp.com/JY3M8uOhA5V2w03JzdX9lA" target="_blank" rel="noopener">
+          <i class="fa-brands fa-whatsapp"></i>
+          <span>Grupo Retenção</span>
+        </a>
+        <a class="menu-item" href="https://chat.whatsapp.com/BoQZOFhgU9jFBEav8EoUfq" target="_blank" rel="noopener">
+          <i class="fa-brands fa-whatsapp"></i>
+          <span>Grupo de Indicações</span>
+        </a>
+        <div class="menu-divider"></div>
+        <div class="menu-caption">Atalhos</div>
+        <a class="menu-item" id="menuPlanos" href="#">
+          <i class="fa-solid fa-wifi"></i>
+          <span>Nossos Planos</span>
+        </a>
+        <!-- Links externos -->
+        <a class="menu-item" href="https://eteccnet.com.br" target="_blank" rel="noopener">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Site da ETECC</span>
+        </a>
+        <a class="menu-item" href="https://play.google.com/store/apps/details?id=br.com.mksolutions.mksac.eteccnet" target="_blank" rel="noopener">
+          <i class="fa-solid fa-download"></i>
+          <span>Aplicativo SAC</span>
+        </a>
+        <a class="menu-item" href="https://pix.eteccnet.com.br/login" target="_blank" rel="noopener">
+          <i class="fa-brands fa-pix"></i>
+          <span>Pague com PIX</span>
+        </a>
+        <div class="menu-divider"></div>
+        <div class="menu-caption">Sistema</div>
+        <a class="menu-item" id="menuVersionHistory" href="#">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Histórico de versões</span>
+        </a>
+        <div class="menu-item" style="opacity: 0.6; cursor: default;">
+          <i class="fa-solid fa-code-branch"></i>
+          <span>Versão <span id="currentVersion">4.0.0</span></span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Modal: Nossos Planos -->
+  <div id="planosModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Nossos Planos</span>
+        <button class="modal-close" id="btnFecharPlanos" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="plans-selector">
+          <button class="plan-tab is-active" data-tab="internet"><i class="fa-solid fa-wifi"></i><span>Internet</span></button>
+          <button class="plan-tab" data-tab="chips"><i class="fa-solid fa-sim-card"></i><span>Chips</span></button>
+          <button class="plan-tab" data-tab="combos"><i class="fa-solid fa-layer-group"></i><span>Combos</span></button>
+        </div>
+        <div id="plansContent" class="plans-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Histórico de Versões -->
+  <div id="versionModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Histórico de Versões</span>
+        <button class="modal-close" id="btnFecharVersion" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="versionContent" class="version-history"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal genérico da aplicação -->
+  <div id="appModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+      <div class="modal-header">
+        <span class="modal-title" id="appModalTitle">Aviso</span>
+        <button class="modal-close" id="appModalClose" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="appModalBody"></div>
+      <div class="modal-footer" id="appModalFooter"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+  <script src="assets/js/main.js"></script>
+
+
+  <!-- PWA Service Worker -->
+  <script>
+    let currentAppVersion = '4.0.0';
+    let versionData = null;
+
+    // Sistema de carregamento
+    function hideLoadingScreen() {
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+          loadingScreen.remove();
+        }, 500);
+      }
+    }
+
+    // Verificar versão e compatibilidade
+    async function checkVersion() {
+      try {
+        const response = await fetch('/version.json?t=' + Date.now());
+        versionData = await response.json();
+
+        // Atualizar versão atual nos elementos
+        document.getElementById('currentVersion').textContent = versionData.version;
+        document.getElementById('loadingVersion').textContent = versionData.version;
+
+        // Verificar se precisa de atualização forçada
+        if (versionData.forceUpdate && isVersionOlder(currentAppVersion, versionData.minVersion)) {
+          showForceUpdateDialog();
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.log('Erro ao verificar versão:', error);
+        return true; // Permite continuar se não conseguir verificar
+      }
+    }
+
+    // Comparar versões (retorna true se v1 < v2)
+    function isVersionOlder(v1, v2) {
+      const parts1 = v1.split('.').map(Number);
+      const parts2 = v2.split('.').map(Number);
+
+      for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const part1 = parts1[i] || 0;
+        const part2 = parts2[i] || 0;
+
+        if (part1 < part2) return true;
+        if (part1 > part2) return false;
+      }
+      return false;
+    }
+
+    // Mostrar dialog de atualização forçada
+    function showForceUpdateDialog() {
+      const overlay = document.createElement('div');
+      overlay.className = 'update-overlay';
+      overlay.innerHTML = `
+        <div class="update-dialog">
+          <div class="update-icon">
+            <i class="fa-solid fa-arrow-rotate-right"></i>
+          </div>
+          <div class="update-title">Atualização Obrigatória</div>
+          <div class="update-message">
+            Uma nova versão do aplicativo está disponível e é necessária para continuar usando o sistema.
+            <br><br>
+            <strong>Nova versão:</strong> ${versionData.version}
+          </div>
+          <button class="update-button" onclick="forceUpdateApp()">
+            <i class="fa-solid fa-download"></i> Atualizar Agora
+          </button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    // Forçar atualização
+    function forceUpdateApp() {
+      const button = document.querySelector('.update-button');
+      button.disabled = true;
+      button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...';
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+          if (registration.waiting) {
+            registration.waiting.postMessage({type: 'SKIP_WAITING'});
+          }
+          setTimeout(() => window.location.reload(), 1000);
+        });
+      } else {
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    }
+
+    // Mostrar histórico de versões
+    function showVersionHistory() {
+      if (!versionData) return;
+
+      const modal = document.getElementById('versionModal');
+      const content = document.getElementById('versionContent');
+
+      let historyHtml = '';
+      for (const [version, info] of Object.entries(versionData.changelog)) {
+        historyHtml += `
+          <div class="version-entry">
+            <div class="version-header">
+              <span class="version-number">v${version}</span>
+              <span class="version-badge ${info.type}">${info.type}</span>
+            </div>
+            <div class="version-title">${info.title}</div>
+            <div class="version-date">${new Date(info.date).toLocaleDateString('pt-BR')}</div>
+            <ul class="version-changes">
+              ${info.changes.map(change => `<li>${change}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
+      content.innerHTML = historyHtml;
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        // Verificar versão primeiro
+        const canProceed = await checkVersion();
+        if (!canProceed) return; // Para aqui se precisar de atualização forçada
+
+        // Registrar SW
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('SW registrado com sucesso:', registration);
+
+            // Aplicar imediatamente caso exista um SW em espera
+            try {
+              if (registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+            } catch (e) {}
+
+            // Escutar atualizações e aplicar automaticamente quando instalar
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  try {
+                    if (registration.waiting) {
+                      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                  } catch (e) {}
+                  checkVersion(); // Revalidar versão
+                }
+              });
+            });
+
+            // Forçar o SW a checar updates periodicamente (10 min)
+            try {
+              setInterval(() => { try { registration.update(); } catch (e) {} }, 10 * 60 * 1000);
+            } catch (e) {}
+
+            // Recarregar quando o novo SW assumir o controle
+            try {
+              let __didRefresh = false;
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (__didRefresh) return;
+                __didRefresh = true;
+                window.location.reload();
+              });
+            } catch (e) {}
+          })
+          .catch(error => {
+            console.log('Falha ao registrar SW:', error);
+          });
+
+        // Escutar mensagens do Service Worker
+        navigator.serviceWorker.addEventListener('message', event => {
+          if (event.data && event.data.type === 'VERSION_CHECK') {
+            versionData = event.data.data;
+            if (versionData.forceUpdate && isVersionOlder(currentAppVersion, versionData.minVersion)) {
+              showForceUpdateDialog();
+            }
+          }
+        });
+
+        // Verificar atualizações periodicamente
+        setInterval(checkVersion, 10 * 60 * 1000); // A cada 10 minutos
+
+        // Esconder tela de carregamento
+        setTimeout(hideLoadingScreen, 2000);
+      });
+    } else {
+      // Se não suporta SW, apenas verificar versão e esconder loading
+      checkVersion().then(() => {
+        setTimeout(hideLoadingScreen, 2000);
+      });
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Tema salvo
+      const stored = localStorage.getItem('theme') || 'light';
+      const menuInput = document.getElementById('menuInputTema');
+      if (menuInput) menuInput.checked = stored === 'dark';
+
+      // Histórico de versões
+      document.getElementById('menuVersionHistory').addEventListener('click', (e) => {
+        e.preventDefault();
+        showVersionHistory();
+      });
+
+      // Fechar modal de versões
+      document.getElementById('btnFecharVersion').addEventListener('click', () => {
+        document.getElementById('versionModal').setAttribute('aria-hidden', 'true');
+      });
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+

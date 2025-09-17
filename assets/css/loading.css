@@ -1,0 +1,273 @@
+/* Tela de Carregamento */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.loading-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loading-container {
+  text-align: center;
+  color: white;
+}
+
+.loading-logo {
+  margin-bottom: 2rem;
+}
+
+.loading-logo img {
+  width: 120px;
+  height: auto;
+  filter: brightness(0) invert(1);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.loading-spinner {
+  margin: 2rem 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 1rem;
+}
+
+.loading-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.loading-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 1rem;
+}
+
+.loading-version {
+  font-size: 0.875rem;
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+/* Animações */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* Estilos para histórico de versões */
+.version-history {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.version-entry {
+  border-left: 3px solid #dc2626;
+  padding-left: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.version-entry::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  background: #dc2626;
+  border-radius: 50%;
+}
+
+.version-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.version-number {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #dc2626;
+}
+
+.version-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.version-badge.major {
+  background: #dc2626;
+  color: white;
+}
+
+.version-badge.minor {
+  background: #f59e0b;
+  color: white;
+}
+
+.version-badge.patch {
+  background: #10b981;
+  color: white;
+}
+
+.version-title {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.version-date {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.version-changes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.version-changes li {
+  padding: 0.25rem 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.version-changes li::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  background: #dc2626;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  vertical-align: middle;
+}
+
+/* Notificação de atualização obrigatória */
+.update-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.update-dialog {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 400px;
+  margin: 1rem;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.update-icon {
+  font-size: 3rem;
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.update-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.update-message {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.update-button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.update-button:hover {
+  background: #b91c1c;
+}
+
+.update-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Tema escuro - Manter fundo vermelho */
+body.dark-theme .loading-screen {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+}
+
+body.dark-theme .version-entry {
+  border-left-color: #dc2626;
+}
+
+body.dark-theme .version-title {
+  color: #f1f5f9;
+}
+
+body.dark-theme .version-changes li {
+  color: #cbd5e1;
+}
+
+body.dark-theme .update-dialog {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+body.dark-theme .update-title {
+  color: #f1f5f9;
+}
+
+body.dark-theme .update-message {
+  color: #94a3b8;
+}

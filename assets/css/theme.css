@@ -1,0 +1,42 @@
+/* Tema claro/escuro controlado por body.dark-theme */
+/* Paleta escura (default/root) e clara (body:not(.dark-theme)) */
+:root {
+  /* Dark (preto + azul-escuro) */
+  --bg: #000000;
+  --card: #070d18;
+  --card-strong: #070c16; /* um passo mais escuro que --card, acima de --surface */
+  --text: #e7e9ee;
+  --muted: #a9b0bb;
+  --brand: #ff3b3b;
+  --accent: #07101f;
+  --surface: #070a12;
+  --border: #151d2c;
+  --ok: #2ecc71;
+}
+
+body.dark-theme {
+  --bg: #000000;
+  --card: #070d18;
+  --card-strong: #070c16;
+  --text: #e7e9ee;
+  --muted: #a9b0bb;
+  --brand: #ff3b3b;
+  --accent: #07101f;
+  --surface: #070a12;
+  --border: #151d2c;
+}
+
+/* Light theme restaurado */
+body:not(.dark-theme) {
+  --bg: #f6f7fb;      /* fundo claro */
+  --card: #ffffff;    /* cartões brancos */
+  --card-strong: #f8fafc; /* um pouco mais escuro que branco para destaque leve */
+  --text: #101319;    /* texto escuro */
+  --muted: #6b7280;   /* texto secundário */
+  --brand: #e73a3a;   /* vermelho de marca consistente */
+  --accent: #eef2ff;  /* acento claro */
+  --surface: #ffffff; /* inputs/painéis claros */
+  --border: #e5e7eb;  /* borda clara */
+}
+
+
