@@ -6411,7 +6411,27 @@ function wireMotoDraft(formId, container){
       };
       return () => { try { clearTimeout(to); } catch {}; to = setTimeout(save, 350); };
     })();
-    const handler = (e) => { try { if (!e || !e.target) return; scheduleSave(); } catch {} };
+    const handler = (e) => {
+      try {
+        if (!e || !e.target) return;
+        const t = e.target;
+        const name = (t && (t.name || t.id)) || '';
+        // Espelha imediatamente o valor alterado no estado em memória
+        try {
+          if (name && typeof setFormState === 'function') {
+            let val;
+            if (t.type === 'radio') { if (!t.checked) return; val = t.value; }
+            else if (t.type === 'checkbox') { val = !!t.checked; }
+            else { val = t.value; }
+            setFormState(formId, { [name]: val });
+          }
+        } catch {}
+        // Persiste snapshot com debounce
+        scheduleSave();
+        // Reavalia condicionais imediatamente (usa getFormState)
+        try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+      } catch {}
+    };
     container.__motoPersistHandler = handler;
     container.addEventListener('input', handler, true);
     container.addEventListener('change', handler, true);
