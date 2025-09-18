@@ -1,15 +1,14 @@
-const CACHE_NAME = 'etecc-conclusoes-v4.0.0';
+﻿const CACHE_NAME = 'etecc-conclusoes-v4.0.2';
 const OFFLINE_URL = '/offline.html';
 const VERSION_URL = '/version.json';
 
-// Assets que devem ser sempre cached (core da aplicação)
+// Assets que devem ser sempre cached (core da aplicaÃ§Ã£o)
 const CORE_CACHE = [
   '/',
   '/index.html',
   '/offline.html',
   '/version.json',
-  '/assets/css/styles.css',
-  '/assets/css/theme.css',
+  '/assets/css/styles.css',\n'/assets/css/theme.css',
   '/assets/css/loading.css',
   '/assets/js/main.js',
   '/assets/images/E_vermelha_nova.png',
@@ -57,13 +56,13 @@ self.addEventListener('activate', event => {
 
 // Interceptar requests
 self.addEventListener('fetch', event => {
-  // Só interceptar requests HTTP/HTTPS
+  // SÃ³ interceptar requests HTTP/HTTPS
   if (!event.request.url.startsWith('http')) return;
 
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Retorna do cache se disponível
+        // Retorna do cache se disponÃ­vel
         if (response) {
           return response;
         }
@@ -75,7 +74,7 @@ self.addEventListener('fetch', event => {
 
           return fetch(event.request)
             .then(response => {
-              // Verifica se é uma resposta válida
+              // Verifica se Ã© uma resposta vÃ¡lida
               if (!response || response.status !== 200 || response.type !== 'basic') {
                 return response;
               }
@@ -98,7 +97,7 @@ self.addEventListener('fetch', event => {
         // Para outros recursos, busca online
         return fetch(event.request)
           .catch(() => {
-            // Se estiver offline e for uma navegação, mostra página offline
+            // Se estiver offline e for uma navegaÃ§Ã£o, mostra pÃ¡gina offline
             if (event.request.mode === 'navigate') {
               return caches.match(OFFLINE_URL) || caches.match('/');
             }
@@ -110,13 +109,13 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Verificar versão remota periodicamente
+// Verificar versÃ£o remota periodicamente
 async function checkForUpdates() {
   try {
     const response = await fetch(VERSION_URL, { cache: 'no-cache' });
     const versionData = await response.json();
 
-    // Notificar clientes sobre verificação de versão
+    // Notificar clientes sobre verificaÃ§Ã£o de versÃ£o
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
       client.postMessage({
@@ -125,11 +124,11 @@ async function checkForUpdates() {
       });
     });
   } catch (error) {
-    console.log('Erro ao verificar versão:', error);
+    console.log('Erro ao verificar versÃ£o:', error);
   }
 }
 
-// Verificar atualizações a cada 30 minutos
+// Verificar atualizaÃ§Ãµes a cada 30 minutos
 setInterval(checkForUpdates, 10 * 60 * 1000);
 
 // Escutar mensagens do app principal
@@ -149,11 +148,11 @@ self.addEventListener('message', event => {
   }
 });
 
-// Notificar sobre atualizações
+// Notificar sobre atualizaÃ§Ãµes
 self.addEventListener('updatefound', () => {
-  console.log('Nova versão do Service Worker encontrada');
+  console.log('Nova versÃ£o do Service Worker encontrada');
 
-  // Notifica todos os clientes sobre a atualização
+  // Notifica todos os clientes sobre a atualizaÃ§Ã£o
   self.clients.matchAll().then(clients => {
     clients.forEach(client => {
       client.postMessage({
@@ -162,3 +161,4 @@ self.addEventListener('updatefound', () => {
     });
   });
 });
+

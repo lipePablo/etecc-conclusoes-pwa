@@ -27,16 +27,18 @@ let __bypassDirtyGuardOnce = false;
 // Pular o próximo processamento do roteador (usado ao reverter hash para cancelar navegação)
 let __skipNextRender = false;
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Carregar tema salvo
-  const saved = localStorage.getItem('theme') || 'light';
-  applyTheme(saved);
+  document.addEventListener('DOMContentLoaded', () => {
+      // Carregar tema salvo
+    const saved = localStorage.getItem('theme') || 'light';
+    applyTheme(saved);
 
-  // Botão de tema no topo
-  const btnTemaTopo = document.getElementById('btnTemaTopo');
-  if (btnTemaTopo) btnTemaTopo.addEventListener('click', toggleTheme);
+    // Botão de tema no topo
+    const btnTemaTopo = document.getElementById('btnTemaTopo');
+    if (btnTemaTopo) btnTemaTopo.addEventListener('click', toggleTheme);
 
-  // Saudação e frases motivacionais
+    
+
+    // Saudação e frases motivacionais
   (function setupGreetingAndQuotes(){
     const NAME_KEY = 'unificado.userName';
     const IDX_KEY = 'unificado.motivation.idx';
@@ -227,13 +229,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function timeGreeting(){
       try { const h = new Date().getHours(); if (h>=5 && h<12) return 'Bom dia'; if (h>=12 && h<18) return 'Boa tarde'; return 'Boa noite'; } catch { return 'Olá'; }
     }
-    const EMOJI_FACES = ['😊','😄','😀','😉','😎','🤗','🙂','😌','😇'];
-    const EMOJI_HEARTS = ['❤️','💖','💗','💓','💞','💘','💝'];
+    // Emojis exibidos após o nome na saudação (variedade maior; corações aparecem menos)
+    const EMOJI_FACES = ['😊','😄','😀','😉','😎','🤗','🙂','😌','😇','😁','😃','🥳','😺'];
+    const EMOJI_POS = ['👍','👊','👏','🙌','💪','🤝','🫶'];
+    const EMOJI_STARS = ['✨','⭐️','🌟','💫','🌈'];
+    const EMOJI_FUN = ['🔥','🎉','🚀','🏆','🎯','🧠','🛠️'];
+    const EMOJI_HEARTS = ['❤️','💖','💗','💓','💕','💞'];
     // Offline-only: usando apenas QUOTES locais (sem rede)
     function nextEmoji(){
       try {
-        const useHeart = Math.random() < 0.20; // 20% corações
-        const arr = useHeart ? EMOJI_HEARTS : EMOJI_FACES;
+        const r = Math.random();
+        // Pesos: Hearts ~8%, Faces ~32%, Positivos ~22%, Stars ~18%, Fun ~20%
+        let arr;
+        if (r < 0.08) arr = EMOJI_HEARTS;
+        else if (r < 0.40) arr = EMOJI_FACES;
+        else if (r < 0.62) arr = EMOJI_POS;
+        else if (r < 0.80) arr = EMOJI_STARS;
+        else arr = EMOJI_FUN;
         return arr[Math.floor(Math.random() * arr.length)] || '😊';
       } catch { return '😊'; }
     }
@@ -894,6 +906,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function render(){
       lista.innerHTML = '';
+      const panel = document.querySelector('.recent__panel');
+      if (panel) panel.classList.remove('fade-on');
       let arr = load();
       const q = (document.getElementById('fltBusca')?.value || '').toLowerCase();
       const equipeF = document.getElementById('fltEquipe')?.value || 'todos';
@@ -901,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (q) arr = arr.filter(i => (i.cliente||'').toLowerCase().includes(q));
       if (equipeF !== 'todos') arr = arr.filter(i => (i.equipe||'') === equipeF);
       arr.sort((a,b) => ord === 'asc' ? (a.data||0) - (b.data||0) : (b.data||0) - (a.data||0));
-      if (!arr.length) { empty.style.display = 'block'; return; }
+      if (!arr.length) { empty.style.display = 'block'; if (panel) panel.classList.remove('fade-on'); return; }
       empty.style.display = 'none';
       arr.forEach(a => {
         const li = document.createElement('li');
@@ -933,6 +947,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         lista.appendChild(li);
       });
+      // Ativa degradê somente quando houver pelo menos 3 itens
+      try { if (panel) panel.classList.toggle('fade-on', (arr.length || 0) >= 3); } catch {}
     }
 
     // Controles de filtro
