@@ -4240,7 +4240,23 @@ function updateConditionalVisibility(formId, container){
     const field = block.getAttribute('data-when-field');
     const equals = block.getAttribute('data-when-equals');
     const inList = block.getAttribute('data-when-in');
-    const cur = state[field];
+    let cur = state[field];
+    // Robust fallback: if state is empty/unset, try reading the live DOM value
+    if (cur === undefined || cur === null || String(cur) === '') {
+      try {
+        // radios (checked)
+        const r = container.querySelector(`input[name="${field}"][type="radio"]:checked`);
+        if (r) {
+          cur = r.value;
+        } else {
+          // any element with matching name or id
+          const el = container.querySelector(`[name="${field}"]`) || container.querySelector(`#${field}`);
+          if (el) {
+            if (el.type === 'checkbox') cur = !!el.checked; else cur = el.value;
+          }
+        }
+      } catch {}
+    }
     let visible = false;
     if (inList) {
       const arr = inList.split(',').map(s => String(s).trim());
