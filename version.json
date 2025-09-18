@@ -1,5 +1,5 @@
 ﻿{
-  "version": "4.0.2",
+  "version": "4.0.3",
   "buildDate": "2025-09-16T12:00:00.000Z",
   "minVersion": "4.0.0",
   "forceUpdate": true,
@@ -30,4 +30,5 @@
     "Controle de compatibilidade"
   ]
 }
+
 

@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'etecc-conclusoes-v4.0.2';
+﻿const CACHE_NAME = 'etecc-conclusoes-v4.0.3';
 const OFFLINE_URL = '/offline.html';
 const VERSION_URL = '/version.json';
 
@@ -8,7 +8,8 @@ const CORE_CACHE = [
   '/index.html',
   '/offline.html',
   '/version.json',
-  '/assets/css/styles.css',\n'/assets/css/theme.css',
+  '/assets/css/styles.css',
+  '/assets/css/theme.css',
   '/assets/css/loading.css',
   '/assets/js/main.js',
   '/assets/images/E_vermelha_nova.png',
@@ -161,4 +162,7 @@ self.addEventListener('updatefound', () => {
     });
   });
 });
+
+
+
 
