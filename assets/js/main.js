@@ -983,6 +983,33 @@ let __skipNextRender = false;
     window.__clearHistory = clearAll;
     window.__addHistoryWithSnapshot = (item, snapshot) => addFinal(item, snapshot);
     window.__upsertDraftHistory = (formId, state) => upsertDraft(formId, state);
+    // Override: rascunhos independentes por formulário e nome do usuário no Comunicado de Ausência
+    try {
+      if (!window.__upsertDraftHistoryPatched){
+        window.__upsertDraftHistoryPatched = true;
+        window.__upsertDraftHistory = function(formId, state){
+          try {
+            const arr = load();
+            const equipe = (formId === 'comunicado-ausencia') ? 'especial' : (localStorage.getItem('unificado.selectedTeam') || '');
+            const def = (typeof FORMS_CATALOG!=='undefined' && FORMS_CATALOG) ? FORMS_CATALOG[formId] : null;
+            let cliente = state?.clienteNome || state?.cliente || '';
+            try { if (formId === 'comunicado-ausencia') cliente = (localStorage.getItem('unificado.userName')||'').trim() || 'Usuário'; } catch {}
+            const entry = { isDraft:true, formId, cliente, equipe, formulario: def?.titulo || 'Formulário', data: Date.now() };
+            const idx = arr.findIndex(i => i && i.isDraft && i.formId === formId);
+            if (idx >= 0){
+              const cur = arr[idx];
+              arr[idx] = { ...cur, ...entry };
+              saveSnap(cur.id, state||{});
+            } else {
+              const id = nowId();
+              arr.push({ id, ...entry });
+              saveSnap(id, state||{});
+            }
+            enforceLimit(arr); save(arr); render();
+          } catch {}
+        };
+      }
+    } catch {}
 
     // Render inicial
     render();
@@ -1239,7 +1266,7 @@ function setTopbarMode(internal){
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label">Exemplo de formato:</label>\n'
-        + '    <div class="form-hint" style="white-space: pre-line; line-height:1.4;">' +
+        + '    <div class="form-hint" data-ctx="exemplo-ausencia" style="white-space: pre-line; line-height:1.4;">' +
                'Boa tarde, Venho, por meio deste, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].\n\n' +
                '( ) Iniciarei a rota mais tarde.\n' +
                '(✔) Retornarei para finalizar o expediente.\n' +
@@ -1248,26 +1275,35 @@ function setTopbarMode(internal){
         + '  </div>\n'
         + '  <div class="menu-divider"></div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" for="aus_data">Data da Ausência:</label>\n'
-        + '    <input id="aus_data" name="aus_data" type="text" class="form-input--underline" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="^\\d{2}/\\d{2}/\\d{4}$" maxlength="10" />\n'
+        + '    <label class="form-label" for="aus_data">Data da Ausência:<span class="req">*</span></label>\n'
+        + '    <input id="aus_data" name="aus_data" type="text" class="form-input--underline" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="^\\d{2}/\\d{2}/\\d{4}$" maxlength="10" required />\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" for="aus_hora">Horário da Ausência:</label>\n'
-        + '    <input id="aus_hora" name="aus_hora" type="text" class="form-input--underline" placeholder="hh:mm" inputmode="numeric" pattern="^\\d{2}:\\d{2}$" maxlength="5" />\n'
+        + '    <label class="form-label" for="aus_hora">Horário da Ausência:<span class="req">*</span></label>\n'
+        + '    <input id="aus_hora" name="aus_hora" type="text" class="form-input--underline" placeholder="hh:mm" inputmode="numeric" pattern="^\\d{2}:\\d{2}$" maxlength="5" required />\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" for="aus_motivo">Motivo da Ausência:</label>\n'
-        + '    <input id="aus_motivo" name="aus_motivo" type="text" class="form-input--underline" placeholder="Descreva o motivo" />\n'
+        + '    <label class="form-label" for="aus_motivo">Motivo da Ausência:<span class="req">*</span></label>\n'
+        + '    <textarea id="aus_motivo" name="aus_motivo" class="form-input--underline auto-expand" placeholder="Descreva o motivo" rows="2" data-min-height="64" required></textarea>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label">Opções de Retorno:</label>\n'
-        + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Opções de Retorno">\n'
+        + '    <label class="form-label">Opções de Retorno:<span class="req">*</span></label>\n'
+        + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Opções de Retorno" aria-required="true">\n'
         + '      <input type="radio" id="ret_inicio_tarde" name="aus_retorno" value="inicio_tarde">\n'
         + '      <label for="ret_inicio_tarde">Iniciarei a rota mais tarde.</label>\n'
         + '      <input type="radio" id="ret_retornar_finalizar" name="aus_retorno" value="retornar">\n'
         + '      <label for="ret_retornar_finalizar">Retornarei para finalizar o expediente.</label>\n'
         + '      <input type="radio" id="ret_nao_retornar" name="aus_retorno" value="nao_retornar">\n'
         + '      <label for="ret_nao_retornar">Não retornarei para finalizar o expediente.</label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label">A supervisão técnica foi comunicada previamente sobre esta ausência?<span class="req">*</span></label>\n'
+        + '    <div class="segmented" role="radiogroup" aria-label="Supervisão técnica comunicada" aria-required="true">\n'
+        + '      <input type="radio" id="sup_comunicada_sim" name="aus_sup_comunicada" value="sim">\n'
+        + '      <label for="sup_comunicada_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
+        + '      <input type="radio" id="sup_comunicada_nao" name="aus_sup_comunicada" value="nao">\n'
+        + '      <label for="sup_comunicada_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
         + '    </div>\n'
         + '  </div>\n'
         + '</section>\n'
@@ -1277,31 +1313,223 @@ function setTopbarMode(internal){
         + '</div>\n';
 
         try {
+          // Ajusta saudação do exemplo conforme hora atual
+          try {
+            const greet = (()=>{ try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia'; if (h<18) return 'Boa tarde'; return 'Boa noite'; } catch { return 'Olá'; } })();
+            const ex = root.querySelector('[data-ctx="exemplo-ausencia"]');
+            if (ex) {
+              const rest = 'Venho, por meio deste, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].\n\n( ) Iniciarei a rota mais tarde.\n(✔) Retornarei para finalizar o expediente.\n( ) Não retornarei para finalizar o expediente.';
+              ex.textContent = greet + '. ' + rest + '\nA supervisão foi previamente comunicada sobre a minha ausência.';
+            }
+          } catch {}
+          // Exemplo dinâmico: saudação + somente a opção selecionada
+          try {
+            const ex = root.querySelector('[data-ctx="exemplo-ausencia"]');
+            const getGreet = () => { try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } };
+            const updateExample = () => {
+              if (!ex) return;
+              const msg = getGreet() + ' Venho por meio deste comunicado, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].';
+              const parts = [msg];
+              try {
+                const sel = root.querySelector('input[name="aus_retorno"]:checked');
+                if (sel) {
+                  const lab = root.querySelector('label[for="'+sel.id+'"]');
+                  const t = (lab && lab.textContent || '').trim();
+                  if (t) parts.push('', '(✔) ' + t);
+                }
+              } catch {}
+              try {
+                const sup = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                if (sup) {
+                  const v = String(sup.value||'').toLowerCase();
+                  parts.push('', (v === 'sim') ? 'A supervisão foi previamente comunicada sobre a minha ausência.' : 'Não foi previamente comunicada sobre a minha ausência.');
+                }
+              } catch {}
+              ex.textContent = parts.filter(Boolean).join('\n');
+            };
+            updateExample();
+            try { root.__updateAusenciaExample = updateExample; } catch {}
+            try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno' || n==='aus_sup_comunicada') { try { updateExample(); } catch {} } }, true); } catch {}
+            // Override com reflexão de valores digitados e padrões completos
+            try {
+              const ex2 = root.querySelector('[data-ctx="exemplo-ausencia"]');
+              const getGreet2 = () => { try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } };
+              const updateExample2 = () => {
+                if (!ex2) return;
+                const d = (root.querySelector('#aus_data')?.value || '[data]').trim();
+                const hh = (root.querySelector('#aus_hora')?.value || '[horário]').trim();
+                const mm = (root.querySelector('#aus_motivo')?.value || '[motivo]').trim();
+                const msg = getGreet2() + ` Venho por meio deste comunicado, informar que no dia ${d}, no horário das ${hh}, precisarei me ausentar para ${mm}.`;
+                let ret = 'Retornarei para finalizar o expediente.';
+                try { const sel = root.querySelector('input[name="aus_retorno"]:checked'); if (sel){ const lab = root.querySelector('label[for="'+sel.id+'"]'); const t=(lab&&lab.textContent||'').trim(); if (t) ret = t; } } catch {}
+                let supLine = 'A supervisão foi previamente comunicada sobre a minha ausência.';
+                try { const sup = root.querySelector('input[name="aus_sup_comunicada"]:checked'); if (sup){ const v=(sup.value||'').toLowerCase(); if (v==='nao') supLine = 'Não foi previamente comunicada sobre a minha ausência.'; } } catch {}
+                const out = [msg, '', '(✔) ' + ret, '', supLine].join('\n');
+                ex2.textContent = out;
+              };
+              updateExample2();
+            try { root.__updateAusenciaExample = updateExample2; } catch {}
+            try { root.addEventListener('input', (e)=>{ const id=(e.target&&e.target.id)||''; if (id==='aus_data'||id==='aus_hora'||id==='aus_motivo'){ try { updateExample2(); } catch {} } }, true); } catch {}
+            try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'){ try { updateExample2(); } catch {} } }, true); } catch {}
+              // Reforço: quando nenhuma opção de retorno estiver selecionada, exibir as três linhas com ( )
+              try {
+                const ex3 = root.querySelector('[data-ctx="exemplo-ausencia"]');
+                const greet3 = () => { try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } };
+                const updateExample3 = () => {
+                  if (!ex3) return;
+                  const d = (root.querySelector('#aus_data')?.value || '[data]').trim();
+                  const hh = (root.querySelector('#aus_hora')?.value || '[horário]').trim();
+                  const mm = (root.querySelector('#aus_motivo')?.value || '[motivo]').trim();
+                  const msg = greet3() + ` Venho por meio deste comunicado, informar que no dia ${d}, no horário das ${hh}, precisarei me ausentar para ${mm}.`;
+                  let retornoLines = [];
+                  const sel = root.querySelector('input[name="aus_retorno"]:checked');
+                  if (sel) {
+                    const lab = root.querySelector('label[for="'+sel.id+'"]');
+                    const t = (lab && lab.textContent || '').trim();
+                    retornoLines = t ? ['(✔) ' + t] : [];
+                  } else {
+                    retornoLines = [
+                      '( ) Iniciarei a rota mais tarde.',
+                      '( ) Retornarei para finalizar o expediente.',
+                      '( ) Não retornarei para finalizar o expediente.'
+                    ];
+                  }
+                  const supSel = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                  const supLine = (supSel && String(supSel.value||'').toLowerCase()==='nao')
+                    ? 'A supervisão não foi previamente comunicada sobre a minha ausência.'
+                    : 'A supervisão foi previamente comunicada sobre a minha ausência.';
+                  ex3.textContent = [msg, '', ...retornoLines, '', supLine].join('\n');
+                };
+                try { root.__updateAusenciaExample = updateExample3; } catch {}
+                try { updateExample3(); } catch {}
+                try { root.addEventListener('input', (e)=>{ const id=(e.target&&e.target.id)||''; if (id==='aus_data'||id==='aus_hora'||id==='aus_motivo'){ try { updateExample3(); } catch {} } }, true); } catch {}
+                try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'){ try { updateExample3(); } catch {} } }, true); } catch {}
+              } catch {}
+            } catch {}
+          } catch {}
+
           // Máscara leve para data dd/mm/aaaa
           const data = root.querySelector('#aus_data');
           if (data && !data.__wired){
             data.__wired = true;
+            // helpers comuns
+            const ensureShake = () => { try { if (!document.getElementById('errShakeStyle')) { const st=document.createElement('style'); st.id='errShakeStyle'; st.textContent='@keyframes errshake{0%{transform:translateX(0)}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}100%{transform:translateX(0)}} .error-shake{animation:errshake .32s ease}'; document.head.appendChild(st); } } catch {} };
+            const showHint = (el, key, msg) => {
+              try {
+                ensureShake();
+                const block = el.closest('.form-block') || el;
+                let m = block.querySelector('.sinal-los-hint[data-error="1"][data-error-key="'+key+'"]');
+                if (!m) { m = document.createElement('div'); m.className='form-hint sinal-los-hint is-highlight'; m.setAttribute('data-error','1'); m.setAttribute('data-error-key', key); block.appendChild(m); }
+                m.textContent = msg;
+                el.classList.add('error'); el.style.borderBottomColor='#ff4d4d'; el.style.boxShadow='0 2px 0 rgba(255,77,77,.5)';
+                try { el.classList.add('error-shake'); setTimeout(()=>{ try { el.classList.remove('error-shake'); } catch {} }, 360); } catch {}
+                clearTimeout(el.__errTO); el.__errTO = setTimeout(()=>{ try { m.remove(); el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; } catch {} }, 7000);
+              } catch {}
+            };
+            const maxYear = new Date().getFullYear() + 1;
+            const daysInMonth = (y, m) => { try { return new Date(y, m, 0).getDate(); } catch { return 31; } };
+            const isPartialValid = (digs) => {
+              const L = digs.length;
+              if (L>=1){ const d1 = parseInt(digs[0],10); if (isNaN(d1) || d1<0 || d1>3) return false; }
+              if (L>=2){ const day = parseInt(digs.slice(0,2),10); if (day<=0 || day>31) return false; }
+              if (L>=3){ const m1 = parseInt(digs[2],10); if (isNaN(m1) || m1<0 || m1>1) return false; }
+              if (L>=4){ const mo = parseInt(digs.slice(2,4),10); if (mo<=0 || mo>12) return false; if (mo===2 && parseInt(digs.slice(0,2),10)>29) return false; }
+              if (L===8){ const y=parseInt(digs.slice(4),10); const mo=parseInt(digs.slice(2,4),10); const dd=parseInt(digs.slice(0,2),10); if (dd>daysInMonth(y,mo)) return false; if (y>maxYear) return false; }
+              return true;
+            };
+            data.__lastValidDigits = ((data.value||'').replace(/\D+/g,'').slice(0,8)) || '';
             data.addEventListener('input', () => {
-              const digits = (data.value||'').replace(/\D+/g,'').slice(0,8);
+              let digits = (data.value||'').replace(/\D+/g,'').slice(0,8);
+              if (!isPartialValid(digits)) {
+                digits = data.__lastValidDigits || '';
+                showHint(data, 'aus_data', 'Data inválida. Use dd/mm/aaaa.');
+              } else {
+                data.__lastValidDigits = digits;
+              }
               let out = '';
               if (digits.length <= 2) out = digits;
               else if (digits.length <= 4) out = digits.slice(0,2) + '/' + digits.slice(2);
               else out = digits.slice(0,2) + '/' + digits.slice(2,4) + '/' + digits.slice(4);
               data.value = out;
             });
+            data.addEventListener('input', () => { try { const b=data.closest('.form-block'); data.classList.remove('error'); data.style.boxShadow=''; data.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); } catch {} });
+            const validateDateLimits = () => {
+              try {
+                const v = (data.value||'').trim();
+                if (!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return;
+                const [dd,mm,yy] = v.split('/').map(x=>parseInt(x,10));
+                if (mm < 1 || mm > 12) return showHint(data, 'aus_data', 'Mês inválido. Use de 01 a 12.');
+                if (dd < 1 || dd > 31) return showHint(data, 'aus_data', 'Dia inválido. Use de 01 a 31.');
+                const maxDay = daysInMonth(yy, mm);
+                if (dd > maxDay) return showHint(data, 'aus_data', 'Dia inválido para o mês informado.');
+                const d = new Date(yy, mm-1, dd);
+                if (!(d.getFullYear()===yy && d.getMonth()===(mm-1) && d.getDate()===dd)) return showHint(data, 'aus_data', 'Data inválida.');
+                if (yy > maxYear) return showHint(data, 'aus_data', 'Ano não permitido. Use ano até ' + maxYear + '.');
+              } catch {}
+            };
+            data.addEventListener('blur', validateDateLimits);
           }
           // Máscara leve para hora hh:mm
           const hora = root.querySelector('#aus_hora');
           if (hora && !hora.__wired){
             hora.__wired = true;
+            const showHintTime = (msg) => {
+              try {
+                const block = hora.closest('.form-block') || hora;
+                let m = block.querySelector('.sinal-los-hint[data-error="1"][data-error-key="aus_hora"]');
+                if (!m) { m = document.createElement('div'); m.className='form-hint sinal-los-hint is-highlight'; m.setAttribute('data-error','1'); m.setAttribute('data-error-key','aus_hora'); block.appendChild(m); }
+                m.textContent = msg;
+                hora.classList.add('error'); hora.style.borderBottomColor='#ff4d4d'; hora.style.boxShadow='0 2px 0 rgba(255,77,77,.5)';
+                try { hora.classList.add('error-shake'); setTimeout(()=>{ try { hora.classList.remove('error-shake'); } catch {} }, 360); } catch {}
+                clearTimeout(hora.__errTO); hora.__errTO = setTimeout(()=>{ try { m.remove(); hora.classList.remove('error'); hora.style.boxShadow=''; hora.style.borderBottomColor=''; } catch {} }, 7000);
+              } catch {}
+            };
+            const isValidTimePartial = (digs) => {
+              const L=digs.length;
+              if (L>=1){ const h1=parseInt(digs[0],10); if (isNaN(h1)||h1<0||h1>2) return false; }
+              if (L>=2){ const hh=parseInt(digs.slice(0,2),10); if (hh<0||hh>23) return false; }
+              if (L>=3){ const m1=parseInt(digs[2],10); if (isNaN(m1)||m1<0||m1>5) return false; }
+              if (L>=4){ const mm=parseInt(digs.slice(2,4),10); if (mm<0||mm>59) return false; }
+              return true;
+            };
+            hora.__lastValidDigits = ((hora.value||'').replace(/\D+/g,'').slice(0,4)) || '';
             hora.addEventListener('input', () => {
-              const digits = (hora.value||'').replace(/\D+/g,'').slice(0,4);
-              let out = '';
-              if (digits.length <= 2) out = digits;
-              else out = digits.slice(0,2) + ':' + digits.slice(2);
+              let digits = (hora.value||'').replace(/\D+/g,'').slice(0,4);
+              if (!isValidTimePartial(digits)) { digits = hora.__lastValidDigits || ''; showHintTime('Horário inválido. Use 00:00 a 23:59.'); }
+              else { hora.__lastValidDigits = digits; }
+              let out=''; if (digits.length<=2) out=digits; else out=digits.slice(0,2)+':'+digits.slice(2);
               hora.value = out;
             });
+            hora.addEventListener('input', () => { try { const b=hora.closest('.form-block'); hora.classList.remove('error'); hora.style.boxShadow=''; hora.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); } catch {} });
+            const validateTime24h = () => {
+              try {
+                const v = (hora.value||'').trim();
+                if (!/^\d{2}:\d{2}$/.test(v)) return;
+                const [hh,mm] = v.split(':').map(x=>parseInt(x,10));
+                if (!(hh>=0 && hh<=23 && mm>=0 && mm<=59)) showHintTime('Horário inválido. Use 00:00 a 23:59.');
+              } catch {}
+            };
+            hora.addEventListener('blur', validateTime24h);
           }
+          const motivo = root.querySelector('#aus_motivo');
+          if (motivo && !motivo.__wired){
+            motivo.__wired = true;
+            motivo.addEventListener('input', () => { try { const b=motivo.closest('.form-block'); motivo.classList.remove('error'); motivo.style.boxShadow=''; motivo.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); const hint=b?.querySelector('.sinal-los-hint[data-error="1"]'); if (hint) hint.remove(); } catch {} });
+          }
+          try {
+            const segWrap = root.querySelector('div.segmented [name="aus_retorno"]').closest('.form-block');
+            if (segWrap && !segWrap.__wired){
+              segWrap.__wired = true;
+              segWrap.addEventListener('change', (e) => { const t=e.target; if (!t) return; if ((t.name||'')==='aus_retorno'){ try { const seg=segWrap.querySelector('.segmented'); if (seg){ seg.classList.remove('error'); seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; } const err=segWrap.querySelector('.form-error'); if (err) err.remove(); const hint=segWrap.querySelector('.sinal-los-hint[data-error="1"]'); if (hint) hint.remove(); } catch {} } }, true);
+            }
+          } catch {}
+          try {
+            const segWrap2 = root.querySelector('div.segmented [name="aus_sup_comunicada"]').closest('.form-block');
+            if (segWrap2 && !segWrap2.__wired){
+              segWrap2.__wired = true;
+              segWrap2.addEventListener('change', (e) => { const t=e.target; if (!t) return; if ((t.name||'')==='aus_sup_comunicada'){ try { const seg=segWrap2.querySelector('.segmented'); if (seg){ seg.classList.remove('error'); seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; } const err=segWrap2.querySelector('.form-error'); if (err) err.remove(); const hint=segWrap2.querySelector('.sinal-los-hint[data-error="1"]'); if (hint) hint.remove(); } catch {} } }, true);
+            }
+          } catch {}
         } catch {}
       }
     },
@@ -4596,6 +4824,20 @@ function updateConditionalVisibility(formId, container){
   try { restoreFormState(formId, container); } catch {}
   try { container.__inPrefill = false; } catch {}
   try { container.__prefillState = null; window.__pendingFormPrefill = null; } catch {}
+  // Atualiza exemplo do Comunicado após restaurar rascunho
+  try {
+    if (formId === 'comunicado-ausencia' && typeof container.__updateAusenciaExample === 'function') {
+      container.__updateAusenciaExample();
+      setTimeout(()=>{ try { container.__updateAusenciaExample(); } catch {} }, 30);
+    }
+  } catch {}
+  // Recalcula contadores de textareas após restaurar rascunho
+  try {
+    container.querySelectorAll('textarea.auto-expand').forEach(t => {
+      try { t.dispatchEvent(new Event('input', { bubbles: true })); }
+      catch { try { t.dispatchEvent(new Event('input')); } catch {} }
+    });
+  } catch {}
 }
 
     } catch {}
@@ -4715,19 +4957,102 @@ const copyBtn = document.getElementById('btnCopiarForm');
     const container = document.getElementById('formContainer');
     const formId = (container && container.__formId) || '';
     if (formId === 'comunicado-ausencia') {
-      try { localStorage.setItem(formStateKey(formId), JSON.stringify((typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId))); } catch {}
+      // Estilo de "tremidinha" (injetado uma vez)
+      const ensureErrShakeStyle = () => {
+        try {
+          if (document.getElementById('errShakeStyle')) return;
+          const st = document.createElement('style'); st.id='errShakeStyle';
+          st.textContent = '@keyframes errshake{0%{transform:translateX(0)}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}100%{transform:translateX(0)}} .error-shake{animation:errshake .32s ease}';
+          document.head.appendChild(st);
+        } catch {}
+      };
+      const clearErrors = () => {
+        try { Array.from(container.querySelectorAll('.form-error')).forEach(el => el.remove()); } catch {}
+        try { Array.from(container.querySelectorAll('.sinal-los-hint[data-error="1"]')).forEach(el => el.remove()); } catch {}
+        try { const el=container.querySelector('#aus_data'); el?.classList.remove('error'); if (el){ el.style.boxShadow=''; el.style.borderBottomColor=''; } } catch {}
+        try { const el=container.querySelector('#aus_hora'); el?.classList.remove('error'); if (el){ el.style.boxShadow=''; el.style.borderBottomColor=''; } } catch {}
+        try { const el=container.querySelector('#aus_motivo'); el?.classList.remove('error'); if (el){ el.style.boxShadow=''; el.style.borderBottomColor=''; } } catch {}
+        try { const seg=container.querySelector('.segmented'); seg?.classList.remove('error'); if (seg){ seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; } } catch {}
+      };
+      const addError = (el, msg) => {
+        try {
+          ensureErrShakeStyle();
+          const block = el.closest('.form-block') || el;
+          // Aviso no mesmo estilo do "Sem sinal"
+          const m = document.createElement('div');
+          m.className = 'form-hint sinal-los-hint is-highlight';
+          m.setAttribute('data-error','1');
+          m.textContent = msg || 'Este campo é obrigatório.';
+          if (el.classList) {
+            el.classList.add('error');
+            if (el.id === 'aus_data' || el.id === 'aus_hora' || el.id === 'aus_motivo') { el.style.borderBottomColor = '#ff4d4d'; el.style.boxShadow = '0 2px 0 rgba(255,77,77,.5)'; }
+            // Tremidinha
+            try { el.classList.add('error-shake'); setTimeout(()=>{ try { el.classList.remove('error-shake'); } catch {} }, 360); } catch {}
+          } else if (el.querySelector) {
+            const seg = el.querySelector('.segmented') || el;
+            seg.classList.add('error');
+            try { seg.classList.add('error-shake'); setTimeout(()=>{ try { seg.classList.remove('error-shake'); } catch {} }, 360); } catch {}
+          }
+          block.appendChild(m);
+          // Remove aviso automaticamente após 7s
+          setTimeout(() => {
+            try { m.remove(); } catch {}
+            try {
+              if (el.classList) { el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; }
+              else if (el.querySelector) { const seg = el.querySelector('.segmented') || el; seg.classList.remove('error'); seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; }
+            } catch {}
+          }, 7000);
+        } catch {}
+      };
+      clearErrors();
       const data = (document.getElementById('aus_data')?.value || '').trim();
       const horaRaw = (document.getElementById('aus_hora')?.value || '').trim();
       const hora = horaRaw ? horaRaw.replace(':','h') : '';
       const motivo = (document.getElementById('aus_motivo')?.value || '').trim();
       let sel = '';
       try { const r = container.querySelector('input[name="aus_retorno"]:checked'); sel = (r && r.value) || ''; } catch {}
-      const retornoLine = (sel === 'inicio_tarde') ? 'Iniciarei a rota mais tarde.' : (sel === 'retornar') ? 'Retornarei para finalizar o expediente.' : (sel === 'nao_retornar') ? 'Não retornarei para finalizar o expediente.' : '';
+      let sup = '';
+      try { const r2 = container.querySelector('input[name="aus_sup_comunicada"]:checked'); sup = (r2 && r2.value) || ''; } catch {}
+      let hasErr = false; const reDate=/^\d{2}\/\d{2}\/\d{4}$/; const reTime=/^\d{2}:\d{2}$/;
+      // Data: formato e ano máximo atual+1
+      if (!data || !reDate.test(data)) { addError(document.getElementById('aus_data'), 'Preencha a data no formato dd/mm/aaaa.'); hasErr = true; }
+      else {
+        try {
+          const [dd,mm,yy] = data.split('/').map(x=>parseInt(x,10));
+          if (mm < 1 || mm > 12) { addError(document.getElementById('aus_data'), 'Mês inválido. Use de 01 a 12.'); hasErr = true; }
+          else if (dd < 1 || dd > 31) { addError(document.getElementById('aus_data'), 'Dia inválido. Use de 01 a 31.'); hasErr = true; }
+          else {
+            const daysInMonth = (y, m) => { try { return new Date(y, m, 0).getDate(); } catch { return 31; } };
+            const maxDay = daysInMonth(yy, mm);
+            if (dd > maxDay) { addError(document.getElementById('aus_data'), 'Dia inválido para o mês informado.'); hasErr = true; }
+            const d = new Date(yy, mm-1, dd);
+            const maxYear = new Date().getFullYear() + 1;
+            if (!(d.getFullYear()===yy && d.getMonth()===(mm-1) && d.getDate()===dd)) { addError(document.getElementById('aus_data'), 'Data inválida.'); hasErr = true; }
+            else if (yy > maxYear) { addError(document.getElementById('aus_data'), 'Ano não permitido. Use ano até ' + maxYear + '.'); hasErr = true; }
+          }
+        } catch { addError(document.getElementById('aus_data'), 'Data inválida.'); hasErr = true; }
+      }
+      // Hora: 24h
+      if (!horaRaw || !reTime.test(horaRaw)) { addError(document.getElementById('aus_hora'), 'Preencha o horário no formato hh:mm.'); hasErr = true; }
+      else {
+        try { const [hh,mm] = horaRaw.split(':').map(x=>parseInt(x,10)); if (!(hh>=0 && hh<=23 && mm>=0 && mm<=59)) { addError(document.getElementById('aus_hora'), 'Horário inválido. Use 00:00 a 23:59.'); hasErr = true; } } catch { addError(document.getElementById('aus_hora'), 'Horário inválido.'); hasErr = true; }
+      }
+      if (!motivo) { addError(document.getElementById('aus_motivo'), 'Informe o motivo da ausência.'); hasErr = true; }
+      if (!sel) { const el = container.querySelector('div.segmented [name="aus_retorno"]').closest('.form-block'); if (el){ addError(el, 'Selecione uma opção de retorno.'); } hasErr = true; }
+      if (!sup) { const el2 = container.querySelector('div.segmented [name="aus_sup_comunicada"]').closest('.form-block'); if (el2){ addError(el2, 'Informe se a supervisão foi previamente comunicada.'); } hasErr = true; }
+      if (hasErr) { try { const firstErr = container.querySelector('.error'); firstErr?.focus(); } catch {} return; }
+      try { localStorage.setItem(formStateKey(formId), JSON.stringify((typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId))); } catch {}
+      const retornoLine = sel === 'inicio_tarde' ? 'Iniciarei a rota mais tarde.' : sel === 'retornar' ? 'Retornarei para finalizar o expediente.' : 'Não retornarei para finalizar o expediente.';
       const header = 'COMUNICADO DE AUSÊNCIA';
-      const l0 = 'Boa tarde,';
-      const lMsg = `Venho, por meio deste, informar que no dia *${data}*, no horário das *${hora}*, precisarei me ausentar para *${motivo}*.`;
-      const lRet = retornoLine ? `*${retornoLine}*.` : '';
-      const text = [header, l0, lMsg, lRet].filter(Boolean).join('\n');
+      const greet = (function(){ try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } })();
+      const l01 = `${greet} Venho, por meio deste, informar que no dia ${data}, no horário das ${hora}, precisarei me ausentar para ${motivo}.`;
+      const lRet = retornoLine || '';
+      const lSup = sup === 'sim' ? 'A supervisão foi previamente comunicada sobre a minha ausência.' : 'A supervisão não foi previamente comunicada sobre a minha ausência.';
+      let text = [header, l01, lRet, lSup].filter(Boolean).join('\n');
+      try {
+        const l01new = `${greet} Venho por meio deste comunicado, informar que no dia ${data}, no horário das ${hora}, precisarei me ausentar para ${motivo}.`;
+        text = [header, l01new, lRet, lSup].filter(Boolean).join('\n');
+      } catch {}
       try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
       catch(e){
         try { const aux=document.createElement('textarea'); aux.value=text; document.body.appendChild(aux); aux.select(); document.execCommand('copy'); document.body.removeChild(aux); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
@@ -4736,8 +5061,10 @@ const copyBtn = document.getElementById('btnCopiarForm');
       // Salvar no histórico como finalizado
       try {
         const st = (typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId);
-        const equipe = localStorage.getItem('unificado.selectedTeam') || '';
-        const cliente = st?.clienteNome || st?.cliente || '';
+        const equipe = 'especial';
+        let cliente = '';
+        try { cliente = (localStorage.getItem('unificado.userName')||'').trim(); } catch { cliente=''; }
+        if (!cliente) cliente = 'Usuário';
         if (typeof window.__addHistoryWithSnapshot === 'function') {
           const titulo = 'Comunicado de Ausência';
           window.__addHistoryWithSnapshot({ formId, equipe, cliente, formulario: titulo, data: Date.now(), isDraft:false }, st);
