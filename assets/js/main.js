@@ -1408,108 +1408,32 @@ function setTopbarMode(internal){
             } catch {}
           } catch {}
 
-          // Máscara leve para data dd/mm/aaaa
+          // Máscara leve para data dd/mm/aaaa (sem validação em tempo real)
           const data = root.querySelector('#aus_data');
           if (data && !data.__wired){
             data.__wired = true;
-            // helpers comuns
-            const ensureShake = () => { try { if (!document.getElementById('errShakeStyle')) { const st=document.createElement('style'); st.id='errShakeStyle'; st.textContent='@keyframes errshake{0%{transform:translateX(0)}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}100%{transform:translateX(0)}} .error-shake{animation:errshake .32s ease}'; document.head.appendChild(st); } } catch {} };
-            const showHint = (el, key, msg) => {
-              try {
-                ensureShake();
-                const block = el.closest('.form-block') || el;
-                let m = block.querySelector('.sinal-los-hint[data-error="1"][data-error-key="'+key+'"]');
-                if (!m) { m = document.createElement('div'); m.className='form-hint sinal-los-hint is-highlight'; m.setAttribute('data-error','1'); m.setAttribute('data-error-key', key); block.appendChild(m); }
-                m.textContent = msg;
-                el.classList.add('error'); el.style.borderBottomColor='#ff4d4d'; el.style.boxShadow='0 2px 0 rgba(255,77,77,.5)';
-                try { el.classList.add('error-shake'); setTimeout(()=>{ try { el.classList.remove('error-shake'); } catch {} }, 360); } catch {}
-                clearTimeout(el.__errTO); el.__errTO = setTimeout(()=>{ try { m.remove(); el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; } catch {} }, 7000);
-              } catch {}
-            };
-            const maxYear = new Date().getFullYear() + 1;
-            const daysInMonth = (y, m) => { try { return new Date(y, m, 0).getDate(); } catch { return 31; } };
-            const isPartialValid = (digs) => {
-              const L = digs.length;
-              if (L>=1){ const d1 = parseInt(digs[0],10); if (isNaN(d1) || d1<0 || d1>3) return false; }
-              if (L>=2){ const day = parseInt(digs.slice(0,2),10); if (day<=0 || day>31) return false; }
-              if (L>=3){ const m1 = parseInt(digs[2],10); if (isNaN(m1) || m1<0 || m1>1) return false; }
-              if (L>=4){ const mo = parseInt(digs.slice(2,4),10); if (mo<=0 || mo>12) return false; if (mo===2 && parseInt(digs.slice(0,2),10)>29) return false; }
-              if (L===8){ const y=parseInt(digs.slice(4),10); const mo=parseInt(digs.slice(2,4),10); const dd=parseInt(digs.slice(0,2),10); if (dd>daysInMonth(y,mo)) return false; if (y>maxYear) return false; }
-              return true;
-            };
-            data.__lastValidDigits = ((data.value||'').replace(/\D+/g,'').slice(0,8)) || '';
             data.addEventListener('input', () => {
-              let digits = (data.value||'').replace(/\D+/g,'').slice(0,8);
-              if (!isPartialValid(digits)) {
-                digits = data.__lastValidDigits || '';
-                showHint(data, 'aus_data', 'Data inválida. Use dd/mm/aaaa.');
-              } else {
-                data.__lastValidDigits = digits;
-              }
+              const digits = (data.value||'').replace(/\D+/g,'').slice(0,8);
               let out = '';
               if (digits.length <= 2) out = digits;
               else if (digits.length <= 4) out = digits.slice(0,2) + '/' + digits.slice(2);
               else out = digits.slice(0,2) + '/' + digits.slice(2,4) + '/' + digits.slice(4);
               data.value = out;
             });
-            data.addEventListener('input', () => { try { const b=data.closest('.form-block'); data.classList.remove('error'); data.style.boxShadow=''; data.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); } catch {} });
-            const validateDateLimits = () => {
-              try {
-                const v = (data.value||'').trim();
-                if (!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return;
-                const [dd,mm,yy] = v.split('/').map(x=>parseInt(x,10));
-                if (mm < 1 || mm > 12) return showHint(data, 'aus_data', 'Mês inválido. Use de 01 a 12.');
-                if (dd < 1 || dd > 31) return showHint(data, 'aus_data', 'Dia inválido. Use de 01 a 31.');
-                const maxDay = daysInMonth(yy, mm);
-                if (dd > maxDay) return showHint(data, 'aus_data', 'Dia inválido para o mês informado.');
-                const d = new Date(yy, mm-1, dd);
-                if (!(d.getFullYear()===yy && d.getMonth()===(mm-1) && d.getDate()===dd)) return showHint(data, 'aus_data', 'Data inválida.');
-                if (yy > maxYear) return showHint(data, 'aus_data', 'Ano não permitido. Use ano até ' + maxYear + '.');
-              } catch {}
-            };
-            data.addEventListener('blur', validateDateLimits);
+            data.addEventListener('input', () => { try { const b=data.closest('.form-block'); data.classList.remove('error'); data.style.boxShadow=''; data.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); const hint=b?.querySelector('.sinal-los-hint[data-error="1"]'); if (hint) hint.remove(); } catch {} });
           }
-          // Máscara leve para hora hh:mm
+          // Máscara leve para hora hh:mm (sem validação em tempo real)
           const hora = root.querySelector('#aus_hora');
           if (hora && !hora.__wired){
             hora.__wired = true;
-            const showHintTime = (msg) => {
-              try {
-                const block = hora.closest('.form-block') || hora;
-                let m = block.querySelector('.sinal-los-hint[data-error="1"][data-error-key="aus_hora"]');
-                if (!m) { m = document.createElement('div'); m.className='form-hint sinal-los-hint is-highlight'; m.setAttribute('data-error','1'); m.setAttribute('data-error-key','aus_hora'); block.appendChild(m); }
-                m.textContent = msg;
-                hora.classList.add('error'); hora.style.borderBottomColor='#ff4d4d'; hora.style.boxShadow='0 2px 0 rgba(255,77,77,.5)';
-                try { hora.classList.add('error-shake'); setTimeout(()=>{ try { hora.classList.remove('error-shake'); } catch {} }, 360); } catch {}
-                clearTimeout(hora.__errTO); hora.__errTO = setTimeout(()=>{ try { m.remove(); hora.classList.remove('error'); hora.style.boxShadow=''; hora.style.borderBottomColor=''; } catch {} }, 7000);
-              } catch {}
-            };
-            const isValidTimePartial = (digs) => {
-              const L=digs.length;
-              if (L>=1){ const h1=parseInt(digs[0],10); if (isNaN(h1)||h1<0||h1>2) return false; }
-              if (L>=2){ const hh=parseInt(digs.slice(0,2),10); if (hh<0||hh>23) return false; }
-              if (L>=3){ const m1=parseInt(digs[2],10); if (isNaN(m1)||m1<0||m1>5) return false; }
-              if (L>=4){ const mm=parseInt(digs.slice(2,4),10); if (mm<0||mm>59) return false; }
-              return true;
-            };
-            hora.__lastValidDigits = ((hora.value||'').replace(/\D+/g,'').slice(0,4)) || '';
             hora.addEventListener('input', () => {
-              let digits = (hora.value||'').replace(/\D+/g,'').slice(0,4);
-              if (!isValidTimePartial(digits)) { digits = hora.__lastValidDigits || ''; showHintTime('Horário inválido. Use 00:00 a 23:59.'); }
-              else { hora.__lastValidDigits = digits; }
-              let out=''; if (digits.length<=2) out=digits; else out=digits.slice(0,2)+':'+digits.slice(2);
+              const digits = (hora.value||'').replace(/\D+/g,'').slice(0,4);
+              let out = '';
+              if (digits.length <= 2) out = digits;
+              else out = digits.slice(0,2) + ':' + digits.slice(2);
               hora.value = out;
             });
-            hora.addEventListener('input', () => { try { const b=hora.closest('.form-block'); hora.classList.remove('error'); hora.style.boxShadow=''; hora.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); } catch {} });
-            const validateTime24h = () => {
-              try {
-                const v = (hora.value||'').trim();
-                if (!/^\d{2}:\d{2}$/.test(v)) return;
-                const [hh,mm] = v.split(':').map(x=>parseInt(x,10));
-                if (!(hh>=0 && hh<=23 && mm>=0 && mm<=59)) showHintTime('Horário inválido. Use 00:00 a 23:59.');
-              } catch {}
-            };
-            hora.addEventListener('blur', validateTime24h);
+            hora.addEventListener('input', () => { try { const b=hora.closest('.form-block'); hora.classList.remove('error'); hora.style.boxShadow=''; hora.style.borderBottomColor=''; const err=b?.querySelector('.form-error'); if (err) err.remove(); const hint=b?.querySelector('.sinal-los-hint[data-error="1"]'); if (hint) hint.remove(); } catch {} });
           }
           const motivo = root.querySelector('#aus_motivo');
           if (motivo && !motivo.__wired){
@@ -4890,6 +4814,29 @@ if (clearBtn) clearBtn.addEventListener('click', async function(){
   try { scrollToTop(); } catch {}
 });
 
+// Garantir limpeza do exemplo e dos avisos ao usar "Limpar respostas"
+try {
+  document.addEventListener('click', function(e){
+    try {
+      const t = e.target;
+      if (!t) return;
+      const isBtn = (t.id === 'btnLimparForm') || (t.closest && t.closest('#btnLimparForm'));
+      if (!isBtn) return;
+      setTimeout(function(){
+        try {
+          const fc = document.getElementById('formContainer');
+          if (!fc) return;
+          // Remove avisos/hints e classes de erro
+          try { fc.querySelectorAll('.sinal-los-hint[data-error="1"], .form-error').forEach(n=>{ try { n.remove(); } catch {} }); } catch {}
+          try { fc.querySelectorAll('.error').forEach(el=>{ try { el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; } catch {} }); } catch {}
+          // Atualiza exemplo do Comunicado quando aplicável
+          try { if (fc.__formId === 'comunicado-ausencia' && typeof fc.__updateAusenciaExample === 'function') fc.__updateAusenciaExample(); } catch {}
+        } catch {}
+      }, 30);
+    } catch {}
+  }, true);
+} catch {}
+
 // Função de pós-processamento específica para instalacoes-mudancas
 function postProcessInstalacoesMudancas(text) {
   try {
@@ -4979,6 +4926,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
           ensureErrShakeStyle();
           const block = el.closest('.form-block') || el;
           // Aviso no mesmo estilo do "Sem sinal"
+          try { Array.from(block.querySelectorAll('.sinal-los-hint[data-error="1"]')).forEach(function(x){ try { x.remove(); } catch {} }); } catch {}
           const m = document.createElement('div');
           m.className = 'form-hint sinal-los-hint is-highlight';
           m.setAttribute('data-error','1');
@@ -5026,9 +4974,16 @@ const copyBtn = document.getElementById('btnCopiarForm');
             const maxDay = daysInMonth(yy, mm);
             if (dd > maxDay) { addError(document.getElementById('aus_data'), 'Dia inválido para o mês informado.'); hasErr = true; }
             const d = new Date(yy, mm-1, dd);
-            const maxYear = new Date().getFullYear() + 1;
+            const curYear = new Date().getFullYear();
+            const maxYear = curYear + 1;
             if (!(d.getFullYear()===yy && d.getMonth()===(mm-1) && d.getDate()===dd)) { addError(document.getElementById('aus_data'), 'Data inválida.'); hasErr = true; }
-            else if (yy > maxYear) { addError(document.getElementById('aus_data'), 'Ano não permitido. Use ano até ' + maxYear + '.'); hasErr = true; }
+            else if (yy < curYear || yy > maxYear) { addError(document.getElementById('aus_data'), 'Ano não permitido. Use entre ' + curYear + ' e ' + maxYear + '.'); hasErr = true; }
+            else {
+              try {
+                const today = new Date(); today.setHours(0,0,0,0);
+                if (d < today) { addError(document.getElementById('aus_data'), 'A data não pode ser anterior ao dia atual.'); hasErr = true; }
+              } catch {}
+            }
           }
         } catch { addError(document.getElementById('aus_data'), 'Data inválida.'); hasErr = true; }
       }
