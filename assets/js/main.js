@@ -4891,7 +4891,24 @@ if (clearBtn) clearBtn.addEventListener('click', async function(){
   } catch {}
   if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
   // Atualiza o exemplo do Comunicado após a limpeza para refletir ( ) nas opções
-  try { if (container.__formId === 'comunicado-ausencia' && typeof container.__updateAusenciaExample === 'function') container.__updateAusenciaExample(); } catch {}
+  try {
+    if (container.__formId === 'comunicado-ausencia' && typeof container.__updateAusenciaExample === 'function') {
+      container.__updateAusenciaExample();
+      // Se nenhuma opção de supervisão estiver marcada, aplicar placeholder [selecione]
+      try {
+        const sup = container.querySelector('input[name="aus_sup_comunicada"]:checked');
+        if (!sup) {
+          const exFix = container.querySelector('[data-ctx="exemplo-ausencia"]');
+          if (exFix) {
+            const base = 'A supervisão [selecione] previamente comunicada sobre a minha ausência.';
+            const cur = exFix.textContent || '';
+            if (/A supervis[^\n]*/.test(cur)) exFix.textContent = cur.replace(/A supervis[^\n]*/, base);
+            else exFix.textContent = (cur ? (cur + '\n') : '') + base;
+          }
+        }
+      } catch {}
+    }
+  } catch {}
   // Sobe a página para o topo após limpar
   try { scrollToTop(); } catch {}
 });
@@ -4912,7 +4929,24 @@ try {
           try { fc.querySelectorAll('.sinal-los-hint[data-error="1"], .form-error').forEach(n=>{ try { n.remove(); } catch {} }); } catch {}
           try { fc.querySelectorAll('.error').forEach(el=>{ try { el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; } catch {} }); } catch {}
           // Atualiza exemplo do Comunicado quando aplicável
-          try { if (fc.__formId === 'comunicado-ausencia' && typeof fc.__updateAusenciaExample === 'function') fc.__updateAusenciaExample(); } catch {}
+          try {
+            if (fc.__formId === 'comunicado-ausencia' && typeof fc.__updateAusenciaExample === 'function') {
+              fc.__updateAusenciaExample();
+              // Se nenhuma opção de supervisão estiver marcada, aplicar placeholder [selecione]
+              try {
+                const sup = fc.querySelector('input[name="aus_sup_comunicada"]:checked');
+                if (!sup) {
+                  const exFix = fc.querySelector('[data-ctx="exemplo-ausencia"]');
+                  if (exFix) {
+                    const base = 'A supervisão [selecione] previamente comunicada sobre a minha ausência.';
+                    const cur = exFix.textContent || '';
+                    if (/A supervis[^\n]*/.test(cur)) exFix.textContent = cur.replace(/A supervis[^\n]*/, base);
+                    else exFix.textContent = (cur ? (cur + '\n') : '') + base;
+                  }
+                }
+              } catch {}
+            }
+          } catch {}
         } catch {}
       }, 30);
     } catch {}
