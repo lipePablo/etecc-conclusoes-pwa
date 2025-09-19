@@ -36,7 +36,28 @@ let __skipNextRender = false;
     const btnTemaTopo = document.getElementById('btnTemaTopo');
     if (btnTemaTopo) btnTemaTopo.addEventListener('click', toggleTheme);
 
-    
+    // Remover item "Histórico de versões" do menu lateral
+    try { const mvh = document.getElementById('menuVersionHistory'); if (mvh) mvh.remove(); } catch {}
+
+    // Reforço global: manter placeholder de supervisão no exemplo quando nada selecionado
+    try {
+      const enforceSupPlaceholder = () => {
+        try {
+          const ex = document.querySelector('[data-ctx="exemplo-ausencia"]');
+          const fc = document.getElementById('formContainer');
+          if (!ex || !fc || (fc.__formId !== 'comunicado-ausencia')) return;
+          const sel = fc.querySelector('input[name="aus_sup_comunicada"]:checked');
+          if (!sel) {
+            const base = 'A supervisão [selecione] previamente comunicada sobre a minha ausência.';
+            const cur = ex.textContent || '';
+            try { ex.textContent = /A supervis[^\n]*/.test(cur) ? cur.replace(/A supervis[^\n]*/, base) : (cur ? (cur+'\n'+base) : base); } catch {}
+          }
+        } catch {}
+      };
+      // Observa apenas mudanças explícitas do campo; evita observar todo o body (performance)
+      document.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') enforceSupPlaceholder(); }, true);
+      setTimeout(enforceSupPlaceholder, 50);
+    } catch {}
 
     // Saudação e frases motivacionais
   (function setupGreetingAndQuotes(){
@@ -251,6 +272,19 @@ let __skipNextRender = false;
     }
     // Conjunto curado de frases mais contextuais (PT-BR, serviço/campo)
     const CURATED_QUOTES = QUOTES_BASE;
+    // Ajuste de emojis: aumenta frequência de 🦇, 🦥 e 🧟 ao lado do nome
+    try {
+      const __origNextEmoji = nextEmoji;
+      nextEmoji = function(){
+        try {
+          if (Math.random() < 0.35) {
+            const SPOOKY = ['🦇','🦥','🧟','🧟‍♂️','🧟‍♀️'];
+            return SPOOKY[Math.floor(Math.random() * SPOOKY.length)] || __origNextEmoji();
+          }
+          return __origNextEmoji();
+        } catch { return __origNextEmoji(); }
+      };
+    } catch {}
     // Geração leve de frases extras (offline) para ampliar a variedade sem pesar o bundle
     function buildOfflinePool(total){
       const norm = (s) => String(s||'').trim().replace(/\s+/g,' ');
@@ -1319,7 +1353,7 @@ function setTopbarMode(internal){
             const ex = root.querySelector('[data-ctx="exemplo-ausencia"]');
             if (ex) {
               const rest = 'Venho, por meio deste, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].\n\n( ) Iniciarei a rota mais tarde.\n(✔) Retornarei para finalizar o expediente.\n( ) Não retornarei para finalizar o expediente.';
-              ex.textContent = greet + '. ' + rest + '\nA supervisão foi previamente comunicada sobre a minha ausência.';
+              ex.textContent = greet + '. ' + rest + '\nA supervisão [selecione] previamente comunicada sobre a minha ausência.';
             }
           } catch {}
           // Exemplo dinâmico: saudação + somente a opção selecionada
@@ -1401,6 +1435,24 @@ function setTopbarMode(internal){
                   ex3.textContent = [msg, '', ...retornoLines, '', supLine].join('\n');
                 };
                 try { root.__updateAusenciaExample = updateExample3; } catch {}
+                // Fix: placeholder de supervisão quando não houver seleção (exemplo de formato)
+                try {
+                  const exFix = root.querySelector('[data-ctx="exemplo-ausencia"]');
+                  const applySupPlaceholder = () => {
+                    if (!exFix) return;
+                    const sel = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                    if (!sel) {
+                      try {
+                        const base = 'A supervisão [selecione] previamente comunicada sobre a minha ausência.';
+                        const cur = exFix.textContent || '';
+                        if (/A supervis[^\n]*/.test(cur)) exFix.textContent = cur.replace(/A supervis[^\n]*/, base);
+                        else exFix.textContent = (cur ? (cur + '\n') : '') + base;
+                      } catch {}
+                    }
+                  };
+                  applySupPlaceholder();
+                  root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') applySupPlaceholder(); }, true);
+                } catch {}
                 try { updateExample3(); } catch {}
                 try { root.addEventListener('input', (e)=>{ const id=(e.target&&e.target.id)||''; if (id==='aus_data'||id==='aus_hora'||id==='aus_motivo'){ try { updateExample3(); } catch {} } }, true); } catch {}
                 try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'){ try { updateExample3(); } catch {} } }, true); } catch {}
@@ -7239,6 +7291,8 @@ try {
     };
   }
 } catch {}
+
+
 
 
 
