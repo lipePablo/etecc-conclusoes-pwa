@@ -4890,6 +4890,8 @@ if (clearBtn) clearBtn.addEventListener('click', async function(){
     });
   } catch {}
   if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
+  // Atualiza o exemplo do Comunicado após a limpeza para refletir ( ) nas opções
+  try { if (container.__formId === 'comunicado-ausencia' && typeof container.__updateAusenciaExample === 'function') container.__updateAusenciaExample(); } catch {}
   // Sobe a página para o topo após limpar
   try { scrollToTop(); } catch {}
 });
