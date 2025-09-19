@@ -53,6 +53,15 @@ let __skipNextRender = false;
             try { ex.textContent = /A supervis[^\n]*/.test(cur) ? cur.replace(/A supervis[^\n]*/, base) : (cur ? (cur+'\n'+base) : base); } catch {}
           }
         } catch {}
+        try {
+          Array.from(root.querySelectorAll('input[name="stc_tipo_serv"]')).forEach(r => {
+            r.addEventListener('change', () => {
+              try { if (typeof setFormState==='function') setFormState('suporte-tecnico-carro', { stc_tipo_serv: r.value }); } catch {}
+              try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+            });
+          });
+          try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+        } catch {}
       };
       // Observa apenas mudanças explícitas do campo; evita observar todo o body (performance)
       document.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') enforceSupPlaceholder(); }, true);
@@ -1238,10 +1247,22 @@ function setTopbarMode(internal){
     });
   }
   function scrollToTop(){
-    try { (document.scrollingElement || document.documentElement).scrollTo({ top: 0, behavior: 'auto' }); }
-    catch(e){ try { window.scrollTo(0,0); } catch(_) {} }
+    try {
+      const sc = (document.scrollingElement || document.documentElement);
+      sc.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(e){ try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(_) {} }
     const content = document.querySelector('.content');
-    if (content) { try { content.scrollTop = 0; } catch(_) {} }
+    if (content) { try { content.scrollTo({ top: 0, behavior: 'smooth' }); } catch(_) {} }
+  }
+  function scrollToCenter(el){
+    try {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const sc = (document.scrollingElement || document.documentElement);
+      const current = sc.scrollTop || 0;
+      const offset = rect.top + current - Math.max(0, (window.innerHeight/2 - Math.min(rect.height, window.innerHeight)/2));
+      sc.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+    } catch {}
   }
   function switchView(next){
     const active = document.querySelector('.view.is-active');
@@ -3698,7 +3719,7 @@ function setTopbarMode(internal){
          + '      <label for="stc_tipo_outros">Outros serviços</label>\n'
         + '    </div>\n'
         + '  </div>\n'
-        + '  <div class="form-cond" data-when-field="stc_tipo_serv" data-when-in="los,mudanca,outros" data-clear-on-hide="1">\n'
+        + '  <div class="form-cond" data-when-field="stc_tipo_serv" data-when-in="los,mudanca,outros" data-clear-on-hide="1" hidden>\n'
         + '  <div class="form-block form-cond" data-when-field="stc_tipo_serv" data-when-equals="outros" data-clear-on-hide="1">\n'
         + '    <label class="form-label" for="stc_outros_desc">Qual serviço foi executado:</label>\n'
         + '    <textarea id="stc_outros_desc" name="stc_outros_desc" class="form-input--underline auto-expand" placeholder="De forma simplificada, ex.: Troca de alça, fitagem de poste..." rows="3" data-min-height="90"></textarea>\n'
@@ -3763,7 +3784,7 @@ function setTopbarMode(internal){
         + '    <input id="stc_cx_ident" name="stc_cx_ident" type="text" class="form-input--underline" placeholder="Informe a caixa aqui..." />\n'
         + '  </div>\n'
         + '  </div>\n'
-        + '  <div class="form-cond" data-when-field="stc_tipo_serv" data-when-equals="quebra_slot" data-clear-on-hide="1">\n'
+        + '  <div class="form-cond" data-when-field="stc_tipo_serv" data-when-equals="quebra_slot" data-clear-on-hide="1" hidden>\n'
         + '    <div class="form-block">\n'
         + '      <label class="form-label">Necessário passar uma nova fibra:</label>\n'
         + '      <div class="segmented" role="radiogroup" aria-label="Passar nova fibra?">\n'
@@ -4555,7 +4576,14 @@ function updateConditionalVisibility(formId, container){
           // any element with matching name or id
           const el = container.querySelector(`[name="${field}"]`) || container.querySelector(`#${field}`);
           if (el) {
-            if (el.type === 'checkbox') cur = !!el.checked; else cur = el.value;
+            const t = (el.type || '').toLowerCase();
+            if (t === 'checkbox') {
+              cur = !!el.checked;
+            } else if (t === 'radio') {
+              // Nenhum radio selecionado: manter cur indefinido para ocultar por padrao
+            } else {
+              cur = el.value;
+            }
           }
         }
       } catch {}
@@ -5047,7 +5075,30 @@ const copyBtn = document.getElementById('btnCopiarForm');
       if (!motivo) { addError(document.getElementById('aus_motivo'), 'Informe o motivo da ausência.'); hasErr = true; }
       if (!sel) { const el = container.querySelector('div.segmented [name="aus_retorno"]').closest('.form-block'); if (el){ addError(el, 'Selecione uma opção de retorno.'); } hasErr = true; }
       if (!sup) { const el2 = container.querySelector('div.segmented [name="aus_sup_comunicada"]').closest('.form-block'); if (el2){ addError(el2, 'Informe se a supervisão foi previamente comunicada.'); } hasErr = true; }
-      if (hasErr) { try { const firstErr = container.querySelector('.error'); firstErr?.focus(); } catch {} return; }
+      if (hasErr) {
+        try {
+          // Localiza o elemento de erro mais acima na tela
+          const cand = Array.from(container.querySelectorAll('.error, .sinal-los-hint[data-error="1"]'));
+          let target = null;
+          let bestTop = Infinity;
+          cand.forEach(el => {
+            const blk = (el.closest && el.closest('.form-block')) || el;
+            const rect = blk.getBoundingClientRect();
+            const top = rect.top + window.scrollY;
+            if (top < bestTop) { bestTop = top; target = blk; }
+          });
+          if (target) {
+            const topbar = document.querySelector('.topbar');
+            const offset = (topbar && topbar.offsetHeight ? topbar.offsetHeight : 72) + 12;
+            const y = bestTop - offset;
+            window.scrollTo({ top: y < 0 ? 0 : y, behavior: 'smooth' });
+            // Foco no primeiro campo com erro dentro do bloco
+            const focusable = target.querySelector('.error, input, select, textarea, .segmented');
+            if (focusable && focusable.focus) setTimeout(()=>{ try { focusable.focus(); } catch {} }, 50);
+          }
+        } catch {}
+        return;
+      }
       try { localStorage.setItem(formStateKey(formId), JSON.stringify((typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId))); } catch {}
       const retornoLine = sel === 'inicio_tarde' ? 'Iniciarei a rota mais tarde.' : sel === 'retornar' ? 'Retornarei para finalizar o expediente.' : 'Não retornarei para finalizar o expediente.';
       const header = 'COMUNICADO DE AUSÊNCIA';
@@ -6097,6 +6148,86 @@ const copyBtn = document.getElementById('btnCopiarForm');
           }
         } catch {}
       });
+    } catch {}
+  }
+
+  // Máscara e cálculo para metragem de cabo (#cabometros e #cd_cabometros)
+  function setupCabometrosMaskAndCost(root){
+    try {
+      const ctx = root || document;
+      const bindOne = (id, hintId) => {
+        const inp = ctx.querySelector('#'+id);
+        if (!inp || inp.__cabMaskWired) return;
+        inp.__cabMaskWired = true;
+        const hint = ctx.querySelector('#'+hintId);
+        try {
+          const lab = ctx.querySelector('label[for="'+id+'"]');
+          if (lab) lab.textContent = 'Metragem de cabo de rede total para este serviço:';
+        } catch {}
+        const clean = (v) => {
+          if (!v) return '';
+          let s = String(v).toLowerCase().replace(/m/g,'');
+          s = s.replace(/\./g, ',');
+          s = s.replace(/[^0-9,]/g, '');
+          const parts = s.split(',');
+          if (parts.length > 1) s = parts.shift() + ',' + parts.join('').replace(/,/g,'');
+          return s;
+        };
+        const recalc = (base) => {
+          try {
+            const m = parseFloat((base || '0').replace(',', '.')) || 0;
+            const total = m * 3;
+            if (hint) hint.textContent = 'Previsão de custos sobre este cabeamento: ' + ('R$' + total.toFixed(2).replace('.', ','));
+          } catch {}
+        };
+        const onInput = (e) => {
+          let base = clean(inp.value);
+          if (e && e.inputType === 'deleteContentBackward') {
+            const pos = inp.selectionStart || 0;
+            const atEnd = pos === (inp.value || '').length;
+            if (atEnd) base = base.slice(0, -1);
+          }
+          inp.value = base ? (base + 'm') : '';
+          recalc(base);
+        };
+        const onKeyDown = (e) => {
+          if (e.key === 'Backspace') {
+            const digits = (inp.value||'').replace(/\D/g,'');
+            if (digits.length <= 1) {
+              e.preventDefault();
+              inp.value = '';
+              recalc('');
+            }
+          }
+        };
+        inp.addEventListener('keydown', onKeyDown);
+        inp.addEventListener('input', onInput);
+        inp.addEventListener('change', onInput);
+        onInput();
+      };
+      bindOne('cabometros', 'cabocusto');
+      bindOne('cd_cabometros', 'cd_cabocusto');
+    } catch {}
+  }
+
+  // Singular/Plural do label de dispositivo cabeado em Suporte Técnico
+  function setupQtdCabosDispLabel(root){
+    try {
+      const ctx = root || document;
+      const qty = ctx.querySelector('#qtd_cabos');
+      const lab = ctx.querySelector('label[for="disp_cabeado"]');
+      if (!qty || !lab) return;
+      if (qty.__dispLblWired) return; qty.__dispLblWired = true;
+      const apply = () => {
+        try {
+          const n = parseInt(String(qty.value||'').replace(/\D/g,''), 10) || 0;
+          lab.textContent = (n > 1) ? 'Quais dispositivos foram cabeados:' : 'Qual dispositivo foi cabeado:';
+        } catch {}
+      };
+      ['input','change','keyup','blur'].forEach(evt => qty.addEventListener(evt, apply));
+      // também reage quando a seção é exibida ao marcar "Passou cabo de rede?"
+      try { Array.from(ctx.querySelectorAll('input[name="stc_cab_rede"]')).forEach(r => r.addEventListener('change', apply, true)); } catch {}
+      apply();
     } catch {}
   }
   // tenta aplicar em carregamento inicial e também após renderizações futuras
@@ -7169,6 +7300,8 @@ try {
           try { setupMacLists(container); } catch {}
           try { setupOutroList(container); } catch {}
           try { ensureFotosJustificativa(container); } catch {}
+          try { setupCabometrosMaskAndCost(container); } catch {}
+          try { setupQtdCabosDispLabel(container); } catch {}
           try { ensureMotoTipoServDefault(container); } catch {}
           try { enforceMotoFinalOrder(container); } catch {}
         } catch {}
@@ -7291,6 +7424,8 @@ try {
     };
   }
 } catch {}
+
+
 
 
 
