@@ -1048,6 +1048,7 @@ let __skipNextRender = false;
       const counts = { moto: 0, carro: 0 };
       entries.forEach(([id, def]) => {
         try {
+          if (id === 'comunicado-ausencia') return; // não conta este formulário exclusivo
           if (!def || !def.equipe) return;
           if (def.equipe === 'moto') counts.moto++;
           else if (def.equipe === 'carro') counts.carro++;
@@ -1222,6 +1223,88 @@ function setTopbarMode(internal){
    * 4) A listagem (renderForms) usa este catélogo automaticamente e navega via #/form/:id.
    */
   const FORMS_CATALOG = {
+    'comunicado-ausencia': {
+      equipe: 'especial',
+      titulo: 'Comunicado de Ausência',
+      descricao: 'Informe data, horário e motivo; selecione o retorno.',
+      icon: 'fa-calendar-xmark',
+      badge: 'teal',
+      atualizadoEm: '19/09/2025 00:00',
+      render: (root) => {
+        root.innerHTML = ''+
+        '<section class="form-section">\n'
+        + '  <div class="form-header">\n'
+        + '    <div class="form-title"><i class="fa-solid fa-calendar-xmark"></i> COMUNICADO DE AUSÊNCIA</div>\n'
+        + '    <div class="form-subtitle">Preencha e copie o comunicado</div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label">Exemplo de formato:</label>\n'
+        + '    <div class="form-hint" style="white-space: pre-line; line-height:1.4;">' +
+               'Boa tarde, Venho, por meio deste, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].\n\n' +
+               '( ) Iniciarei a rota mais tarde.\n' +
+               '(✔) Retornarei para finalizar o expediente.\n' +
+               '( ) Não retornarei para finalizar o expediente.' +
+             '</div>\n'
+        + '  </div>\n'
+        + '  <div class="menu-divider"></div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label" for="aus_data">Data da Ausência:</label>\n'
+        + '    <input id="aus_data" name="aus_data" type="text" class="form-input--underline" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="^\\d{2}/\\d{2}/\\d{4}$" maxlength="10" />\n'
+        + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label" for="aus_hora">Horário da Ausência:</label>\n'
+        + '    <input id="aus_hora" name="aus_hora" type="text" class="form-input--underline" placeholder="hh:mm" inputmode="numeric" pattern="^\\d{2}:\\d{2}$" maxlength="5" />\n'
+        + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label" for="aus_motivo">Motivo da Ausência:</label>\n'
+        + '    <input id="aus_motivo" name="aus_motivo" type="text" class="form-input--underline" placeholder="Descreva o motivo" />\n'
+        + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label">Opções de Retorno:</label>\n'
+        + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Opções de Retorno">\n'
+        + '      <input type="radio" id="ret_inicio_tarde" name="aus_retorno" value="inicio_tarde">\n'
+        + '      <label for="ret_inicio_tarde">Iniciarei a rota mais tarde.</label>\n'
+        + '      <input type="radio" id="ret_retornar_finalizar" name="aus_retorno" value="retornar">\n'
+        + '      <label for="ret_retornar_finalizar">Retornarei para finalizar o expediente.</label>\n'
+        + '      <input type="radio" id="ret_nao_retornar" name="aus_retorno" value="nao_retornar">\n'
+        + '      <label for="ret_nao_retornar">Não retornarei para finalizar o expediente.</label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '</section>\n'
+        + '<div class="form-actions">\n'
+        + '  <button id="btnLimparForm" type="button" class="btn-action btn-action--gray"><i class="fa-solid fa-eraser"></i> Limpar respostas</button>\n'
+        + '  <button id="btnCopiarForm" type="button" class="btn-action btn-action--red"><i class="fa-solid fa-copy"></i> Copiar</button>\n'
+        + '</div>\n';
+
+        try {
+          // Máscara leve para data dd/mm/aaaa
+          const data = root.querySelector('#aus_data');
+          if (data && !data.__wired){
+            data.__wired = true;
+            data.addEventListener('input', () => {
+              const digits = (data.value||'').replace(/\D+/g,'').slice(0,8);
+              let out = '';
+              if (digits.length <= 2) out = digits;
+              else if (digits.length <= 4) out = digits.slice(0,2) + '/' + digits.slice(2);
+              else out = digits.slice(0,2) + '/' + digits.slice(2,4) + '/' + digits.slice(4);
+              data.value = out;
+            });
+          }
+          // Máscara leve para hora hh:mm
+          const hora = root.querySelector('#aus_hora');
+          if (hora && !hora.__wired){
+            hora.__wired = true;
+            hora.addEventListener('input', () => {
+              const digits = (hora.value||'').replace(/\D+/g,'').slice(0,4);
+              let out = '';
+              if (digits.length <= 2) out = digits;
+              else out = digits.slice(0,2) + ':' + digits.slice(2);
+              hora.value = out;
+            });
+          }
+        } catch {}
+      }
+    },
     'suporte-moto': {
       equipe: 'moto',
       titulo: 'Suporte Técnico',
@@ -4459,8 +4542,29 @@ function updateConditionalVisibility(formId, container){
       }
     } catch {}
     try { setupAutoExpand(container); } catch {}
-    try { setupGeolocationCapture(container); } catch {}
+    // Não capturar localização para Comunicado de Ausência
+    if (formId !== 'comunicado-ausencia') { try { setupGeolocationCapture(container); } catch {} }
     try { fixFormA11y(container); } catch {}
+    // Comunicado de Ausência: remover seções não aplicáveis (INDICAÇÕES e DESCRIÇÃO DA O.S.)
+    try {
+      if (formId === 'comunicado-ausencia') {
+        try { const ind = container.querySelector('[data-section="indicacao"]'); if (ind) ind.remove(); } catch {}
+        try {
+          const desc = container.querySelector('#descricao_os');
+          const sec = desc ? (desc.closest && desc.closest('.form-section')) : null;
+          if (sec) sec.remove(); else if (desc) desc.remove();
+        } catch {}
+        // Reforço: remove novamente após pequeno atraso para evitar reaparição
+        setTimeout(() => {
+          try { const ind2 = container.querySelector('[data-section="indicacao"]'); if (ind2) ind2.remove(); } catch {}
+          try {
+            const desc2 = container.querySelector('#descricao_os');
+            const sec2 = desc2 ? (desc2.closest && desc2.closest('.form-section')) : null;
+            if (sec2) sec2.remove(); else if (desc2) desc2.remove();
+          } catch {}
+        }, 25);
+      }
+    } catch {}
     // Aviso da torre (Inviabilidade Técnica): alterna dentro do mesmo bloco
     try {
       const torreHint = container.querySelector('#inv_torre_hint');
@@ -4606,6 +4710,42 @@ function postProcessInstalacoesMudancas(text) {
 
 const copyBtn = document.getElementById('btnCopiarForm');
     if (copyBtn) copyBtn.addEventListener('click', async function(){
+  // Tratamento personalizado para o formulário de Comunicado de Ausência
+  try {
+    const container = document.getElementById('formContainer');
+    const formId = (container && container.__formId) || '';
+    if (formId === 'comunicado-ausencia') {
+      try { localStorage.setItem(formStateKey(formId), JSON.stringify((typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId))); } catch {}
+      const data = (document.getElementById('aus_data')?.value || '').trim();
+      const horaRaw = (document.getElementById('aus_hora')?.value || '').trim();
+      const hora = horaRaw ? horaRaw.replace(':','h') : '';
+      const motivo = (document.getElementById('aus_motivo')?.value || '').trim();
+      let sel = '';
+      try { const r = container.querySelector('input[name="aus_retorno"]:checked'); sel = (r && r.value) || ''; } catch {}
+      const retornoLine = (sel === 'inicio_tarde') ? 'Iniciarei a rota mais tarde.' : (sel === 'retornar') ? 'Retornarei para finalizar o expediente.' : (sel === 'nao_retornar') ? 'Não retornarei para finalizar o expediente.' : '';
+      const header = 'COMUNICADO DE AUSÊNCIA';
+      const l0 = 'Boa tarde,';
+      const lMsg = `Venho, por meio deste, informar que no dia *${data}*, no horário das *${hora}*, precisarei me ausentar para *${motivo}*.`;
+      const lRet = retornoLine ? `*${retornoLine}*.` : '';
+      const text = [header, l0, lMsg, lRet].filter(Boolean).join('\n');
+      try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
+      catch(e){
+        try { const aux=document.createElement('textarea'); aux.value=text; document.body.appendChild(aux); aux.select(); document.execCommand('copy'); document.body.removeChild(aux); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
+        catch { try { await window.__appModal?.showAlert('Falha ao copiar. Selecione e copie manualmente.\n\n'+text, { title: 'Atenção' }); } catch {} }
+      }
+      // Salvar no histórico como finalizado
+      try {
+        const st = (typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId);
+        const equipe = localStorage.getItem('unificado.selectedTeam') || '';
+        const cliente = st?.clienteNome || st?.cliente || '';
+        if (typeof window.__addHistoryWithSnapshot === 'function') {
+          const titulo = 'Comunicado de Ausência';
+          window.__addHistoryWithSnapshot({ formId, equipe, cliente, formulario: titulo, data: Date.now(), isDraft:false }, st);
+        }
+      } catch {}
+      return;
+    }
+  } catch {}
   try { localStorage.setItem(formStateKey(formId), JSON.stringify((typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId))); } catch {}
   const container = document.getElementById('formContainer');
   if (!container) { try { await (window.__appModal?.showAlert('Formulário não encontrado.', { title: 'Aviso' })); } catch {} return; }
@@ -5442,12 +5582,20 @@ const copyBtn = document.getElementById('btnCopiarForm');
       } catch {}
       
       if (btnBackEl) btnBackEl.onclick = () => {
+        // Comunicado de Ausência: sempre voltar para a Home
+        if (formId === 'comunicado-ausencia') { location.hash = '/'; return; }
         // volta para a última tela navegada (lista), mantendo seleção
         const backTo = __lastNonFormRoute && __lastNonFormRoute !== '/' ? __lastNonFormRoute : '/conclusoes';
         location.hash = backTo;
       };
-      try { if (bottomConcl) bottomConcl.hidden = false; } catch {}
-      try { if (bottomBar) bottomBar.classList.add('bottombar--three'); } catch {}
+      // Menu inferior: não exibir atalho de "Formulários" para o Comunicado de Ausência
+      if (formId === 'comunicado-ausencia') {
+        try { if (bottomConcl) bottomConcl.hidden = true; } catch {}
+        try { if (bottomBar) bottomBar.classList.remove('bottombar--three'); } catch {}
+      } else {
+        try { if (bottomConcl) bottomConcl.hidden = false; } catch {}
+        try { if (bottomBar) bottomBar.classList.add('bottombar--three'); } catch {}
+      }
     } else {
       switchView(home);
       setTopbarMode(false);
@@ -5459,7 +5607,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
     }
     // Exibe/oculta atalho de conclusões no menu inferior
     try {
-      const showShortcut = route.startsWith('/form/');
+      let showShortcut = route.startsWith('/form/');
+      if (route.startsWith('/form/')) {
+        const fid = (route.split('/')[2] || '').toLowerCase();
+        if (fid === 'comunicado-ausencia') showShortcut = false;
+      }
       if (bottomConcl) bottomConcl.hidden = !showShortcut;
       if (bottomBar) bottomBar.classList.toggle('bottombar--three', showShortcut);
     } catch {}
@@ -6286,6 +6438,7 @@ function setupAutoExpand(root){
       }))
       .filter(f => {
         if (f.equipe !== team) return false;
+        if (f.id === 'comunicado-ausencia') return false; // não exibir na grade de formulários
         // Ocultar formulários incorporados por unificação
         if (f.id === 'cabeamento-dispositivo') return false;
         if (f.id === 'quebra-de-slot') return false;
@@ -6533,6 +6686,8 @@ try {
   function ensureIndicacaoBeforeDescricao(container){
     try {
       if (!container) return;
+      const fid = (container && container.__formId) || '';
+      if (fid === 'comunicado-ausencia') return; // não aplicar neste formulário exclusivo
       let indic = container.querySelector('[data-section="indicacao"]');
       if (!indic) { try { appendIndicacaoSection(container); } catch {} indic = container.querySelector('[data-section="indicacao"]'); }
       if (!indic) return;
@@ -6552,6 +6707,8 @@ try {
   function ensureIndicacaoVisibilityForRetencao(container){
     try {
       if (!container) return;
+      const fid0 = (container && container.__formId) || '';
+      if (fid0 === 'comunicado-ausencia') return; // não aplicar
       const formId = (container && container.__formId) || '';
       if (formId !== 'retencao-clientes') return;
       let indic = container.querySelector('[data-section="indicacao"]');
@@ -6673,8 +6830,8 @@ try {
         try {
           if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
           if (formId === 'suporte-moto') { try { ensureIndicacaoPosition(container); } catch {} }
-          try { ensureIndicacaoBeforeDescricao(container); } catch {}
-          try { ensureIndicacaoVisibilityForRetencao(container); } catch {}
+          if (formId !== 'comunicado-ausencia') { try { ensureIndicacaoBeforeDescricao(container); } catch {} }
+          if (formId !== 'comunicado-ausencia') { try { ensureIndicacaoVisibilityForRetencao(container); } catch {} }
           try { setupMacLists(container); } catch {}
           try { setupOutroList(container); } catch {}
           try { ensureFotosJustificativa(container); } catch {}
