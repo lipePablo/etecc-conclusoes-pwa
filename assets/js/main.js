@@ -5282,7 +5282,19 @@ const copyBtn = document.getElementById('btnCopiarForm');
       return false;
     };
     const toSentence = (s) => { try { const t=String(s||'').trim(); return t ? (t.charAt(0).toUpperCase()+t.slice(1).toLowerCase()) : t; } catch { return s||''; } };
-    const printQuestionOnce = (q) => { try { const k=String(q||'').toUpperCase(); if (!k) return false; if (__printedQ.has(k)) return false; __printedQ.add(k); secOut.push(k); return true; } catch { return false; } };
+    const printQuestionOnce = (q) => {
+      try {
+        let k = String(q || '').toUpperCase();
+        if (!k) return false;
+        if (k === 'QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL:' || k === 'QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL') {
+          k = 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:';
+        }
+        if (__printedQ.has(k)) return false;
+        __printedQ.add(k);
+        secOut.push(k);
+        return true;
+      } catch { return false; }
+    };
     blocks.forEach((block) => {
       if (!isVisible(block)) return;
       // Caso especial: grupo de checkboxes (choices)
@@ -5478,7 +5490,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
             const list = b.querySelector && b.querySelector('.mac-list');
             if (!list) continue;
             const pref = (list.getAttribute('data-mac-prefix')||'').toLowerCase();
-            const isEquipList = pref.startsWith('ont_mac_') || pref.startsWith('onu_mac_') || pref.startsWith('rot_mac_') || pref.startsWith('estao_ont_mac_') || pref.startsWith('estao_onu_mac_') || pref.startsWith('estao_rot_mac_');
+            const isEquipList = pref.startsWith('ont_mac_') || pref.startsWith('onu_mac_') || pref.startsWith('rot_mac_')
+              || pref.startsWith('estao_ont_mac_') || pref.startsWith('estao_onu_mac_') || pref.startsWith('estao_rot_mac_')
+              || pref.startsWith('ficou_ont_mac_') || pref.startsWith('ficou_onu_mac_') || pref.startsWith('ficou_rot_mac_')
+              || pref.startsWith('ret_ont_mac_') || pref.startsWith('ret_onu_mac_') || pref.startsWith('ret_rot_mac_')
+              || pref.startsWith('ins_ont_mac_') || pref.startsWith('ins_onu_mac_') || pref.startsWith('ins_rot_mac_');
             if (!isEquipList) continue;
             const macs2 = collectMacRows(list);
             if (macs2 && macs2.length) { hasNonOutroMacs2 = true; break; }
@@ -5508,7 +5524,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
           return hasNonOutroMacs2 ? 'OUTROS EQUIPAMENTOS RETIRADOS:' : 'MAC DOS EQUIPAMENTOS RETIRADOS:';
         })();
         const __skipHeader = !!(prevChoicesQ) && !!(hasNonOutroMacs2);
-        if (!__skipHeader) printQuestionOnce(outroHeader);
+        if (__skipHeader) {
+          try { while (secOut.length && secOut[secOut.length-1] === '') secOut.pop(); } catch {}
+        } else {
+          printQuestionOnce(outroHeader);
+        }
         if (!pairs.length){
           secOut.push('O técnico não preencheu este campo.');
         } else {
@@ -5547,6 +5567,14 @@ const copyBtn = document.getElementById('btnCopiarForm');
           const sval = hasSegmented ? getRadioGroupValue(pb) : '';
           if ((hasSegmented && sval && /retirado|ficou|inserido|deixado/i.test(qlbl)) || hasChoices) { prevSel = { q: qlbl, sel: sval, isChoices: hasChoices }; break; }
         }
+        if (prevSel) {
+          try {
+            const normQ = cleanQ(prevSel.q || '').toUpperCase();
+            if (normQ === 'QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL') {
+              prevSel.q = 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:';
+            }
+          } catch {}
+        }
         // Se o bloco de "ret_equip" anterior estiver marcado como SIM e existem MACs informados,
         // ajusta o cabeçalho para "MAC DOS EQUIPAMENTOS RETIRADOS:"
         try {
@@ -5570,8 +5598,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
         try {
           const prefCur = String(macList.getAttribute('data-mac-prefix')||'').toLowerCase();
           if (prefCur.startsWith('ficou_') || prefCur.startsWith('estao_')){
-            prevSel = prevSel || { q: 'MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:' };
-            prevSel.q = 'MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:';
+            prevSel = prevSel || { q: 'MAC DOS OUTROS EQUIPAMENTOS NO LOCAL' };
+            prevSel.q = 'MAC DOS OUTROS EQUIPAMENTOS NO LOCAL';
           }
         } catch {}
         const eqLabel = /ROTEADOR/i.test(bLabel) ? 'ROTEADOR' : (/\bONT\b/i.test(bLabel) ? 'ONT' : (/\bONU\b/i.test(bLabel) ? 'ONU' : (prevSel?.sel ? (String(prevSel.sel).toUpperCase().includes('ROTEADOR') ? 'ROTEADOR' : (String(prevSel.sel).toUpperCase().includes('ONT') ? 'ONT' : (String(prevSel.sel).toUpperCase().includes('ONU') ? 'ONU' : 'EQUIPAMENTO'))) : 'EQUIPAMENTO')));
@@ -5737,7 +5765,12 @@ const copyBtn = document.getElementById('btnCopiarForm');
       text = text.replace(/([^\n])\n(AS FONTES FORAM RETIRADAS\?)/g, '$1\n\n$2');
     }
   } catch {}
-  
+
+  // Ajuste: renomear bloco "Qual o outro equipamento da ETECC que ficou no local" no texto copiado
+  try {
+    text = text.replace(/^\s*QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL:?/gmi, 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:');
+  } catch {}
+
   try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
   catch(e){
     
