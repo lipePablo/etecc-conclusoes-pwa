@@ -2608,14 +2608,23 @@ function setTopbarMode(internal){
          + '</section>\n'
          // Seção 4: Equipamentos do atendimento (movido para sua própria seção)
          + '<section class="form-section">\n'
-         + '  <div class="form-header">\n'
-         + '    <div class="form-title"><i class="fa-solid fa-screwdriver-wrench"></i> EQUIPAMENTOS DO ATENDIMENTO</div>\n'
-         + '  </div>\n'
-         + '  <div class="form-block">\n' 
-         + '    <label class="form-label" id="lbl_ret_equip">Foi retirado algum equipamento por troca:</label>\n'
-         + '    <div class="form-hint" style="margin-top:4px; margin-bottom:8px; font-style:italic;">Exemplo: Retirado uma EPON e inserida GPON ou retirado FAST e inserido GIGABIT</div>\n'
-         + '    <div class="segmented" role="radiogroup" aria-label="Retirado equipamento por troca?">\n'
-         + '      <input type="radio" id="ret_equip_sim" name="ret_equip" value="sim">\n'
+        + '  <div class="form-header">\n'
+        + '    <div class="form-title"><i class="fa-solid fa-screwdriver-wrench"></i> EQUIPAMENTOS DO ATENDIMENTO</div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="tipo_serv" data-when-equals="mudanca" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">Equipamentos que o cliente trouxe na mudança: <span class="form-hint">(múltipla escolha)</span></label>\n'
+        + '    <div class="choices">\n'
+        + '      <label class="choice"><input type="checkbox" id="mud_trouxe_ont" name="mud_trouxe_ont"><span>ONT</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="mud_trouxe_onu" name="mud_trouxe_onu"><span>ONU</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="mud_trouxe_rot" name="mud_trouxe_rot"><span>Roteador</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="mud_trouxe_outro" name="mud_trouxe_outro"><span>Outros</span></label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="tipo_serv" data-when-equals="mudanca" data-clear-on-hide="1">\n'
+        + '    <label class="form-label" id="lbl_ret_equip">Foi retirado algum equipamento por troca:</label>\n'
+        + '    <div class="form-hint" style="margin-top:4px; margin-bottom:8px; font-style:italic;">Exemplo: Retirado uma EPON e inserida GPON ou retirado FAST e inserido GIGABIT</div>\n'
+        + '    <div class="segmented" role="radiogroup" aria-label="Retirado equipamento por troca?">\n'
+        + '      <input type="radio" id="ret_equip_sim" name="ret_equip" value="sim">\n'
          + '      <label for="ret_equip_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
          + '      <input type="radio" id="ret_equip_nao" name="ret_equip" value="nao">\n'
          + '      <label for="ret_equip_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
@@ -2658,19 +2667,19 @@ function setTopbarMode(internal){
          + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
          + '    </div>\n'
          + '  </div>\n'
-         + '  <div class="form-block">\n'
-         + '    <label class="form-label">Foi deixado algum equipamento no local:</label>\n'
-         + '    <div class="segmented" role="radiogroup" aria-label="Deixado equipamento no local?">\n'
-         + '      <input type="radio" id="ficou_equip_sim" name="ficou_equip" value="sim">\n'
-         + '      <label for="ficou_equip_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
-         + '      <input type="radio" id="ficou_equip_nao" name="ficou_equip" value="nao">\n'
-         + '      <label for="ficou_equip_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
-         + '    </div>\n'
-         + '  </div>\n'
-         + '  <div class="form-block" data-when-field="ficou_equip" data-when-equals="nao" data-clear-on-hide="1">\n'
-         + '    <label class="form-label" for="ficou_motivo">Por qual motivo não foi deixado equipamento?</label>\n'
-         + '    <input id="ficou_motivo" name="ficou_motivo" type="text" class="form-input--underline" placeholder="Ex.: Já tinha equipamento no local" />\n'
-         + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label" data-label-default="Foi inserido algum equipamento no local:" data-label-mudanca="Foi inserido algum equipamento a mais no local:">Foi inserido algum equipamento no local:</label>\n'
+        + '    <div class="segmented" role="radiogroup" aria-label="Inserido equipamento no local?">\n'
+        + '      <input type="radio" id="ficou_equip_sim" name="ficou_equip" value="sim">\n'
+        + '      <label for="ficou_equip_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
+        + '      <input type="radio" id="ficou_equip_nao" name="ficou_equip" value="nao">\n'
+        + '      <label for="ficou_equip_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="ficou_equip" data-when-equals="nao" data-clear-on-hide="1">\n'
+        + '    <label class="form-label" for="ficou_motivo">Por qual motivo não foi deixado equipamento?</label>\n'
+        + '    <input id="ficou_motivo" name="ficou_motivo" type="text" class="form-input--underline" placeholder="Ex.: Já tinha equipamento no local" />\n'
+        + '  </div>\n'
          + '  <div class="form-block" data-when-field="ficou_equip" data-when-equals="sim" data-clear-on-hide="1">\n'
          + '    <label class="form-label">Selecione e insira o MAC dos equipamentos comodatos ou compra que foram instalados: <span class="form-hint">(múltipla escolha)</span></label>\n'
          + '    <div class="choices">\n'
@@ -2767,6 +2776,59 @@ function setTopbarMode(internal){
             ['input','change','keyup','blur'].forEach(evt => qt.addEventListener(evt, applyQt));
             cabRedeRadios.forEach(r => r.addEventListener('change', applyQt, true));
             applyQt();
+          }
+        } catch {}
+
+        // Reforço: garantir avaliação das condicionais de tipo_serv inclusive em rascunhos
+        try {
+          const servRadiosIM = Array.from(root.querySelectorAll('input[name="tipo_serv"]'));
+          if (servRadiosIM.length && !root.__tipoServWireIM) {
+            root.__tipoServWireIM = true;
+            const onTipoServChangeIM = () => {
+              try {
+                const sel = root.querySelector('input[name="tipo_serv"]:checked');
+                const val = sel ? String(sel.value || '') : '';
+                if (typeof setFormState === 'function') setFormState('instalacoes-mudancas', { tipo_serv: val });
+                try {
+                  const label = root.querySelector('[data-label-default][data-label-mudanca]');
+                  if (label) {
+                    label.textContent = (val === 'mudanca') ? label.getAttribute('data-label-mudanca') : label.getAttribute('data-label-default');
+                  }
+                } catch {}
+                if (val !== 'mudanca') {
+                  try { root.querySelectorAll('input[name="ret_equip"]').forEach(r => { r.checked = false; }); } catch {}
+                  try { root.querySelectorAll('#eq_sel_ont,#eq_sel_onu,#eq_sel_rot,#eq_sel_outro').forEach(cb => cb.checked = false); } catch {}
+                  try {
+                    const clearMacList = (prefix) => {
+                      const list = root.querySelector('.mac-list[data-mac-prefix="'+prefix+'"]');
+                      if (!list) return;
+                      const inputs = Array.from(list.querySelectorAll('input'));
+                      inputs.forEach(inp => { inp.value = ''; });
+                      const wrap = list.querySelector('.mac-rows');
+                      if (wrap) {
+                        const rows = Array.from(wrap.querySelectorAll('.mac-row'));
+                        rows.slice(1).forEach(r => r.remove());
+                      }
+                    };
+                    ['ont_mac_','onu_mac_','rot_mac_'].forEach(clearMacList);
+                  } catch {}
+                  try {
+                    root.querySelectorAll('.outro-list[data-outro-list]').forEach(list => {
+                      const inputs = Array.from(list.querySelectorAll('input'));
+                      inputs.forEach(inp => { inp.value = ''; });
+                      const rowsWrap = list.querySelector('.outro-rows');
+                      if (rowsWrap) {
+                        const rows = Array.from(rowsWrap.querySelectorAll('.outro-row'));
+                        rows.slice(1).forEach(r => r.remove());
+                      }
+                    });
+                  } catch {}
+                }
+                if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('instalacoes-mudancas', root);
+              } catch {}
+            };
+            servRadiosIM.forEach(r => r.addEventListener('change', onTipoServChangeIM, true));
+            onTipoServChangeIM();
           }
         } catch {}
 
@@ -5337,9 +5399,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
         const idxB = blocks.indexOf(block);
         const combineWithMac = /retirado|ficou|inserido|deixado/i.test(bLabel) && blocks.slice(idxB+1).some(b => isVisible(b) && b.querySelector('.mac-list'));
         if (combineWithMac) {
-          // Tratamento especial: "Foi deixado algum equipamento no local" deve imprimir cabeçalho de MACs
-          const isDeixado = /deixado/i.test(bLabel);
-          if (isDeixado) {
+          // Tratamento especial: "Foi inserido/deixado algum equipamento no local" deve imprimir cabeçalho de MACs
+          const isInseridoLocal = /(inserido|deixado)/i.test(bLabel);
+          if (isInseridoLocal) {
             // Verifica se há algum MAC preenchido nas listas até o próximo seletor
             let hasMacs = false;
             try {
