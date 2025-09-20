@@ -2145,8 +2145,19 @@ function setTopbarMode(internal){
         + '    </div>\n'
         + '  </div>\n'
         + '  <div class="form-block" data-when-field="ret_venc_alterado" data-when-equals="sim" data-clear-on-hide="1">\n'
-        + '    <label class="form-label" for="ret_novo_venc">Qual é o novo dia de vencimento escolhido?</label>\n'
-        + '    <input id="ret_novo_venc" name="ret_novo_venc" type="text" class="form-input--underline" placeholder="Informe a nova data (ex.: todo dia 20)..." />\n'
+        + '    <label class="form-label">Qual é o novo dia de vencimento escolhido?</label>\n'
+        + '    <div class="segmented segmented--sm" role="radiogroup" aria-label="Novo dia de vencimento">\n'
+        + '      <input type="radio" id="ret_novo_venc_05" name="ret_novo_venc" value="05">\n'
+        + '      <label for="ret_novo_venc_05">05</label>\n'
+        + '      <input type="radio" id="ret_novo_venc_10" name="ret_novo_venc" value="10">\n'
+        + '      <label for="ret_novo_venc_10">10</label>\n'
+        + '      <input type="radio" id="ret_novo_venc_15" name="ret_novo_venc" value="15">\n'
+        + '      <label for="ret_novo_venc_15">15</label>\n'
+        + '      <input type="radio" id="ret_novo_venc_20" name="ret_novo_venc" value="20">\n'
+        + '      <label for="ret_novo_venc_20">20</label>\n'
+        + '      <input type="radio" id="ret_novo_venc_25" name="ret_novo_venc" value="25">\n'
+        + '      <label for="ret_novo_venc_25">25</label>\n'
+        + '    </div>\n'
         + '  </div>\n'
         + '  <div class="form-block" data-when-field="ret_atendido_local" data-when-equals="sim" data-clear-on-hide="1">\n'
         + '    <label class="form-label">Informações negociadas com vizinho, amigo, parente ou outra pessoa além do titular?</label>\n'
@@ -2190,6 +2201,21 @@ function setTopbarMode(internal){
           const radios = root.querySelectorAll('input[name="inv_rep_torre"]');
           radios.forEach(r => r.addEventListener('change', updateInvHint));
           updateInvHint();
+        } catch {}
+
+        // Estilo compacto para botões de dia de vencimento (mesma fonte 13px; menor largura)
+        try {
+          const stId = 'segmentedSmStyle';
+          const css = '.segmented--sm{gap:6px;grid-template-columns:repeat(5,minmax(0,1fr))}.segmented--sm label{padding:6px 6px;border-radius:8px;white-space:nowrap}';
+          const exist = document.getElementById(stId);
+          if (!exist) {
+            const st = document.createElement('style');
+            st.id = stId;
+            st.textContent = css;
+            document.head.appendChild(st);
+          } else if (exist.textContent !== css) {
+            exist.textContent = css;
+          }
         } catch {}
       }
     },
@@ -5263,6 +5289,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try {
         const choices = block.querySelector('.choices');
         if (choices){
+          // Evitar duplicidade: se este .choices pertence a um sub-bloco interno, não processe aqui
+          try { const ownerBlk = choices.closest && choices.closest('.form-block'); if (ownerBlk && ownerBlk !== block) { return; } } catch {}
           const cbs = Array.from(choices.querySelectorAll('input[type="checkbox"]'));
           const anyChecked = cbs.some(cb => cb && cb.checked);
           if (!anyChecked){
@@ -5291,6 +5319,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
       }
       const seg = block.querySelector('.segmented');
       if (seg){
+        // Evitar duplicidade: se este .segmented pertence a um sub-bloco interno, não processe aqui
+        try { const ownerBlk = seg.closest && seg.closest('.form-block'); if (ownerBlk && ownerBlk !== block) { return; } } catch {}
         const bLabel = (block.querySelector('.form-label')?.textContent || '').trim();
         const idxB = blocks.indexOf(block);
         const combineWithMac = /retirado|ficou|inserido|deixado/i.test(bLabel) && blocks.slice(idxB+1).some(b => isVisible(b) && b.querySelector('.mac-list'));
@@ -5659,6 +5689,15 @@ const copyBtn = document.getElementById('btnCopiarForm');
         else if (val) { secOut.push(a); secOut.push(''); }
       });
     });
+    // Remoção específica: evitar linha em branco logo após o título de AJUDA INTERNA
+    try {
+      const titleUp = (sec.querySelector('.form-title')?.textContent || '').trim().toUpperCase();
+      if (titleUp === 'AJUDA INTERNA') {
+        while (secOut.length > 1 && typeof secOut[1] === 'string' && secOut[1].trim() === '') {
+          secOut.splice(1, 1);
+        }
+      }
+    } catch {}
     if (secOut.length){ parts.push(secOut.join('\n')); parts.push(''); }
   });
   // Se a seção específica não imprimiu as coordenadas, injeta no topo do texto copiado
@@ -5670,6 +5709,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
   let text = '\n' + parts.join('\n');
   // Normaliza quebras em excesso
   text = text.replace(/\n{3,}/g,'\n\n');
+  // Remover linha em branco logo abaixo do título "-- AJUDA INTERNA --"
+  try { text = text.replace(/(-- AJUDA INTERNA --)\n\s*\n/g, '$1\n'); } catch {}
   // Remove dicas como (múltipla escolha) de qualquer linha
   try { text = text.replace(/\([^)]*escolh[^)]*\)/ig,''); } catch (e) {}
   // Evita linhas em branco entre linhas de MAC no formulário copiado
