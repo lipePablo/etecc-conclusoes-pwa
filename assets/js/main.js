@@ -5730,6 +5730,13 @@ const copyBtn = document.getElementById('btnCopiarForm');
   if (((container&&container.__formId)||'') === 'instalacoes-mudancas' || ((container&&container.__formId)||'') === 'ponto-adicional' || ((container&&container.__formId)||'') === 'suporte-tecnico-carro' || ((container&&container.__formId)||'') === 'suporte-moto') {
     text = postProcessInstalacoesMudancas(text);
   }
+  // Ajuste: garantir espaço em branco antes de "AS FONTES FORAM RETIRADAS?" em Retirada de Equipamentos
+  try {
+    const __fid = ((container && container.__formId) || '');
+    if (__fid === 'retirada-equipamentos') {
+      text = text.replace(/([^\n])\n(AS FONTES FORAM RETIRADAS\?)/g, '$1\n\n$2');
+    }
+  } catch {}
   
   try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
   catch(e){
