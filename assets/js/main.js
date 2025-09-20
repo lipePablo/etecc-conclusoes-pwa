@@ -5004,6 +5004,7 @@ function postProcessInstalacoesMudancas(text) {
       out = out.replace(/([^\n])\n(QUAL EQUIPAMENTO FOI INSERIDO:)/g, '$1\n\n$2');
       out = out.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:)/g, '$1\n\n$2');
       out = out.replace(/([^\n])\n(-- AJUDA INTERNA --)/g, '$1\n\n$2');
+      out = out.replace(/(-- AJUDA INTERNA --)\n\s*\n/g, '$1\n');
       // Caso solicitado: garantir linha em branco após "FOI NECESSÁRIO A TROCA DE EQUIPAMENTO?" quando resposta = Sim
       out = out.replace(/(FOI NECESS[ÁA]RIO A TROCA DE EQUIPAMENTO[S]?\?\s*\n\s*Sim)\s*\n(\s*MAC DOS EQUIPAMENTOS RETIRADOS:)/i, '$1\n\n$2');
     } catch {}
