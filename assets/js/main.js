@@ -2561,7 +2561,7 @@ function setTopbarMode(internal){
         + '    </div>\n'
         + '  </div>\n'
          + '  <div class="form-block" data-when-field="cx_aberta_antes" data-when-equals="sim" data-clear-on-hide="1">\n'
-         + '    <label class="form-label" for="cx_ident1">Insira a identificação da caixa:</label>\n'
+         + '    <label class="form-label" for="cx_ident1">Identificação da CTO que atende ao cliente:</label>\n'
          + '    <input id="cx_ident1" name="cx_ident1" type="text" class="form-input--underline" placeholder="Informe a caixa aqui..." />\n'
          + '  </div>\n'
          + '  <div class="form-block" data-when-field="cx_aberta_antes" data-when-equals="sim" data-clear-on-hide="1">\n'
@@ -2569,7 +2569,7 @@ function setTopbarMode(internal){
          + '    <input id="sinal_fibra" name="sinal_fibra" data-sinal-fibra="1" type="text" class="form-input--underline" inputmode="decimal" placeholder="-00.00" />\n'
          + '  </div>\n'
          + '  <div class="form-block" data-when-field="ab_caixa" data-when-equals="nao" data-clear-on-hide="1">\n'
-         + '    <label class="form-label" for="cx_ident2">Insira a identificação da caixa:</label>\n'
+         + '    <label class="form-label" for="cx_ident2">Identificação da CTO que atende ao cliente:</label>\n'
          + '    <input id="cx_ident2" name="cx_ident2" type="text" class="form-input--underline" placeholder="Informe a caixa aqui..." />\n'
          + '  </div>\n'
          + '  <div class="form-block" data-when-field="ab_caixa" data-when-equals="nao" data-clear-on-hide="1">\n'
@@ -3917,7 +3917,7 @@ function setTopbarMode(internal){
         + '    <input id="sinal_fibra" name="sinal_fibra" data-sinal-fibra="1" type="text" class="form-input--underline" inputmode="decimal" placeholder="-00.00" />\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" for="stc_cx_ident">Insira a identificação da caixa:</label>\n'
+        + '    <label class="form-label" for="stc_cx_ident">Identificação da CTO que atende ao cliente:</label>\n'
         + '    <input id="stc_cx_ident" name="stc_cx_ident" type="text" class="form-input--underline" placeholder="Informe a caixa aqui..." />\n'
         + '  </div>\n'
         + '  </div>\n'
@@ -3936,7 +3936,7 @@ function setTopbarMode(internal){
         + '      <input id="sinal_fibra" name="sinal_fibra" data-sinal-fibra="1" type="text" class="form-input--underline" inputmode="decimal" placeholder="-00.00" />\n'
         + '    </div>\n'
         + '    <div class="form-block">\n'
-        + '      <label class="form-label" for="qs_cx_ident">Insira a identificação da caixa:</label>\n'
+        + '      <label class="form-label" for="qs_cx_ident">Identificação da CTO que atende ao cliente:</label>\n'
         + '      <input id="qs_cx_ident" name="qs_cx_ident" type="text" class="form-input--underline" placeholder="Informe a caixa aqui..." />\n'
         + '    </div>\n'
         + '  </div>\n'
@@ -4080,11 +4080,40 @@ function setTopbarMode(internal){
               const firstBlock = qsWrap.querySelector('.form-block');
               const encClone = encBlock.cloneNode(true);
               qsWrap.insertBefore(encClone, firstBlock || null);
-              // mover identificação da caixa logo abaixo
+              // Corrige IDs/for nos radios clonados para evitar conflitos e garantir destaque visual
+              try {
+                const sim = encClone.querySelector('#stc_enc_sim');
+                const simLab = encClone.querySelector('label[for="stc_enc_sim"]');
+                const nao = encClone.querySelector('#stc_enc_nao');
+                const naoLab = encClone.querySelector('label[for="stc_enc_nao"]');
+                if (sim) sim.id = 'stc_enc_sim_qs';
+                if (simLab) simLab.setAttribute('for','stc_enc_sim_qs');
+                if (nao) nao.id = 'stc_enc_nao_qs';
+                if (naoLab) naoLab.setAttribute('for','stc_enc_nao_qs');
+              } catch {}
+              // clonar "Qual a situação do local" e inserir logo abaixo do encaminhar
+              let situClone = null;
+              try {
+                const baseWrap = root.querySelector('.form-cond[data-when-field="stc_tipo_serv"][data-when-in="los,mudanca,outros"]');
+                const situBase = baseWrap ? baseWrap.querySelector('.form-block[data-when-field="stc_enc"][data-when-equals="sim"]') : null;
+                if (situBase) {
+                  situClone = situBase.cloneNode(true);
+                  // Renomeia ID/for/name do textarea para evitar conflito com o original
+                  try {
+                    const ta = situClone.querySelector('textarea');
+                    const lab = situClone.querySelector('label[for]');
+                    if (ta) { ta.id = 'qs_enc_situacao'; if (ta.name) ta.name = 'qs_enc_situacao'; }
+                    if (lab) lab.setAttribute('for', 'qs_enc_situacao');
+                  } catch {}
+                  qsWrap.insertBefore(situClone, encClone.nextSibling);
+                }
+              } catch {}
+              // mover identificação da caixa logo abaixo (depois de situação, quando existir)
               const qsIdentInput = qsWrap.querySelector('#qs_cx_ident');
               const qsIdentBlock = qsIdentInput ? qsIdentInput.closest('.form-block') : null;
               if (qsIdentBlock) {
-                qsWrap.insertBefore(qsIdentBlock, encClone.nextSibling);
+                const afterNode = situClone || encClone;
+                qsWrap.insertBefore(qsIdentBlock, afterNode.nextSibling);
               }
               try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
               qsWrap.__encCloned = true;
@@ -4096,11 +4125,56 @@ function setTopbarMode(internal){
           if (baseWrap && !baseWrap.__identMoved) {
             const encSeg = baseWrap.querySelector('.segmented[aria-label="Encaminhar equipe da caixa/estrutura?"]');
             const encBlock = encSeg ? encSeg.closest('.form-block') : null;
+            const situBlock = baseWrap.querySelector('.form-block[data-when-field="stc_enc"][data-when-equals="sim"]');
             const identInput = baseWrap.querySelector('#stc_cx_ident');
             const identBlock = identInput ? identInput.closest('.form-block') : null;
-            if (encBlock && identBlock) baseWrap.insertBefore(identBlock, encBlock.nextSibling);
+            if (encBlock && identBlock) {
+              baseWrap.insertBefore(identBlock, (situBlock || encBlock).nextSibling);
+            }
             try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
             baseWrap.__identMoved = true;
+          }
+        } catch {}
+
+        // Ajustar rótulo para "Mudança de cômodo" (pós-render para evitar problemas de encoding)
+        try { const l = root.querySelector('label[for="stc_tipo_mud"]'); if (l) l.textContent = 'Mudan\u00E7a de c\u00F4modo/remanejar fibra'; } catch {}
+
+        // Resetar campos ao alternar o tipo de serviço (inclui trocas LOS <-> Mudança de cômodo)
+        try {
+          const servRadios = Array.from(root.querySelectorAll('input[name="stc_tipo_serv"]'));
+          if (servRadios.length && !root.__wireStcReset){
+            root.__wireStcReset = true;
+            const clearForServiceChange = () => {
+              try {
+                const sel = root.querySelector('input[name="stc_tipo_serv"]:checked');
+                const newVal = sel ? String(sel.value||'') : '';
+                if (root.__stcPrevVal === undefined) root.__stcPrevVal = newVal;
+                const prevVal = root.__stcPrevVal;
+                if (newVal && prevVal !== newVal){
+                  const wraps = [];
+                  const baseWrap2 = root.querySelector('.form-cond[data-when-field="stc_tipo_serv"][data-when-in="los,mudanca,outros"]');
+                  const qsWrap2 = root.querySelector('.form-cond[data-when-field="stc_tipo_serv"][data-when-equals="quebra_slot"]');
+                  if (baseWrap2) wraps.push(baseWrap2);
+                  if (qsWrap2) wraps.push(qsWrap2);
+                  wraps.forEach(w => {
+                    w.querySelectorAll('input, select, textarea').forEach(el => {
+                      const key = el.name || el.id; if (!key) return;
+                      if (el.type === 'radio' || el.type === 'checkbox') el.checked = false; else el.value = '';
+                      try { const st = (typeof getFormState==='function') ? getFormState('suporte-tecnico-carro') : null; if (st) delete st[key]; } catch {}
+                    });
+                    try {
+                      w.querySelectorAll('.mac-list .mac-rows').forEach(rw => { const rows = Array.from(rw.querySelectorAll('.mac-row')); rows.slice(1).forEach(r => r.remove()); });
+                      w.querySelectorAll('.outro-list .outro-rows').forEach(rw => { const rows = Array.from(rw.querySelectorAll('.outro-row')); rows.slice(1).forEach(r => r.remove()); });
+                    } catch {}
+                  });
+                }
+                root.__stcPrevVal = newVal;
+                try { if (typeof setFormState==='function') setFormState('suporte-tecnico-carro', { stc_tipo_serv: newVal }); } catch {}
+                try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+              } catch {}
+            };
+            servRadios.forEach(r => r.addEventListener('change', clearForServiceChange, true));
+            clearForServiceChange();
           }
         } catch {}
       }
@@ -4391,7 +4465,7 @@ function setTopbarMode(internal){
         + '    <input id="sinal_fibra" name="sinal_fibra" data-sinal-fibra="1" type="text" class="form-input--underline" inputmode="decimal" placeholder="-00.00" />\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" for="qs_cx_ident">Insira a identificação da caixa:</label>\n'
+        + '    <label class="form-label" for="qs_cx_ident">Identificação da CTO que atende ao cliente:</label>\n'
         + '    <input id="qs_cx_ident" name="qs_cx_ident" type="text" class="form-input--underline" placeholder="Informe a caixa aqui..." />\n'
         + '  </div>\n'
         + '</section>\n'
@@ -7687,6 +7761,7 @@ try {
     };
   }
 } catch {}
+
 
 
 
