@@ -4069,6 +4069,40 @@ function setTopbarMode(internal){
             if (el) el.addEventListener('change', () => { try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {} });
           });
         } catch {}
+
+        // Quebra de slot: também exibir "Necessário encaminhar..." e posicionar "Insira a identificação da caixa" logo abaixo
+        try {
+          const qsWrap = root.querySelector('.form-cond[data-when-field="stc_tipo_serv"][data-when-equals="quebra_slot"]');
+          if (qsWrap && !qsWrap.__encCloned) {
+            const encSeg = root.querySelector('.form-cond[data-when-field="stc_tipo_serv"][data-when-in="los,mudanca,outros"] .segmented[aria-label="Encaminhar equipe da caixa/estrutura?"]');
+            if (encSeg) {
+              const encBlock = encSeg.closest('.form-block');
+              const firstBlock = qsWrap.querySelector('.form-block');
+              const encClone = encBlock.cloneNode(true);
+              qsWrap.insertBefore(encClone, firstBlock || null);
+              // mover identificação da caixa logo abaixo
+              const qsIdentInput = qsWrap.querySelector('#qs_cx_ident');
+              const qsIdentBlock = qsIdentInput ? qsIdentInput.closest('.form-block') : null;
+              if (qsIdentBlock) {
+                qsWrap.insertBefore(qsIdentBlock, encClone.nextSibling);
+              }
+              try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+              qsWrap.__encCloned = true;
+            }
+          }
+        } catch {}
+        try {
+          const baseWrap = root.querySelector('.form-cond[data-when-field="stc_tipo_serv"][data-when-in="los,mudanca,outros"]');
+          if (baseWrap && !baseWrap.__identMoved) {
+            const encSeg = baseWrap.querySelector('.segmented[aria-label="Encaminhar equipe da caixa/estrutura?"]');
+            const encBlock = encSeg ? encSeg.closest('.form-block') : null;
+            const identInput = baseWrap.querySelector('#stc_cx_ident');
+            const identBlock = identInput ? identInput.closest('.form-block') : null;
+            if (encBlock && identBlock) baseWrap.insertBefore(identBlock, encBlock.nextSibling);
+            try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+            baseWrap.__identMoved = true;
+          }
+        } catch {}
       }
     }
     ,
