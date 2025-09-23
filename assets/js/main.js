@@ -4235,6 +4235,13 @@ function setTopbarMode(internal){
               try {
                 const t = e.target; if (!t || t.type !== 'checkbox') return;
                 if (t === noneEl) {
+                  // Ao DESMARCAR 'Nenhum', remover aviso inline imediatamente
+                  try {
+                    if (!noneEl.checked && groupBox) {
+                      const next = groupBox.nextElementSibling;
+                      if (next && next.classList && (next.classList.contains('sinal-los-hint') || next.classList.contains('inline-alert'))) next.remove();
+                    }
+                  } catch {}
                   if (noneEl.checked && normals.some(n => n && n.checked)) {
                     const msgNenhum = 'Ao selecionar "Nenhum", as opções marcadas serão desmarcadas e os campos de MAC serão limpos. Confirmar?';
                     const ok = (await (window.__appModal?.showConfirm(msgNenhum, { okText:'Confirmar', cancelText:'Cancelar', danger: true }) || Promise.resolve(null))) ?? window.confirm(msgNenhum);
@@ -5433,12 +5440,17 @@ function postProcessInstalacoesMudancas(text) {
     }
 
     let out = result.join('\n');
-    // Garantia extra: remove linhas em branco imediatamente antes de 'RETIRADOS', mas preserva para 'DEIXADOS'
-    try { out = out.replace(/\n{2,}(MAC DOS EQUIPAMENTOS RETIRADOS:)/g, '\n$1'); } catch {}
+
+    // Renomear cabeçalho "DEIXADOS NO LOCAL" para "EQUIPAMENTOS INSERIDOS:" no texto copiado
+    try { out = out.replace(/MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:/g, 'EQUIPAMENTOS INSERIDOS:'); } catch {}
+
     // Garantia: inserir linha em branco antes de cabeçalhos esperados se vier logo após item de MAC
     try {
       out = out.replace(/([^\n])\n(QUAL EQUIPAMENTO FOI INSERIDO:)/g, '$1\n\n$2');
-      out = out.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:)/g, '$1\n\n$2');
+      // Espaço antes do cabeçalho "EQUIPAMENTOS INSERIDOS:" (após renomeação)
+      out = out.replace(/([^\n])\n(EQUIPAMENTOS INSERIDOS:)/g, '$1\n\n$2');
+      // Espaço antes do cabeçalho "RETIRADOS"
+      out = out.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS RETIRADOS:)/g, '$1\n\n$2');
       out = out.replace(/([^\n])\n(-- AJUDA INTERNA --)/g, '$1\n\n$2');
       // Espaço acima do título da seção INDICAÇÕES
       out = out.replace(/([^\n])\n(-- INDICAÇÕES --)/g, '$1\n\n$2');
@@ -5748,22 +5760,44 @@ const copyBtn = document.getElementById('btnCopiarForm');
         const bLabel = (block.querySelector('.form-label')?.textContent || '').trim();
         const idxB = blocks.indexOf(block);
         const combineWithMac = /retirado|ficou|inserido|deixado/i.test(bLabel) && blocks.slice(idxB+1).some(b => isVisible(b) && b.querySelector('.mac-list'));
+        // Regra solicitada: se a pergunta for sobre INSERIDO e a resposta for SIM, não imprimir a pergunta
+        try {
+          const isInsQ = /(ficou|inserido)/i.test(bLabel);
+          if (isInsQ) {
+            const sel = getRadioGroupValue(block);
+            const vLower = String(sel||'').toLowerCase();
+            if (vLower === 'sim') { return; }
+          }
+        } catch {}
+        // Regra solicitada: se a pergunta for sobre RETIRADO e a resposta for SIM, não imprimir a pergunta
+        try {
+          const isRetQ = /retirado/i.test(bLabel);
+          if (isRetQ) {
+            const sel = getRadioGroupValue(block);
+            const vLower = String(sel||'').toLowerCase();
+            if (vLower === 'sim') { return; }
+          }
+        } catch {}
         if (combineWithMac) {
-          // Tratamento especial: "Foi inserido/deixado algum equipamento no local" deve imprimir cabeçalho de MACs
+          // Tratamento especial: pergunta "Foi inserido/deixado ...?"
           const isInseridoLocal = /(inserido|deixado)/i.test(bLabel);
           if (isInseridoLocal) {
-            // Verifica se há algum MAC preenchido nas listas até o próximo seletor
-            let hasMacs = false;
-            try {
-              for (let j = idxB + 1; j < blocks.length; j++){
-                const nb = blocks[j]; if (!isVisible(nb)) continue;
-                const list = nb.querySelector && nb.querySelector('.mac-list');
-                if (!list) continue;
-                const macs = collectMacRows(list);
-                if (macs && macs.length) { hasMacs = true; break; }
-              }
-            } catch {}
-            if (hasMacs) return;
+            const sel = getRadioGroupValue(block);
+            const vLower = String(sel||'').toLowerCase();
+            if (vLower === 'sim') {
+              // Não imprime a pergunta; os MACs (se houver) serão impressos pelas listas
+              return;
+            }
+            if (vLower === 'nao' || vLower === 'não'){
+              // Imprime a pergunta e a resposta "Não" e não imprime MACs
+              const qText = cleanQ(bLabel).toUpperCase();
+              printQuestionOnce(qText);
+              const aText = toSentence(sel);
+              if (aText) secOut.push(aText);
+              secOut.push('');
+              return;
+            }
+            // Sem resposta: não imprime nada aqui
             return;
           }
           // Novo: quando a pergunta é de RETIRADO e a resposta é NÃO, precisamos imprimir a pergunta/resposta
@@ -6020,8 +6054,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
           const __pfx = String(macList.getAttribute('data-mac-prefix')||'').toLowerCase();
           const __fid = ((container && container.__formId) || (typeof formId!=='undefined' ? formId : ''));
           if ((__fid==='instalacoes-mudancas' || __fid==='ponto-adicional' || __fid==='suporte-tecnico-carro') && __pfx.startsWith('ins_')){
-            prevSel = prevSel || { q: 'MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:' };
-            prevSel.q = 'MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:';
+            prevSel = prevSel || { q: 'EQUIPAMENTOS INSERIDOS:' };
+            prevSel.q = 'EQUIPAMENTOS INSERIDOS:';
           }
         } catch {}
         // Força cabeçalho padrão quando a pergunta anterior for de RETIRADO e houver MACs
@@ -6057,7 +6091,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
           }
         } catch {}
         const questionText = (prevSel?.q || bLabel || 'MAC').replace(/\(\s*mul[tíi]pla\s+escolha\s*\)/i,'').toUpperCase();
-        printQuestionOnce(cleanQ(questionText));
+        printQuestionOnce(cleanQ(/SELECIONE\s+O\s+EQUIPAMENTO\s+RETIRADO\s+E\s+INSIRA\s+SEU\s+MAC/.test(String(questionText||'').toUpperCase()) ? 'MAC DOS EQUIPAMENTOS RETIRADOS:' : questionText));
         const __withinRetiradaGroup = !!(prevSel && prevSel.q && (String(prevSel.q).toUpperCase().indexOf('MAC DOS EQUIPAMENTOS RETIRADOS') !== -1 || prevSel.isChoices));
         if (!macs.length){
           secOut.push(isPhoneList ? 'O técnico não preencheu este campo.' : 'O técnico não preencheu este campo.');
@@ -6170,6 +6204,10 @@ const copyBtn = document.getElementById('btnCopiarForm');
   if (((container&&container.__formId)||'') === 'instalacoes-mudancas' || ((container&&container.__formId)||'') === 'ponto-adicional' || ((container&&container.__formId)||'') === 'suporte-tecnico-carro' || ((container&&container.__formId)||'') === 'suporte-moto') {
     text = postProcessInstalacoesMudancas(text);
   }
+  // Normalização específica: substituir instrução de UI por cabeçalho canônico no texto copiado
+  try {
+    text = text.replace(/^\s*SELECIONE\s+O\s+EQUIPAMENTO\s+RETIRADO\s+E\s+INSIRA\s+SEU\s+MAC\s*:?\s*$/gmi, 'MAC DOS EQUIPAMENTOS RETIRADOS:');
+  } catch {}
   // Ajuste: garantir espaço em branco antes de "AS FONTES FORAM RETIRADAS?" em Retirada de Equipamentos
   try {
     const __fid = ((container && container.__formId) || '');
@@ -6200,6 +6238,34 @@ const copyBtn = document.getElementById('btnCopiarForm');
     }
   } catch {}
   });
+
+  // Ajuste de rótulo para blocos de inserção de equipamentos
+  try {
+    const applyInseridosLabelGeneric = () => {
+      try {
+        const container = document.getElementById('formContainer') || document;
+        [
+          { name: 'ficou_equip', field: 'ficou_equip' },
+          { name: 'cd_ficou_equip', field: 'cd_ficou_equip' },
+        ].forEach(({ name, field }) => {
+          const sel = container.querySelector('input[name="' + name + '"]:checked');
+          const val = sel ? String(sel.value || '') : '';
+          const blk = container.querySelector('.form-block[data-when-field="' + field + '"][data-when-equals="sim"]');
+          const lab = blk ? blk.querySelector('.form-label') : null;
+          if (lab) {
+            if (val === 'sim') lab.textContent = 'EQUIPAMENTOS INSERIDOS:';
+            else lab.textContent = 'FOI INSERIDO ALGUM EQUIPAMENTO DURANTE ESTE ATENDIMENTO?';
+          }
+        });
+      } catch {}
+    };
+    document.addEventListener('change', (e) => {
+      const t = e.target; if (!t) return;
+      const nm = String(t.name || '');
+      if (nm === 'ficou_equip' || nm === 'cd_ficou_equip') applyInseridosLabelGeneric();
+    }, true);
+    setTimeout(applyInseridosLabelGeneric, 0);
+  } catch {}
     // Reordenar: garantir TESTES DE VELOCIDADE após EQUIPE EXTERNA
     try {
       const sections = Array.from(container.querySelectorAll('.form-section'));
