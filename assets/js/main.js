@@ -2881,6 +2881,27 @@ function setTopbarMode(internal){
           }
         } catch {}
 
+        // Ajuste de rótulo no formulário copiado: "EQUIPAMENTOS INSERIDOS:" quando SIM; caso NÃO, exibir pergunta completa
+        try {
+          const applyInseridosLabelIM = () => {
+            try {
+              const sel = root.querySelector('input[name="ficou_equip"]:checked');
+              const val = sel ? String(sel.value||'') : '';
+              const blk = root.querySelector('.form-block[data-when-field="ficou_equip"][data-when-equals="sim"]');
+              const lab = blk ? blk.querySelector('.form-label') : null;
+              if (lab) {
+                if (val === 'sim') lab.textContent = 'EQUIPAMENTOS INSERIDOS:';
+                else lab.textContent = 'FOI INSERIDO ALGUM EQUIPAMENTO DURANTE ESTE ATENDIMENTO?';
+              }
+            } catch {}
+          };
+          root.addEventListener('change', (e) => {
+            const t = e.target; if (!t) return;
+            if ((t.name||'') === 'ficou_equip') applyInseridosLabelIM();
+          }, true);
+          applyInseridosLabelIM();
+        } catch {}
+
         // Removido: atalhos entre formulários. Unificação passa a ser somente por visibilidade dentro do próprio formulário.
       }
     }
@@ -3123,6 +3144,44 @@ function setTopbarMode(internal){
         + '  <div class="form-block" data-when-field="ins_sel_outro" data-when-equals="true" data-clear-on-hide="1">\n'
         + '    <label class="form-label">Descreva os outros equipamentos inseridos:</label>\n'
         + '    <div class="outro-list" data-outro-list="1">\n'
+        + '      <div class="outro-rows"></div>\n'
+        + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label">Equipamentos da ETECC que estão no local: <span class="form-hint">(Exceto os acima, se houver. Múltipla escolha.)</span></label>\n'
+        + '    <div class="choices">\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_ont" name="estao_sel_ont"><span>ONT</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_onu" name="estao_sel_onu"><span>ONU</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_rot" name="estao_sel_rot"><span>Roteador</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_outro" name="estao_sel_outro"><span>Outros</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_none" name="estao_sel_none"><span>Nenhum</span></label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_ont" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">MAC ONT (no local):</label>\n'
+        + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="estao_ont_mac_">\n'
+        + '      <input type="text" id="stc_estao_ont_mac_1" name="estao_ont_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+        + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="estao_ont_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_onu" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">MAC ONU (no local):</label>\n'
+        + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="estao_onu_mac_">\n'
+        + '      <input type="text" id="stc_estao_onu_mac_1" name="estao_onu_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+        + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="estao_onu_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_rot" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">MAC Roteador (no local):</label>\n'
+        + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="estao_rot_mac_">\n'
+        + '      <input type="text" id="stc_estao_rot_mac_1" name="estao_rot_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+        + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="estao_rot_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_outro" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">Descreva os outros equipamentos que estão no local:</label>\n'
+        + '    <div class="outro-list" data-outro-list="1" data-outro-name-prefix="estao_outro_nome_" data-outro-mac-prefix="estao_outro_mac_">\n'
         + '      <div class="outro-rows"></div>\n'
         + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
         + '    </div>\n'
@@ -4039,6 +4098,44 @@ function setTopbarMode(internal){
         + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
         + '    </div>\n'
         + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label">Equipamentos da ETECC que estão no local: <span class="form-hint">(Exceto os acima, se houver. Múltipla escolha.)</span></label>\n'
+        + '    <div class="choices">\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_ont" name="estao_sel_ont"><span>ONT</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_onu" name="estao_sel_onu"><span>ONU</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_rot" name="estao_sel_rot"><span>Roteador</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_outro" name="estao_sel_outro"><span>Outros</span></label>\n'
+        + '      <label class="choice"><input type="checkbox" id="estao_sel_none" name="estao_sel_none"><span>Nenhum</span></label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_ont" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">MAC ONT (no local):</label>\n'
+        + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="estao_ont_mac_">\n'
+        + '      <input type="text" id="stc_estao_ont_mac_1" name="estao_ont_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+        + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="estao_ont_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_onu" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">MAC ONU (no local):</label>\n'
+        + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="estao_onu_mac_">\n'
+        + '      <input type="text" id="stc_estao_onu_mac_1" name="estao_onu_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+        + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="estao_onu_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_rot" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">MAC Roteador (no local):</label>\n'
+        + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="estao_rot_mac_">\n'
+        + '      <input type="text" id="stc_estao_rot_mac_1" name="estao_rot_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+        + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="estao_rot_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="estao_sel_outro" data-when-equals="true" data-clear-on-hide="1">\n'
+        + '    <label class="form-label">Descreva os outros equipamentos que estão no local:</label>\n'
+        + '    <div class="outro-list" data-outro-list="1" data-outro-name-prefix="estao_outro_nome_" data-outro-mac-prefix="estao_outro_mac_">\n'
+        + '      <div class="outro-rows"></div>\n'
+        + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
+        + '    </div>\n'
+        + '  </div>\n'
         + '</section>\n'
         // Seção 5: DESCRIÇÃO DA O.S
         + '<section class="form-section">\n'
@@ -4068,6 +4165,100 @@ function setTopbarMode(internal){
             const el = root.querySelector(sel);
             if (el) el.addEventListener('change', () => { try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {} });
           });
+        } catch {}
+        try {
+          ['#estao_sel_ont','#estao_sel_onu','#estao_sel_rot','#estao_sel_outro','#estao_sel_none'].forEach(sel => {
+            const el = root.querySelector(sel);
+            if (el) el.addEventListener('change', () => { try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {} });
+          });
+        } catch {}
+
+        // Exclusividade do grupo "estão no local" com "Nenhum" + confirmação e limpeza
+        try {
+          const get = (id) => root.querySelector('#'+id);
+          const noneEl = get('estao_sel_none');
+          const normals = ['estao_sel_ont','estao_sel_onu','estao_sel_rot','estao_sel_outro'].map(get).filter(Boolean);
+          const groupBox = (noneEl && (noneEl.closest('.choices') || noneEl.closest('.form-block'))) || null;
+          const showInlineAlert = (message) => {
+            try {
+              if (!groupBox) return;
+              const next = groupBox.nextElementSibling;
+              if (next && next.classList && (next.classList.contains('sinal-los-hint') || next.classList.contains('inline-alert'))) next.remove();
+              const el = document.createElement('div');
+              // Mesmo estilo visual do aviso de "Sem sinal"
+              el.className = 'form-hint sinal-los-hint is-highlight';
+              if (!el.id) el.id = 'los_hint_' + Math.random().toString(36).slice(2);
+              el.textContent = message;
+              groupBox.insertAdjacentElement('afterend', el);
+              const close = () => { try { el.remove(); } catch {} };
+              el.addEventListener('click', close, { once: true });
+              setTimeout(close, 5000);
+            } catch {}
+          };
+          const clearMacListsByPrefixes = (prefixes) => {
+            try {
+              prefixes.forEach(pref => {
+                root.querySelectorAll('input[name^="'+pref+'"]').forEach(inp => { inp.value=''; });
+                const list = root.querySelector('.mac-list[data-mac-prefix="'+pref+'"]');
+                if (list) {
+                  const rows = list.querySelectorAll('.mac-row');
+                  if (rows && rows.length) { Array.from(rows).slice(1).forEach(r => r.remove()); }
+                  const first = list.querySelector('.mac-row input') || list.querySelector('input');
+                  if (first) first.value='';
+                }
+              });
+              // Limpa "outros" no local
+              root.querySelectorAll('.outro-list[data-outro-list]').forEach(list => {
+                list.querySelectorAll('input').forEach(inp => { inp.value=''; });
+                const rowsWrap = list.querySelector('.outro-rows');
+                if (rowsWrap) {
+                  const rows = Array.from(rowsWrap.querySelectorAll('.outro-row'));
+                  rows.slice(1).forEach(r => r.remove());
+                }
+              });
+            } catch {}
+          };
+          if (noneEl) {
+            // Bloqueia clique em outros quando Nenhum estiver marcado (mensagem)
+            root.addEventListener('click', (e) => {
+              try {
+                const t = e.target;
+                if (!t || t.tagName !== 'INPUT' || t.type !== 'checkbox') return;
+                if (!normals.some(n=>n===t) && t !== noneEl) return;
+                if (t !== noneEl && noneEl.checked) {
+                  showInlineAlert('Desmarque a opção "Nenhum" para selecionar algum equipamento.');
+                }
+              } catch {}
+            }, true);
+            // Enforce exclusividade + confirmação
+            root.addEventListener('change', async (e) => {
+              try {
+                const t = e.target; if (!t || t.type !== 'checkbox') return;
+                if (t === noneEl) {
+                  if (noneEl.checked && normals.some(n => n && n.checked)) {
+                    const msgNenhum = 'Ao selecionar "Nenhum", as opções marcadas serão desmarcadas e os campos de MAC serão limpos. Confirmar?';
+                    const ok = (await (window.__appModal?.showConfirm(msgNenhum, { okText:'Confirmar', cancelText:'Cancelar', danger: true }) || Promise.resolve(null))) ?? window.confirm(msgNenhum);
+                    if (!ok) { noneEl.checked = false; try { const key = noneEl.name||noneEl.id; if (key && typeof setFormState==='function') setFormState('suporte-tecnico-carro', { [key]: false }); } catch {}; return; }
+                    // Desmarca outros e limpa
+                    normals.forEach(n => { if (n && n.checked) { n.checked = false; try { const key = n.name||n.id; if (key && typeof setFormState==='function') setFormState('suporte-tecnico-carro', { [key]: false }); } catch {} } });
+                    clearMacListsByPrefixes(['estao_ont_mac_','estao_onu_mac_','estao_rot_mac_','estao_outro_mac_']);
+                    try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+                  }
+                } else if (normals.includes(t)) {
+                  if (noneEl.checked) {
+                    // mantém Nenhum exclusivo
+                    t.checked = false;
+                    try { const key = t.name||t.id; if (key && typeof setFormState==='function') setFormState('suporte-tecnico-carro', { [key]: false }); } catch {}
+                    showInlineAlert('Desmarque a opção "Nenhum" para selecionar algum equipamento.');
+                  } else {
+                    // algum normal foi marcado: garante Nenhum desmarcado
+                    if (noneEl.checked) { noneEl.checked = false; try { const key = noneEl.name||noneEl.id; if (key && typeof setFormState==='function') setFormState('suporte-tecnico-carro', { [key]: false }); } catch {} }
+                  }
+                  try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('suporte-tecnico-carro', root); } catch {}
+                }
+              } catch {}
+            });
+          }
         } catch {}
 
         // Quebra de slot: também exibir "Necessário encaminhar..." e posicionar "Insira a identificação da caixa" logo abaixo
@@ -5249,6 +5440,8 @@ function postProcessInstalacoesMudancas(text) {
       out = out.replace(/([^\n])\n(QUAL EQUIPAMENTO FOI INSERIDO:)/g, '$1\n\n$2');
       out = out.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS DEIXADOS NO LOCAL:)/g, '$1\n\n$2');
       out = out.replace(/([^\n])\n(-- AJUDA INTERNA --)/g, '$1\n\n$2');
+      // Espaço acima do título da seção INDICAÇÕES
+      out = out.replace(/([^\n])\n(-- INDICAÇÕES --)/g, '$1\n\n$2');
       out = out.replace(/(-- AJUDA INTERNA --)\n\s*\n/g, '$1\n');
       // Caso solicitado: garantir linha em branco após "FOI NECESSÁRIO A TROCA DE EQUIPAMENTO?" quando resposta = Sim
       out = out.replace(/(FOI NECESS[ÁA]RIO A TROCA DE EQUIPAMENTO[S]?\?\s*\n\s*Sim)\s*\n(\s*MAC DOS EQUIPAMENTOS RETIRADOS:)/i, '$1\n\n$2');
