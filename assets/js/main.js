@@ -2667,7 +2667,7 @@ function setTopbarMode(internal){
          + '    </div>\n'
          + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" data-label-default="Foi inserido algum equipamento a mais no local:" data-label-mudanca="Foi inserido algum equipamento a mais no local:">Foi inserido algum equipamento a mais no local:</label>\n'
+        + '    <label class="form-label" data-label-default="Foi inserido algum equipamento no local:" data-label-mudanca="Foi inserido algum equipamento a mais no local:">Foi inserido algum equipamento a mais no local:</label>\n'
         + '    <div class="segmented" role="radiogroup" aria-label="Inserido equipamento a mais no local?">\n'
         + '      <input type="radio" id="ficou_equip_sim" name="ficou_equip" value="sim">\n'
         + '      <label for="ficou_equip_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
@@ -2789,7 +2789,61 @@ function setTopbarMode(internal){
                   if (label) {
                     label.textContent = (val === 'mudanca') ? label.getAttribute('data-label-mudanca') : label.getAttribute('data-label-default');
                   }
+                }
+                catch {}
+                // BEGIN equip section gating/reset
+                try {
+                  const equipTitle = Array.from(root.querySelectorAll('.form-title')).find(t => /EQUIPAMENTOS DO ATENDIMENTO/.test(t.textContent || ''));
+                  const equipSec = equipTitle ? equipTitle.closest('section.form-section') : null;
+                  if (equipSec) {
+                    let hint = equipSec.querySelector('#equip_hint');
+                    if (!hint) {
+                      hint = document.createElement('div');
+                      hint.id = 'equip_hint';
+                      hint.className = 'form-hint sinal-los-hint is-highlight';
+                      hint.textContent = 'Primeiro selecione o servi\u00E7o executado para que as op\u00E7\u00F5es sejam mostradas nesta se\u00E7\u00E3o.';
+                      const header = equipSec.querySelector('.form-header');
+                      if (header && header.parentNode) header.parentNode.insertBefore(hint, header.nextSibling);
+                    }
+                    const selected = (val === 'instalacao' || val === 'mudanca');
+                    try {
+                      const st = (typeof getFormState === 'function') ? getFormState('instalacoes-mudancas') : {};
+                      const blocks = Array.from(equipSec.querySelectorAll('.form-block'));
+                      blocks.forEach(b => {
+                        b.querySelectorAll('input, select, textarea').forEach(el => {
+                          const key = el.name || el.id;
+                          if (el.type === 'radio' || el.type === 'checkbox') { el.checked = false; }
+                          else { el.value = ''; }
+                          try { if (key && st && typeof st === 'object') delete st[key]; } catch {}
+                        });
+                      });
+                      equipSec.querySelectorAll('.mac-list').forEach(list => {
+                        list.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+                        const rowsWrap = list.querySelector('.mac-rows');
+                        if (rowsWrap) {
+                          const rows = Array.from(rowsWrap.querySelectorAll('.mac-row'));
+                          rows.slice(1).forEach(r => r.remove());
+                        }
+                      });
+                      equipSec.querySelectorAll('.outro-list').forEach(list => {
+                        list.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+                        const rowsWrap = list.querySelector('.outro-rows');
+                        if (rowsWrap) {
+                          const rows = Array.from(rowsWrap.querySelectorAll('.outro-row'));
+                          rows.slice(1).forEach(r => r.remove());
+                        }
+                      });
+                    } catch {}
+                    const blocks = Array.from(equipSec.querySelectorAll('.form-block'));
+                    blocks.forEach(b => {
+                      if ((b.id || '') === 'equip_hint') return;
+                      if (!selected) b.setAttribute('hidden','hidden');
+                      else b.removeAttribute('hidden');
+                    });
+                    if (hint) hint.hidden = selected;
+                  }
                 } catch {}
+                // END equip section gating/reset
                 if (val !== 'mudanca') {
                   try { root.querySelectorAll('input[name="ret_equip"]').forEach(r => { r.checked = false; }); } catch {}
                   try { root.querySelectorAll('#eq_sel_ont,#eq_sel_onu,#eq_sel_rot,#eq_sel_outro').forEach(cb => cb.checked = false); } catch {}
@@ -7599,6 +7653,7 @@ try {
     };
   }
 } catch {}
+
 
 
 
