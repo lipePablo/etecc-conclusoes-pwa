@@ -2666,15 +2666,20 @@ function setTopbarMode(internal){
          + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
          + '    </div>\n'
          + '  </div>\n'
-        + '  <div class="form-block">\n'
-        + '    <label class="form-label" data-label-default="Foi inserido algum equipamento no local:" data-label-mudanca="Foi inserido algum equipamento a mais no local:">Foi inserido algum equipamento a mais no local:</label>\n'
-        + '    <div class="segmented" role="radiogroup" aria-label="Inserido equipamento a mais no local?">\n'
-        + '      <input type="radio" id="ficou_equip_sim" name="ficou_equip" value="sim">\n'
-        + '      <label for="ficou_equip_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
-        + '      <input type="radio" id="ficou_equip_nao" name="ficou_equip" value="nao">\n'
-        + '      <label for="ficou_equip_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
-        + '    </div>\n'
-        + '  </div>\n'
+         + '  <div class="form-block">\n'
+         + '    <label class="form-label" data-label-default="Foi inserido algum equipamento no local:" data-label-mudanca="Foi inserido algum equipamento a mais no local:">Foi inserido algum equipamento a mais no local:</label>\n'
+         + '    <div class="segmented" role="radiogroup" aria-label="Inserido equipamento a mais no local?">\n'
+         + '      <input type="radio" id="ficou_equip_sim" name="ficou_equip" value="sim">\n'
+         + '      <label for="ficou_equip_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
+         + '      <input type="radio" id="ficou_equip_nao" name="ficou_equip" value="nao">\n'
+         + '      <label for="ficou_equip_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
+         + '    </div>\n'
+         + '  </div>\n'
+         + '  <div class="form-block" data-when-field="ficou_equip" data-when-equals="nao" data-when-parent-field="tipo_serv" data-when-parent-equals="instalacao" data-clear-on-hide="1">\n'
+         + '    <label class="form-label" for="ficou_equip_just">Justifique o motivo de não ter inserido equipamentos.</label>\n'
+         + '    <textarea id="ficou_equip_just" name="ficou_equip_just" class="form-input--underline auto-expand" placeholder="Descreva o motivo" rows="2" data-min-height="64"></textarea>\n'
+         + '    <div class="textarea-counter">0 caracteres</div>\n'
+         + '  </div>\n'
          + '  <div class="form-block" data-when-field="ficou_equip" data-when-equals="sim" data-clear-on-hide="1">\n'
          + '    <label class="form-label">Selecione e insira o MAC dos equipamentos comodatos ou compra que foram instalados: <span class="form-hint">(múltipla escolha)</span></label>\n'
          + '    <div class="choices">\n'
@@ -6113,8 +6118,19 @@ const copyBtn = document.getElementById('btnCopiarForm');
           if (isPhoneList) {
             macs.forEach(m => { secOut.push(`- TELEFONE: ${m}`); });
           } else {
-            // Remove qualquer linha em branco anterior ao imprimir novo grupo de MACs
-            if (__withinRetiradaGroup) { try { while (secOut.length && secOut[secOut.length-1] === '') secOut.pop(); } catch {} }
+          // Remoção seletiva de linha em branco anterior ao imprimir MACs:
+          // preserva a linha em branco quando o bloco anterior indicou "O técnico não preencheu este campo."
+          if (__withinRetiradaGroup) {
+            try {
+              let __k = secOut.length - 1;
+              while (__k >= 0 && secOut[__k] === '') __k--;
+              const __prev = __k >= 0 ? String(secOut[__k] || '') : '';
+              const __wasEmptyInfo = /PREENCHEU\s+ESTE\s+CAMPO/i.test(__prev);
+              if (!__wasEmptyInfo) {
+                while (secOut.length && secOut[secOut.length-1] === '') secOut.pop();
+              }
+            } catch {}
+          }
             macs.forEach(m => { secOut.push(`- ${eqLabel} (MAC): ${m}`); });
           }
           const __nextMacQ2 = (()=>{ try { for (let j=idxB+1;j<all.length;j++){ const b=all[j]; if (!isVisible(b)) continue; if (b.querySelector('.mac-list')) { let __qN=null; for (let k=j-1;k>=0;k--){ const pb=all[k]; if (!isVisible(pb)) continue; if (pb.querySelector('.segmented') || pb.querySelector('.choices')){ const ql=(pb.querySelector('.form-label')?.textContent||'').trim(); if (ql) { __qN=ql; break; } } } return __qN; } } } catch{} return null; })(); const __sameGroup2 = prevSel && __nextMacQ2 && String(__nextMacQ2).trim().toUpperCase() === String(prevSel.q||'').trim().toUpperCase();
@@ -6207,6 +6223,10 @@ const copyBtn = document.getElementById('btnCopiarForm');
   // Normalização específica: substituir instrução de UI por cabeçalho canônico no texto copiado
   try {
     text = text.replace(/^\s*SELECIONE\s+O\s+EQUIPAMENTO\s+RETIRADO\s+E\s+INSIRA\s+SEU\s+MAC\s*:?\s*$/gmi, 'MAC DOS EQUIPAMENTOS RETIRADOS:');
+  } catch {}
+  // Garantia global: inserir linha em branco antes de "MAC DOS EQUIPAMENTOS RETIRADOS:" quando vier logo após uma linha de texto
+  try {
+    text = text.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS RETIRADOS:)/g, '$1\n\n$2');
   } catch {}
   // Ajuste: garantir espaço em branco antes de "AS FONTES FORAM RETIRADAS?" em Retirada de Equipamentos
   try {
