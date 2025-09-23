@@ -2112,11 +2112,13 @@ function setTopbarMode(internal){
         + '    </div>\n'
         + '    <div class="form-block" data-when-field="ret_casa_ocupada" data-when-equals="nao" data-clear-on-hide="1">\n'
         + '      <label class="form-label" for="ret_just_desocupada">Justifique por que a casa aparenta estar desocupada:</label>\n'
-        + '      <input id="ret_just_desocupada" name="ret_just_desocupada" type="text" class="form-input--underline" placeholder="Descreva o motivo..." />\n'
+        + '      <textarea id="ret_just_desocupada" name="ret_just_desocupada" class="form-input--underline auto-expand" placeholder="Descreva o motivo..." rows="2" data-min-height="64"></textarea>\n'
+        + '      <div class="textarea-counter">0 caracteres</div>\n'
         + '    </div>\n'
         + '    <div class="form-block" data-when-field="ret_casa_ocupada" data-when-equals="sim" data-clear-on-hide="1">\n'
         + '      <label class="form-label" for="ret_just_ocupada">Justifique por que a casa aparenta estar ocupada:</label>\n'
-        + '      <input id="ret_just_ocupada" name="ret_just_ocupada" type="text" class="form-input--underline" placeholder="Descreva..." />\n'
+        + '      <textarea id="ret_just_ocupada" name="ret_just_ocupada" class="form-input--underline auto-expand" placeholder="Descreva..." rows="2" data-min-height="64"></textarea>\n'
+        + '      <div class="textarea-counter">0 caracteres</div>\n'
         + '    </div>\n'
         + '  </div>\n'
         + '  <div class="form-block" data-when-field="ret_atendido_local" data-when-equals="sim" data-clear-on-hide="1">\n'
@@ -2181,7 +2183,7 @@ function setTopbarMode(internal){
         + '    <label class="form-label" for="descricao_os">Relato geral da ordem de serviço:</label>\n'
         + '    <textarea id="descricao_os" name="descricao_os" class="form-input--underline auto-expand" placeholder="Descreva os detalhes da execução da ordem de serviço..." rows="4" data-min-height="120"></textarea>\n'
         + '    <div class="textarea-counter">0 caracteres</div>\n'
-        + '  </div>\n'
+        + '  </div>\n' 
         + '</section>\n'
         + '<div class="form-actions">\n'
         + '  <button id="btnLimparForm" type="button" class="btn-action btn-action--gray"><i class="fa-solid fa-eraser"></i> Limpar respostas</button>\n'
@@ -2216,6 +2218,49 @@ function setTopbarMode(internal){
           } else if (exist.textContent !== css) {
             exist.textContent = css;
           }
+        } catch {}
+
+        // Retenção: remover form-blocks aninhados. Cada bloco deve ser independente.
+        try {
+          const scope = root;
+          const innerBlocks = Array.from(scope.querySelectorAll('.form-block .form-block'));
+          const __anchors = new Map();
+          innerBlocks.forEach(inner => {
+            try {
+              const outer = inner.parentElement;
+              if (!outer || !outer.classList || !outer.classList.contains('form-block')) return;
+              const pField = outer.getAttribute('data-when-field');
+              const pEquals = outer.getAttribute('data-when-equals');
+              const pIn = outer.getAttribute('data-when-in');
+              // Se o bloco interno não tem gate próprio, herda o gate do pai
+              if (!inner.hasAttribute('data-when-field') && pField && (pEquals !== null || pIn !== null)){
+                inner.setAttribute('data-when-field', pField);
+                if (pEquals !== null && pEquals !== '') inner.setAttribute('data-when-equals', pEquals);
+                if (pIn !== null && pIn !== '') inner.setAttribute('data-when-in', pIn);
+              } else if (inner.hasAttribute('data-when-field') && pField && (pEquals !== null || pIn !== null)){
+                // Caso já tenha gate próprio, adiciona gate do pai como condicional extra
+                if (!inner.hasAttribute('data-when-parent-field')) inner.setAttribute('data-when-parent-field', pField);
+                if (pEquals !== null && pEquals !== '') inner.setAttribute('data-when-parent-equals', pEquals);
+                if (pIn !== null && pIn !== '') inner.setAttribute('data-when-parent-in', pIn);
+              }
+              // Move para fora do bloco pai, preservando ordem relativa
+              const anchor = __anchors.get(outer) || outer;
+              anchor.parentNode.insertBefore(inner, anchor.nextSibling);
+              __anchors.set(outer, inner);
+              outer.__hadChildrenMoved = true;
+            } catch {}
+          });
+          // Remove blocos pais esvaziados
+          Array.from(scope.querySelectorAll('.form-block')).forEach(b => {
+            try {
+              if (b.__hadChildrenMoved){
+                const hasInner = !!b.querySelector('.form-block');
+                const hasContent = (b.textContent||'').trim() !== '';
+                if (!hasInner && !hasContent) b.remove();
+              }
+            } catch {}
+          });
+          try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('retencao-clientes', root); } catch {}
         } catch {}
       }
     },
