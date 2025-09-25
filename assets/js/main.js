@@ -93,6 +93,22 @@ let __skipNextRender = false;
               wrap2.setAttribute('data-clear-on-hide', '1');
               wrap2.innerHTML = '<div class="form-hint sinal-los-hint is-highlight">Avise o cliente sobre a necessidade de instalar uma tomada neste local.</div>';
               wrap1.insertAdjacentElement('afterend', wrap2);
+              // Ajustes solicitados: rótulo da pergunta, opções Sim/Não e regra de exibição
+              try { const lab = temBlock.querySelector('label.form-label'); if (lab) lab.textContent = 'Tem tomada para ligar o equipamento neste local:'; } catch {}
+              try { const lSim = temBlock.querySelector('label[for="tem_tomada_sim"]'); if (lSim) lSim.innerHTML = '<i class="fa-solid fa-check"></i> Sim'; } catch {}
+              try { const lNao = temBlock.querySelector('label[for=\'tem_tomada_nao\']'); if (lNao) lNao.innerHTML = '<i class="fa-solid fa-xmark"></i> N\u00e3o'; } catch {}
+              try { const extra = temBlock.querySelector('#tem_tomada_nao_nec'); if (extra) { const lbl = temBlock.querySelector('label[for="tem_tomada_nao_nec"]'); if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl); if (extra && extra.parentNode) extra.parentNode.removeChild(extra); } } catch {}
+              // Exibir pergunta de ciência quando NÃO há tomada
+              try { const w1 = root.querySelector('div.form-block[data-when-field="tem_tomada"][data-when-equals="sim"]'); if (w1) w1.setAttribute('data-when-equals','nao'); } catch {}
+              // Substituir aviso por justificativa (textarea 1 linha)
+              try {
+                const w2 = root.querySelector('div.form-block[data-when-field="cli_ciente_tomada"][data-when-equals="nao"]');
+                if (w2) {
+                  w2.innerHTML = ''
+                    + '<label class="form-label" for="cli_tomada_ciente_just">Justifique o motivo pelo qual o cliente n\u00e3o foi informado sobre esta necessidade:</label>\\n'
+                    + '  <textarea id="cli_tomada_ciente_just" name="cli_tomada_ciente_just" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>';
+                }
+              } catch {}
               try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
             }
           }
@@ -1786,7 +1802,7 @@ function setTopbarMode(internal){
         + '    <div class="form-title"><i class="fa-regular fa-square-check"></i> Conferências Técnicas</div>\n'
         + '    <div class="form-subtitle">Checklist de verificações técnicas</div>\n'
         + '  </div>\n'
-        + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,instalacao" data-clear-on-hide="1">\n'
+        + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,avaliacao_cab,instalacao" data-clear-on-hide="1">\n'
         + '    <label class="form-label">Conferiu o cabo de rede que interliga até o roteador:</label>\n'
         + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Conferiu o cabo até o roteador?">\n'
         + '      <input type="radio" id="caborede_fast" name="caborede" value="fast">\n'
@@ -3072,6 +3088,8 @@ function setTopbarMode(internal){
         + '      <label for="tipo_serv_aval">Avaliação de ponto adicional</label>\n'
         + '      <input type="radio" id="tipo_serv_inst" name="tipo_serv" value="instalacao">\n'
         + '      <label for="tipo_serv_inst">Instalação de ponto adicional</label>\n'
+        + '      <input type="radio" id="tipo_serv_aval_cab" name="tipo_serv" value="avaliacao_cab">\n'
+        + '      <label for="tipo_serv_aval_cab">Avaliação de cabeamento</label>\n'
         + '      <input type="radio" id="tipo_serv_cab" name="tipo_serv" value="cabeamento">\n'
         + '      <label for="tipo_serv_cab">Cabeamento de dispositivo</label>\n'
         + '    </div>\n'
@@ -3085,7 +3103,7 @@ function setTopbarMode(internal){
         + '      <label for="pt_viavel_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
         + '    </div>\n'
         + '  </div>\n'
-        + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,instalacao" data-clear-on-hide="1">\n'
+        + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,avaliacao_cab,instalacao" data-clear-on-hide="1">\n'
         + '    <label class="form-label">Há passagem adequada para o cabo de rede (Ex.: Conduite):</label>\n'
         + '    <div class="segmented" role="radiogroup" aria-label="Passagem adequada?">\n'
         + '      <input type="radio" id="passagem_sim" name="passagem" value="sim">\n'
@@ -3455,9 +3473,15 @@ function setTopbarMode(internal){
                   if (!lab) return;
                   const digits = String(qtEl && qtEl.value || '').replace(/\D/g,'');
                   const n = parseInt(digits||'0', 10) || 0;
-                  lab.textContent = (n > 1)
-                    ? 'Quais dispositivos foram cabeados:'
-                    : 'Qual dispositivo foi cabeado:';
+                  try {
+                    const selServ = root.querySelector('input[name="tipo_serv"]:checked');
+                    const tval = selServ ? String(selServ.value||'') : '';
+                    if (tval === 'avaliacao_cab') {
+                      lab.textContent = (n > 1) ? 'Quais dispositivos serão cabeados:' : 'Qual dispositivo será cabeado:';
+                    } else {
+                      lab.textContent = (n > 1) ? 'Quais dispositivos foram cabeados:' : 'Qual dispositivo foi cabeado:';
+                    }
+                  } catch { lab.textContent = (n > 1) ? 'Quais dispositivos foram cabeados:' : 'Qual dispositivo foi cabeado:'; }
                 } catch {}
               };
               try {
@@ -3465,6 +3489,90 @@ function setTopbarMode(internal){
                 if (qt) ['input','change','keyup','blur'].forEach(evt => qt.addEventListener(evt, updateDispLabel));
               } catch {}
               updateDispLabel();
+              try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+            } catch {}
+            // Ajustes para "Avaliação de cabeamento": compartilhar campos de cabeamento básico
+            try {
+              const applyCabEvalFields = () => {
+                try {
+                  const sel = root.querySelector('input[name="tipo_serv"]:checked');
+                  const val = sel ? String(sel.value||'') : '';
+                  const qtBlk = root.querySelector('#cd_qt_cabos')?.closest('.form-block');
+                  const quaisBlk = root.querySelector('#cd_quais_disp')?.closest('.form-block');
+                  if (qtBlk) {
+                    qtBlk.setAttribute('data-when-field','tipo_serv');
+                    qtBlk.setAttribute('data-when-in','cabeamento,avaliacao_cab');
+                    qtBlk.setAttribute('data-clear-on-hide','1');
+                  }
+                  if (quaisBlk) {
+                    quaisBlk.setAttribute('data-when-field','tipo_serv');
+                    quaisBlk.setAttribute('data-when-in','cabeamento,avaliacao_cab');
+                    quaisBlk.setAttribute('data-clear-on-hide','1');
+                  }
+                  // Reordena acima de cabometros quando avaliação de cabeamento
+                  try {
+                    if (val === 'avaliacao_cab') {
+                      const cabBlk = root.querySelector('#cabometros')?.closest('.form-block');
+                      if (cabBlk && qtBlk) {
+                        cabBlk.parentNode.insertBefore(qtBlk, cabBlk);
+                        if (quaisBlk) cabBlk.parentNode.insertBefore(quaisBlk, cabBlk);
+                      }
+                    }
+                  } catch {}
+                  // Rótulos dos campos
+                  try {
+                    const labQt = root.querySelector('label[for="cd_qt_cabos"]');
+                    if (labQt) labQt.textContent = (val === 'avaliacao_cab') ? 'Quantos cabos de rede serão passados?' : 'Quantos cabos de rede foram passados?';
+                  } catch {}
+                  try {
+                    const blk = root.querySelector('#cd_quais_disp')?.closest('.form-block');
+                    const lab = blk ? blk.querySelector('label.form-label') : null;
+                    if (lab) {
+                      const qtEl = root.querySelector('#cd_qt_cabos');
+                      const digits = String(qtEl && qtEl.value || '').replace(/\D/g,'');
+                      const n = parseInt(digits||'0', 10) || 0;
+                      const isEvalCab = (val === 'avaliacao_cab');
+                      lab.textContent = isEvalCab
+                        ? ((n > 1) ? 'Quais dispositivos serão cabeados:' : 'Qual dispositivo será cabeado:')
+                        : ((n > 1) ? 'Quais dispositivos foram cabeados:' : 'Qual dispositivo foi cabeado:');
+                    }
+                  } catch {}
+                  // Ajusta outros rótulos herdados do fluxo de ponto adicional
+                  try {
+                    const ptBlk = root.querySelector('#pt_viavel_sim')?.closest('.form-block');
+                    const labPt = ptBlk ? ptBlk.querySelector('label.form-label') : null;
+                    if (labPt) labPt.textContent = (val === 'avaliacao_cab') ? 'Cabeamento viável:' : 'Ponto adicional viável:';
+                  } catch {}
+                  try {
+                    const msBlk = root.querySelector('input[name="mesma_res"]')?.closest('.form-block');
+                    const labMs = msBlk ? msBlk.querySelector('label.form-label') : null;
+                    if (labMs) labMs.textContent = (val === 'avaliacao_cab') ? 'O cabeamento \u00e9 na mesma resid\u00eancia?' : (labMs.textContent || '');
+                  } catch {}
+                  try {
+                    const labCab = root.querySelector('label[for="cabometros"]');
+                    if (labCab) labCab.textContent = (val === 'avaliacao_cab') ? 'Possível metragem de cabo de rede total para este serviço:' : (labCab.textContent || '');
+                  } catch {}
+                  try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+                } catch {}
+              };
+              // Aplica agora e ao trocar o tipo de serviço
+              applyCabEvalFields();
+              try {
+                root.addEventListener('change', (e) => { const t=e.target; if (!t) return; if ((t.name||'')==='tipo_serv') applyCabEvalFields(); }, true);
+              } catch {}
+            } catch {}
+            // Estender visibilidade de outros blocos para "Avaliação de cabeamento"
+            try {
+              const ensureIn = (sel) => {
+                const blk = root.querySelector(sel)?.closest('.form-block');
+                if (!blk) return;
+                blk.setAttribute('data-when-field','tipo_serv');
+                blk.setAttribute('data-when-in','avaliacao,avaliacao_cab,instalacao');
+                blk.setAttribute('data-clear-on-hide','1');
+              };
+              ensureIn('#trajeto_obs');
+              ensureIn('#cabometros');
+              ensureIn('#mesma_res_sim');
               try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
             } catch {}
           }
@@ -3479,11 +3587,49 @@ function setTopbarMode(internal){
                 if (typeof setFormState === 'function') setFormState('ponto-adicional', { tipo_serv: val });
                 if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root);
                 try { if (typeof root.__applyPAServiceTexts === 'function') root.__applyPAServiceTexts(); } catch {}
+                // Limpa todos os campos condicionados por serviço ao alternar o tipo de serviço,
+                // mesmo que permaneçam visíveis após a troca
+                try {
+                  const containers = Array.from(root.querySelectorAll('[data-when-field="tipo_serv"], [data-when-parent-field="tipo_serv"]'));
+                  containers.forEach(ct => {
+                    try {
+                      const fields = ct.querySelectorAll('input, textarea, select');
+                      fields.forEach(el => {
+                        try {
+                          const tag = (el.tagName||'').toLowerCase();
+                          const type = (el.type||'').toLowerCase();
+                          const name = (el.name||'');
+                          if (type === 'radio' || type === 'checkbox') {
+                            if (el.checked) { el.checked = false; try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch {} }
+                          } else if (type === 'file') {
+                            try { el.value = ''; } catch {}
+                          } else if (tag === 'select') {
+                            try { el.selectedIndex = -1; el.value = ''; } catch {}
+                            try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch {}
+                          } else {
+                            if ((el.value||'') !== '') { el.value = ''; try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch {} try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch {} }
+                          }
+                          try { if (typeof setFormState === 'function' && name) setFormState('ponto-adicional', { [name]: '' }); } catch {}
+                        } catch {}
+                      });
+                    } catch {}
+                  });
+                } catch {}
+                // Força rótulo correto para "mesma residência" em Avaliação de cabeamento
+                try {
+                  const msBlk = root.querySelector('input[name="mesma_res"]')?.closest('.form-block');
+                  const labMs = msBlk ? msBlk.querySelector('label.form-label') : null;
+                  if (labMs) {
+                    if (val === 'avaliacao_cab') labMs.textContent = 'O cabeamento \u00e9 na mesma resid\u00eancia?';
+                    else if (val === 'avaliacao') labMs.textContent = 'O ponto adicional ser\u00e1 na mesma resid\u00eancia?';
+                    else labMs.textContent = 'O ponto adicional \u00e9 na mesma resid\u00eancia?';
+                  }
+                } catch {}
                 try {
                   const ptBlk = root.querySelector('#pt_viavel_sim')?.closest('.form-block');
                   if (ptBlk) {
                     ptBlk.setAttribute('data-when-field', 'tipo_serv');
-                    ptBlk.setAttribute('data-when-in', 'avaliacao');
+                    ptBlk.setAttribute('data-when-in', 'avaliacao,avaliacao_cab');
                     ptBlk.setAttribute('data-clear-on-hide', '1');
                     try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
                   }
@@ -3571,7 +3717,7 @@ function setTopbarMode(internal){
                 try {
                   const blocoMesma = root.querySelector('input[name="mesma_res"]')?.closest('.form-block');
                   const labMesma = blocoMesma ? blocoMesma.querySelector('label.form-label') : null;
-                  if (labMesma) labMesma.textContent = (val === 'avaliacao') ? 'O ponto adicional será na mesma residência?' : 'O ponto adicional é na mesma residência?';
+                  if (labMesma) { if (val === 'avaliacao_cab') labMesma.textContent = 'O cabeamento \\u00e9 na mesma resid\\u00eancia?'; else if (val === 'avaliacao') labMesma.textContent = 'O ponto adicional ser\\u00e1 na mesma resid\\u00eancia?'; else labMesma.textContent = 'O ponto adicional \\u00e9 na mesma resid\\u00eancia?'; }
                 } catch {}
                 // desc_onde
                 try {
@@ -3625,7 +3771,7 @@ function setTopbarMode(internal){
             const locBlock = root.querySelector('input[name="local_seguro"]')?.closest('.form-block');
             if (locBlock && !root.querySelector('#local_seguro_just')) {
               const outer = document.createElement('div');
-              outer.className = 'form-block';
+              outer.className = '';
               outer.setAttribute('data-when-field', 'tipo_serv');
               outer.setAttribute('data-when-in', 'avaliacao');
               outer.setAttribute('data-clear-on-hide', '1');
@@ -3656,7 +3802,7 @@ function setTopbarMode(internal){
               } catch {}
               try {
                 const labNao = temBlock.querySelector('label[for=\'tem_tomada_nao\']');
-                if (labNao) labNao.innerHTML = '<i class="fa-solid fa-xmark"></i> Somente cabeamento';
+                if (labNao) labNao.innerHTML = '<i class="fa-solid fa-xmark"></i> N\u00e3o';
               } catch {}
               try {
                 const labNaoNec = temBlock.querySelector('label[for="tem_tomada_nao_nec"]');
@@ -3664,18 +3810,21 @@ function setTopbarMode(internal){
               } catch {}
               try {
                 const lab2 = temBlock.querySelector('label.form-label');
-                if (lab2) lab2.textContent = 'Ser\u00e1 necess\u00e1rio uma tomada ou ser\u00e1 somente cabeamento neste caso:';
+                if (lab2) lab2.textContent = 'Tem tomada para ligar o equipamento neste local:';
+                try { const lSim = temBlock.querySelector('label[for="tem_tomada_sim"]'); if (lSim) lSim.innerHTML = '<i class="fa-solid fa-check"></i> Sim'; } catch {}
+                try { const lNao = temBlock.querySelector('label[for=\'tem_tomada_nao\']'); if (lNao) lNao.innerHTML = '<i class="fa-solid fa-xmark"></i> N\u00e3o'; } catch {}
+                try { const extra = temBlock.querySelector('#tem_tomada_nao_nec'); if (extra) { const lbl = temBlock.querySelector('label[for="tem_tomada_nao_nec"]'); if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl); if (extra && extra.parentNode) extra.parentNode.removeChild(extra); } } catch {}
               } catch {}
               if (!root.querySelector('#cli_tomada_ciente_sim')) {
                 const svcWrap = document.createElement('div');
-                svcWrap.className = 'form-block';
+                svcWrap.className = '';
                 svcWrap.setAttribute('data-when-field', 'tipo_serv');
                 svcWrap.setAttribute('data-when-in', 'avaliacao');
                 svcWrap.setAttribute('data-clear-on-hide', '1');
                 const wrap1 = document.createElement('div');
                 wrap1.className = 'form-block';
                 wrap1.setAttribute('data-when-field', 'tem_tomada');
-                wrap1.setAttribute('data-when-equals', 'sim');
+                wrap1.setAttribute('data-when-equals', 'nao');
                 wrap1.setAttribute('data-clear-on-hide', '1');
                 wrap1.innerHTML = ''
                   + '<label class="form-label">O cliente está ciente da necessidade de uma tomada no local?</label>\n'
