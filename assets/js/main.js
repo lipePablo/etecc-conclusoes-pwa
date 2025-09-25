@@ -1518,6 +1518,16 @@ function setTopbarMode(internal){
                   applySupPlaceholder();
                   root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') applySupPlaceholder(); }, true);
                 } catch {}
+                // Exibir pergunta de tomada apenas na Avaliação
+                try {
+                  const tBlk = root.querySelector('#tem_tomada_sim')?.closest('.form-block');
+                  if (tBlk) {
+                    tBlk.setAttribute('data-when-field', 'tipo_serv');
+                    tBlk.setAttribute('data-when-in', 'avaliacao');
+                    tBlk.setAttribute('data-clear-on-hide', '1');
+                    try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+                  }
+                } catch {}
                 try { updateExample3(); } catch {}
                 try { root.addEventListener('input', (e)=>{ const id=(e.target&&e.target.id)||''; if (id==='aus_data'||id==='aus_hora'||id==='aus_motivo'){ try { updateExample3(); } catch {} } }, true); } catch {}
                 try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'){ try { updateExample3(); } catch {} } }, true); } catch {}
@@ -3131,6 +3141,8 @@ function setTopbarMode(internal){
         + '    <div class="segmented" role="radiogroup" aria-label="Tem tomada?">\n'
         + '      <input type="radio" id="tem_tomada_sim" name="tem_tomada" value="sim">\n'
         + '      <label for="tem_tomada_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
+        + '      <input type="radio" id="tem_tomada_nao_nec" name="tem_tomada" value="nao_necessario">\n'
+        + '      <label for="tem_tomada_nao_nec"><i class="fa-solid fa-xmark"></i> N\u00e3o ser\u00e1 necess\u00e1rio tomada</label>\n'
         + '      <input type="radio" id="tem_tomada_nao" name="tem_tomada" value="nao">\n'
         + '      <label for="tem_tomada_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
         + '    </div>\n'
@@ -3476,6 +3488,23 @@ function setTopbarMode(internal){
                     try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
                   }
                 } catch {}
+                // Limpa campos afetados por alternância Avaliação/Instalação
+                try {
+                  const lsRadios = root.querySelectorAll('input[name="local_seguro"]');
+                  lsRadios.forEach(r => { r.checked = false; });
+                  const lsJust = root.querySelector('#local_seguro_just');
+                  if (lsJust) lsJust.value = '';
+                  // Limpa campos relativos à tomada (quando alterna serviço)
+                  const ttRadios = root.querySelectorAll('input[name="tem_tomada"]');
+                  ttRadios.forEach(r => { r.checked = false; });
+                  const cienteRadios = root.querySelectorAll('input[name="cli_ciente_tomada"]');
+                  cienteRadios.forEach(r => { r.checked = false; });
+                  const cienteJust = root.querySelector('#cli_tomada_ciente_just');
+                  if (cienteJust) cienteJust.value = '';
+
+                  try { if (typeof setFormState === 'function') setFormState('ponto-adicional', { local_seguro: '', local_seguro_just: '', tem_tomada: '', cli_ciente_tomada: '', cli_tomada_ciente_just: '' }); } catch {}
+                  try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+                } catch {}
               } catch {}
             };
             servRadiosPA.forEach(r => r.addEventListener('change', onTipoServChangePA, true));
@@ -3560,6 +3589,13 @@ function setTopbarMode(internal){
                   const blocoLocal = root.querySelector('input[name="local_seguro"]')?.closest('.form-block');
                   const labLocal = blocoLocal ? blocoLocal.querySelector('label.form-label') : null;
                   if (labLocal) labLocal.textContent = (val === 'avaliacao') ? 'Os aparelhos ficarão em local coberto e seguro?' : 'Os aparelhos estão em local coberto e seguro?';
+                  try {
+                    const labNao = blocoLocal ? blocoLocal.querySelector('label[for="local_seguro_nao"]') : null;
+                    if (labNao) {
+                      if (val === 'instalacao') labNao.innerHTML = '<i class="fa-solid fa-xmark"></i> Não, o cliente irá providenciar';
+                      else labNao.innerHTML = '<i class="fa-solid fa-xmark"></i> Não';
+                    }
+                  } catch {}
                 } catch {}
               } catch {}
             };
@@ -3584,6 +3620,28 @@ function setTopbarMode(internal){
             } catch {}
           };
           if (inp) { inp.addEventListener('input', recalc); inp.addEventListener('change', recalc); recalc(); try { if (typeof root.__applyPAServiceTexts === 'function') root.__applyPAServiceTexts(); } catch {} }
+          // Campo de justificativa para local não coberto/seguro (somente em Avaliação)
+          try {
+            const locBlock = root.querySelector('input[name="local_seguro"]')?.closest('.form-block');
+            if (locBlock && !root.querySelector('#local_seguro_just')) {
+              const outer = document.createElement('div');
+              outer.className = 'form-block';
+              outer.setAttribute('data-when-field', 'tipo_serv');
+              outer.setAttribute('data-when-in', 'avaliacao');
+              outer.setAttribute('data-clear-on-hide', '1');
+              const inner = document.createElement('div');
+              inner.className = 'form-block';
+              inner.setAttribute('data-when-field', 'local_seguro');
+              inner.setAttribute('data-when-equals', 'nao');
+              inner.setAttribute('data-clear-on-hide', '1');
+              inner.innerHTML = ''
+                + '<label class="form-label" for="local_seguro_just">Justifique então como esses equipamentos deverão ser instalados:</label>\n'
+                + '  <textarea id="local_seguro_just" name="local_seguro_just" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>';
+              outer.appendChild(inner);
+              locBlock.insertAdjacentElement('afterend', outer);
+              try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+            }
+          } catch {}
           // Ajuste do campo de tomada e inserção do aviso de ciência (Ponto Adicional)
           try {
             const temBlock = root.querySelector('input[name="tem_tomada"]')?.closest('.form-block');
@@ -3600,7 +3658,20 @@ function setTopbarMode(internal){
                 const labNao = temBlock.querySelector('label[for=\'tem_tomada_nao\']');
                 if (labNao) labNao.innerHTML = '<i class="fa-solid fa-xmark"></i> Somente cabeamento';
               } catch {}
+              try {
+                const labNaoNec = temBlock.querySelector('label[for="tem_tomada_nao_nec"]');
+                if (labNaoNec) labNaoNec.innerHTML = '<i class="fa-solid fa-xmark"></i> N\u00e3o ser\u00e1 necess\u00e1rio tomada';
+              } catch {}
+              try {
+                const lab2 = temBlock.querySelector('label.form-label');
+                if (lab2) lab2.textContent = 'Ser\u00e1 necess\u00e1rio uma tomada ou ser\u00e1 somente cabeamento neste caso:';
+              } catch {}
               if (!root.querySelector('#cli_tomada_ciente_sim')) {
+                const svcWrap = document.createElement('div');
+                svcWrap.className = 'form-block';
+                svcWrap.setAttribute('data-when-field', 'tipo_serv');
+                svcWrap.setAttribute('data-when-in', 'avaliacao');
+                svcWrap.setAttribute('data-clear-on-hide', '1');
                 const wrap1 = document.createElement('div');
                 wrap1.className = 'form-block';
                 wrap1.setAttribute('data-when-field', 'tem_tomada');
@@ -3614,14 +3685,18 @@ function setTopbarMode(internal){
                   + '    <input type="radio" id="cli_tomada_ciente_nao" name="cli_ciente_tomada" value="nao">\n'
                   + '    <label for="cli_tomada_ciente_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
                   + '  </div>';
-                temBlock.insertAdjacentElement('afterend', wrap1);
+                svcWrap.appendChild(wrap1);
                 const wrap2 = document.createElement('div');
                 wrap2.className = 'form-block';
                 wrap2.setAttribute('data-when-field', 'cli_ciente_tomada');
                 wrap2.setAttribute('data-when-equals', 'nao');
                 wrap2.setAttribute('data-clear-on-hide', '1');
-                wrap2.innerHTML = '<div class="form-hint sinal-los-hint is-highlight">Avise o cliente sobre a necessidade de instalar uma tomada neste local.</div>';
-                wrap1.insertAdjacentElement('afterend', wrap2);
+                // Solicita justificativa quando o cliente não foi informado sobre a necessidade de tomada
+                wrap2.innerHTML = ''
+                  + '<label class="form-label" for="cli_tomada_ciente_just">Justifique o motivo pelo qual o cliente não foi informado sobre esta necessidade:</label>\n'
+                  + '  <textarea id="cli_tomada_ciente_just" name="cli_tomada_ciente_just" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>';
+                svcWrap.appendChild(wrap2);
+                temBlock.insertAdjacentElement('afterend', svcWrap);
                 try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
               }
             }
