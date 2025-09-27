@@ -2698,6 +2698,34 @@ function setTopbarMode(internal){
          + '      <label for="cab_rede_sim"><i class="fa-solid fa-check"></i> Sim</label>\n'
          + '      <input type="radio" id="cab_rede_nao" name="cab_rede" value="nao">\n'
          + '      <label for="cab_rede_nao"><i class="fa-solid fa-xmark"></i> Não</label>\n'
+         + '    </div>\n' 
+         + '  </div>\n' 
+         + '  <div class="form-block" data-when-field="mud_trouxe_ont" data-when-equals="true" data-clear-on-hide="1">\n'
+         + '    <label class="form-label">MAC ONT (trazido pelo cliente):</label>\n'
+         + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="mud_ont_mac_">\n'
+         + '      <input type="text" id="mud_ont_mac_1" name="mud_ont_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+         + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="mud_ont_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+         + '    </div>\n'
+         + '  </div>\n'
+         + '  <div class="form-block" data-when-field="mud_trouxe_onu" data-when-equals="true" data-clear-on-hide="1">\n'
+         + '    <label class="form-label">MAC ONU (trazido pelo cliente):</label>\n'
+         + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="mud_onu_mac_">\n'
+         + '      <input type="text" id="mud_onu_mac_1" name="mud_onu_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+         + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="mud_onu_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+         + '    </div>\n'
+         + '  </div>\n'
+         + '  <div class="form-block" data-when-field="mud_trouxe_rot" data-when-equals="true" data-clear-on-hide="1">\n'
+         + '    <label class="form-label">MAC Roteador (trazido pelo cliente):</label>\n'
+         + '    <div class="mac-list" data-mac-list="1" data-mac-prefix="mud_rot_mac_">\n'
+         + '      <input type="text" id="mud_rot_mac_1" name="mud_rot_mac_1" class="form-input--underline" placeholder="Digite..." />\n'
+         + '      <button type="button" class="btn-ghost mac-add" data-mac-prefix="mud_rot_mac_"><i class="fa-solid fa-plus"></i> Adicionar outro MAC</button>\n'
+         + '    </div>\n'
+         + '  </div>\n'
+         + '  <div class="form-block" data-when-field="mud_trouxe_outro" data-when-equals="true" data-clear-on-hide="1">\n'
+         + '    <label class="form-label">Descreva os outros equipamentos trazidos:</label>\n'
+         + '    <div class="outro-list" data-outro-list="1" data-outro-name-prefix="mud_outro_nome_" data-outro-mac-prefix="mud_outro_mac_">\n'
+         + '      <div class="outro-rows"></div>\n'
+         + '      <button type="button" class="btn-ghost outro-add"><i class="fa-solid fa-plus"></i> Adicionar outro equipamento</button>\n'
          + '    </div>\n'
          + '  </div>\n'
          + '  <div class="form-block" data-when-field="cab_rede" data-when-equals="sim" data-clear-on-hide="1">\n'
@@ -2999,6 +3027,29 @@ function setTopbarMode(internal){
             servRadiosIM.forEach(r => r.addEventListener('change', onTipoServChangeIM, true));
             onTipoServChangeIM();
           }
+        } catch {}
+
+        // Reposiciona blocos de MAC trazidos pelo cliente para logo abaixo do bloco de escolhas
+        try {
+          const moveMudTrouxeBlocks = () => {
+            try {
+              const base = root.querySelector('#mud_trouxe_outro')?.closest('.form-block')
+                        || root.querySelector('#mud_trouxe_ont')?.closest('.form-block');
+              if (!base) return;
+              const getBlk = (name) => root.querySelector('.form-block[data-when-field="'+name+'"]');
+              const order = ['mud_trouxe_ont','mud_trouxe_onu','mud_trouxe_rot','mud_trouxe_outro'];
+              let anchor = base;
+              order.forEach(n => {
+                const blk = getBlk(n);
+                if (blk && anchor && blk !== anchor.nextElementSibling) {
+                  anchor.insertAdjacentElement('afterend', blk);
+                  anchor = blk;
+                }
+              });
+              try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('instalacoes-mudancas', root); } catch {}
+            } catch {}
+          };
+          moveMudTrouxeBlocks();
         } catch {}
 
         // Ajuste de rótulo no formulário copiado: "EQUIPAMENTOS INSERIDOS:" quando SIM; caso NÃO, exibir pergunta completa
@@ -3787,6 +3838,76 @@ function setTopbarMode(internal){
               locBlock.insertAdjacentElement('afterend', outer);
               try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
             }
+          } catch {}
+          /* Ajustes solicitados para a pergunta de local coberto/seguro no Ponto Adicional */
+          try {
+            const upgradeLocalSeguro = () => {
+              try {
+                const selSrv = root.querySelector('input[name="tipo_serv"]:checked');
+                const val = (selSrv && (selSrv.value || '').toLowerCase()) || '';
+                const blk = root.querySelector('input[name="local_seguro"]')?.closest('.form-block');
+                if (!blk) return;
+                const labLocal = blk.querySelector('label.form-label');
+                if (labLocal) labLocal.textContent = (val === 'avaliacao') ? 'Os equipamentos ficarão em local coberto e seguro?' : 'Os equipamentos estão em local coberto e seguro?';
+                const seg = blk.querySelector('.segmented[aria-label="Local coberto e seguro?"]');
+                const ensurePair = (id, value, html, afterSelector) => {
+                  try {
+                    if (!seg || document.getElementById(id)) return;
+                    const inp = document.createElement('input'); inp.type = 'radio'; inp.id = id; inp.name = 'local_seguro'; inp.value = value;
+                    const lab = document.createElement('label'); lab.setAttribute('for', id); lab.innerHTML = html;
+                    if (afterSelector) {
+                      const ref = seg.querySelector(afterSelector);
+                      if (ref) { ref.insertAdjacentElement('afterend', inp); inp.insertAdjacentElement('afterend', lab); }
+                      else { seg.appendChild(inp); seg.appendChild(lab); }
+                    } else { seg.appendChild(inp); seg.appendChild(lab); }
+                  } catch {}
+                };
+                ensurePair('local_seguro_sim_cli', 'sim_cli', '<i class="fa-solid fa-check"></i> Sim, o cliente irá providenciar', 'label[for="local_seguro_sim"]');
+                ensurePair('local_seguro_nao_equip', 'nao_equip', '<i class="fa-solid fa-circle-xmark"></i> Não há equipamentos', 'label[for="local_seguro_sim_cli"], label[for="local_seguro_sim"]');
+                ensurePair('local_seguro_nao_cli', 'nao_cli', '<i class="fa-solid fa-xmark"></i> Não, o cliente irá providenciar', 'label[for="local_seguro_nao"]');
+                const opt = (id) => ({ input: root.querySelector('#' + id), label: root.querySelector('label[for="' + id + '"]') });
+                const setVis = (el, show) => { if (!el) return; try { el.style.display = show ? '' : 'none'; } catch {} };
+                const clearIfHidden = (inp, show) => { try { if (inp && !show && inp.checked) { inp.checked = false; inp.dispatchEvent(new Event('change', { bubbles: true })); } } catch {} };
+                const oSim = opt('local_seguro_sim');
+                const oSimCli = opt('local_seguro_sim_cli');
+                const oNaoEq = opt('local_seguro_nao_equip');
+                const oNao = opt('local_seguro_nao');
+                const oNaoCli = opt('local_seguro_nao_cli');
+                if (oSim?.label) oSim.label.innerHTML = '<i class="fa-solid fa-check"></i> Sim';
+                if (val === 'avaliacao') {
+                  setVis(oSimCli.input, true); setVis(oSimCli.label, true);
+                  setVis(oNaoEq.input, false); setVis(oNaoEq.label, false); clearIfHidden(oNaoEq.input, false);
+                  setVis(oNaoCli.input, false); setVis(oNaoCli.label, false); clearIfHidden(oNaoCli.input, false);
+                  if (oNao?.label) oNao.label.innerHTML = '<i class="fa-solid fa-xmark"></i> Não';
+                } else if (val === 'instalacao') {
+                  setVis(oSimCli.input, false); setVis(oSimCli.label, false); clearIfHidden(oSimCli.input, false);
+                  if (oNaoEq?.label) oNaoEq.label.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Não há equipamentos';
+                  setVis(oNaoEq.input, true); setVis(oNaoEq.label, true);
+                  if (oNao?.label) oNao.label.innerHTML = '<i class="fa-solid fa-xmark"></i> Não';
+                  if (oNaoCli?.label) oNaoCli.label.innerHTML = '<i class="fa-solid fa-xmark"></i> Não, o cliente irá providenciar';
+                  setVis(oNaoCli.input, true); setVis(oNaoCli.label, true);
+                } else {
+                  setVis(oSimCli.input, false); setVis(oSimCli.label, false); clearIfHidden(oSimCli.input, false);
+                  setVis(oNaoEq.input, false); setVis(oNaoEq.label, false); clearIfHidden(oNaoEq.input, false);
+                  setVis(oNaoCli.input, false); setVis(oNaoCli.label, false); clearIfHidden(oNaoCli.input, false);
+                  if (oNao?.label) oNao.label.innerHTML = '<i class="fa-solid fa-xmark"></i> Não';
+                }
+                try {
+                  const justLab = root.querySelector('label[for="local_seguro_just"]');
+                  if (justLab) {
+                    if (val === 'avaliacao') justLab.textContent = 'Justifique então como esses equipamentos deverão ser instalados:';
+                    else if (val === 'instalacao') justLab.textContent = 'Por que os equipamentos foram instalados fora de um local seguro? Foi autorizado por algum supervisor? Justifique.';
+                  }
+                } catch {}
+                try {
+                  const out = root.querySelector('[data-when-field="tipo_serv"][data-when-in="avaliacao"]');
+                  if (out) out.setAttribute('data-when-in', 'avaliacao,instalacao');
+                } catch {}
+              } catch {}
+            };
+            const srvRadios = root.querySelectorAll('input[name="tipo_serv"]');
+            srvRadios.forEach(r => r.addEventListener('change', upgradeLocalSeguro, true));
+            upgradeLocalSeguro();
           } catch {}
           // Ajuste do campo de tomada e inserção do aviso de ciência (Ponto Adicional)
           try {
@@ -5727,6 +5848,34 @@ function updateConditionalVisibility(formId, container){
     // não restaura do localStorage; começa limpo a cada abertura
     wireFormPersistence(formId, container);
     if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
+    // Correção: garantir o aviso em "EQUIPAMENTOS DO ATENDIMENTO" ao abrir do zero ou pelo histórico
+    try {
+      if (formId === 'instalacoes-mudancas') {
+        const equipTitle = Array.from(container.querySelectorAll('.form-title')).find(t => /EQUIPAMENTOS DO ATENDIMENTO/.test(t.textContent || ''));
+        const equipSec = equipTitle ? equipTitle.closest('section.form-section') : null;
+        if (equipSec) {
+          // Garante que o hint exista
+          let hint = equipSec.querySelector('#equip_hint');
+          if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'equip_hint';
+            hint.className = 'form-hint sinal-los-hint is-highlight';
+            hint.textContent = 'Primeiro selecione o serviço executado para que as opções sejam mostradas nesta seção.';
+            const header = equipSec.querySelector('.form-header');
+            if (header && header.parentNode) header.parentNode.insertBefore(hint, header.nextSibling);
+          }
+          // Avalia seleção atual
+          const sel = container.querySelector('input[name="tipo_serv"]:checked');
+          const val = sel ? String(sel.value || '') : '';
+          const selected = (val === 'instalacao' || val === 'mudanca');
+          if (hint) hint.hidden = selected ? true : false;
+          try {
+            const blocks = Array.from(equipSec.querySelectorAll('.form-block'));
+            blocks.forEach(b => { if ((b.id || '') === 'equip_hint') return; if (!selected) b.setAttribute('hidden','hidden'); else b.removeAttribute('hidden'); });
+          } catch {}
+        }
+      }
+    } catch {}
     const clearBtn = document.getElementById('btnLimparForm');
 if (clearBtn) clearBtn.addEventListener('click', async function(){
   const ok = await (window.__appModal?.showConfirm('Deseja realmente limpar todas as respostas? Esta ação não pode ser desfeita.', { okText: 'Limpar', cancelText: 'Cancelar', danger: true }) || Promise.resolve(false));
@@ -6626,6 +6775,15 @@ const copyBtn = document.getElementById('btnCopiarForm');
   if (((container&&container.__formId)||'') === 'instalacoes-mudancas' || ((container&&container.__formId)||'') === 'ponto-adicional' || ((container&&container.__formId)||'') === 'suporte-tecnico-carro' || ((container&&container.__formId)||'') === 'suporte-moto') {
     text = postProcessInstalacoesMudancas(text);
   }
+  // Garantir espaçamento após o último MAC da seção em "Instalações e Mudanças de Endereço"
+  try {
+    const __fid2 = ((container && container.__formId) || '');
+    if (__fid2 === 'instalacoes-mudancas') {
+      // Se uma linha de MAC for seguida imediatamente por uma linha que não começa com "- ",
+      // insere uma linha em branco para separar visualmente da próxima seção.
+      text = text.replace(/(- .*?\(MAC\):[^\n]*\n)(?![-\n])/g, '$1\n');
+    }
+  } catch {}
   // Normalização específica: substituir instrução de UI por cabeçalho canônico no texto copiado
   try {
     text = text.replace(/^\s*SELECIONE\s+O\s+EQUIPAMENTO\s+RETIRADO\s+E\s+INSIRA\s+SEU\s+MAC\s*:?\s*$/gmi, 'MAC DOS EQUIPAMENTOS RETIRADOS:');
@@ -7405,6 +7563,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
           }
         } catch {} }; };
         const pn = persistOutro(nome); const pm = persistOutro(mac);
+        try { nome.addEventListener('input', pn); nome.addEventListener('change', pn); } catch {}
+        try { mac.addEventListener('input', pm); mac.addEventListener('change', pm); } catch {}
       } catch {}
       macWrap.appendChild(mac);
       if (canDelete){
@@ -7871,13 +8031,28 @@ function setupAutoExpand(root){
     try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
   }
 
-  // Formatação para cópia: adiciona 'dBm' ao valor digitado (replica Projeto - Moto)
+  // Formatação para cópia: normaliza 'Sinal da fibra' conforme regras solicitadas
   function formatSinalFibraForCopy(raw){
     try {
-      const digits = String(raw || '').replace(/\D/g,'').slice(0,4);
-      if (!digits) return '';
-      const s = digits.padStart(4,'0');
-      return `-${s.slice(0,2)}.${s.slice(2)}dBm`;
+      const d = String(raw || '').replace(/\D/g,'');
+      if (!d) return '';
+      const n = d.length;
+      let intPart = '00';
+      let fracPart = '00';
+      if (n === 1) {
+        intPart = ('0' + d);
+        fracPart = '00';
+      } else if (n === 2) {
+        intPart = d;
+        fracPart = '00';
+      } else {
+        intPart = (d.slice(0,2).padStart(2,'0'));
+        const rest = d.slice(2,4);
+        if (rest.length === 0) fracPart = '00';
+        else if (rest.length === 1) fracPart = rest + '0';
+        else fracPart = rest;
+      }
+      return `-${intPart}.${fracPart}dBm`;
     } catch { return raw || ''; }
   }
 
