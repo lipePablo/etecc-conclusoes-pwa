@@ -3973,6 +3973,107 @@ function setTopbarMode(internal){
           } catch {}
         } catch {}
 
+        // Exclusividade do grupo "estão no local" com "Nenhum" + confirmação e limpeza
+        try {
+          const get = (id) => root.querySelector('#' + id);
+          const noneEl = get('estao_sel_none');
+          const normals = ['estao_sel_ont','estao_sel_onu','estao_sel_rot','estao_sel_outro'].map(get).filter(Boolean);
+          const groupBox = (noneEl && (noneEl.closest('.choices') || noneEl.closest('.form-block'))) || null;
+          const showInlineAlert = (message) => {
+            try {
+              if (!groupBox) return;
+              const next = groupBox.nextElementSibling;
+              if (next && next.classList && (next.classList.contains('sinal-los-hint') || next.classList.contains('inline-alert'))) next.remove();
+              const el = document.createElement('div');
+              el.className = 'form-hint sinal-los-hint is-highlight';
+              if (!el.id) el.id = 'los_hint_' + Math.random().toString(36).slice(2);
+              el.textContent = message;
+              groupBox.insertAdjacentElement('afterend', el);
+              const close = () => { try { el.remove(); } catch {} };
+              el.addEventListener('click', close, { once: true });
+              setTimeout(close, 5000);
+            } catch {}
+          };
+          const clearMacListsByPrefixes = (prefixes) => {
+            try {
+              prefixes.forEach(pref => {
+                root.querySelectorAll('input[name^="' + pref + '"]').forEach(inp => { inp.value = ''; });
+                const list = root.querySelector('.mac-list[data-mac-prefix="' + pref + '"]');
+                if (list) {
+                  const rows = list.querySelectorAll('.mac-row');
+                  if (rows && rows.length) { Array.from(rows).slice(1).forEach(r => r.remove()); }
+                  const first = list.querySelector('.mac-row input') || list.querySelector('input');
+                  if (first) first.value = '';
+                }
+              });
+              // Limpa "outros" no local
+              root.querySelectorAll('.outro-list[data-outro-list]').forEach(list => {
+                list.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+                const rowsWrap = list.querySelector('.outro-rows');
+                if (rowsWrap) {
+                  const rows = Array.from(rowsWrap.querySelectorAll('.outro-row'));
+                  rows.slice(1).forEach(r => r.remove());
+                }
+              });
+            } catch {}
+          };
+          if (noneEl) {
+            // Atualiza condicionais ao marcar/desmarcar as opções do grupo
+            try {
+              ['#estao_sel_ont','#estao_sel_onu','#estao_sel_rot','#estao_sel_outro','#estao_sel_none'].forEach(sel => {
+                const el = root.querySelector(sel);
+                if (el) el.addEventListener('change', () => { try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {} });
+              });
+            } catch {}
+            // Bloqueia clique em outros quando "Nenhum" estiver marcado (mensagem)
+            root.addEventListener('click', (e) => {
+              try {
+                const t = e.target;
+                if (!t || t.tagName !== 'INPUT' || t.type !== 'checkbox') return;
+                if (!normals.some(n => n === t) && t !== noneEl) return;
+                if (t !== noneEl && noneEl.checked) {
+                  showInlineAlert('Desmarque a opção "Nenhum" para selecionar algum equipamento.');
+                }
+              } catch {}
+            }, true);
+            // Enforce exclusividade + confirmação
+            root.addEventListener('change', async (e) => {
+              try {
+                const t = e.target; if (!t || t.type !== 'checkbox') return;
+                if (t === noneEl) {
+                  // Ao DESMARCAR 'Nenhum', remover aviso inline imediatamente
+                  try {
+                    if (!noneEl.checked && groupBox) {
+                      const next = groupBox.nextElementSibling;
+                      if (next && next.classList && (next.classList.contains('sinal-los-hint') || next.classList.contains('inline-alert'))) next.remove();
+                    }
+                  } catch {}
+                  if (noneEl.checked && normals.some(n => n && n.checked)) {
+                    const msgNenhum = 'Ao selecionar "Nenhum", as opções marcadas serão desmarcadas e os campos de MAC serão limpos. Confirmar?';
+                    const ok = (await (window.__appModal?.showConfirm(msgNenhum, { okText: 'Confirmar', cancelText: 'Cancelar', danger: true }) || Promise.resolve(null))) ?? window.confirm(msgNenhum);
+                    if (!ok) { noneEl.checked = false; try { const key = noneEl.name || noneEl.id; if (key && typeof setFormState === 'function') setFormState('ponto-adicional', { [key]: false }); } catch {}; return; }
+                    // Desmarca outros e limpa
+                    normals.forEach(n => { if (n && n.checked) { n.checked = false; try { const key = n.name || n.id; if (key && typeof setFormState === 'function') setFormState('ponto-adicional', { [key]: false }); } catch {} } });
+                    clearMacListsByPrefixes(['estao_ont_mac_','estao_onu_mac_','estao_rot_mac_','estao_outro_mac_']);
+                    try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+                  }
+                } else if (normals.includes(t)) {
+                  if (noneEl.checked) {
+                    // mantém Nenhum exclusivo
+                    t.checked = false;
+                    try { const key = t.name || t.id; if (key && typeof setFormState === 'function') setFormState('ponto-adicional', { [key]: false }); } catch {}
+                    showInlineAlert('Desmarque a opção "Nenhum" para selecionar algum equipamento.');
+                  } else {
+                    // algum normal foi marcado: garante Nenhum desmarcado
+                    if (noneEl.checked) { noneEl.checked = false; try { const key = noneEl.name || noneEl.id; if (key && typeof setFormState === 'function') setFormState('ponto-adicional', { [key]: false }); } catch {} }
+                  }
+                  try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('ponto-adicional', root); } catch {}
+                }
+              } catch {}
+            });
+          }
+        } catch {}
+
         // Cabeamento embutido: controla cd_qt_cabos -> cd_cabos_multi e aplica condicionais
         try {
           const qt = root.querySelector('#cd_qt_cabos');
