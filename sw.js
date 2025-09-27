@@ -1,8 +1,8 @@
-﻿const CACHE_NAME = 'etecc-conclusoes-v4.2.7';
+const CACHE_NAME = 'etecc-conclusoes-v4.2.9';
 const OFFLINE_URL = '/offline.html';
 const VERSION_URL = '/version.json';
 
-// Assets que devem ser sempre cached (core da aplicaÃ§Ã£o)
+// Assets que devem ser sempre cached (core da aplicação)
 const CORE_CACHE = [
   '/',
   '/index.html',
@@ -57,13 +57,13 @@ self.addEventListener('activate', event => {
 
 // Interceptar requests
 self.addEventListener('fetch', event => {
-  // SÃ³ interceptar requests HTTP/HTTPS
+  // Só interceptar requests HTTP/HTTPS
   if (!event.request.url.startsWith('http')) return;
 
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Retorna do cache se disponÃ­vel
+        // Retorna do cache se disponível
         if (response) {
           return response;
         }
@@ -75,7 +75,7 @@ self.addEventListener('fetch', event => {
 
           return fetch(event.request)
             .then(response => {
-              // Verifica se Ã© uma resposta vÃ¡lida
+              // Verifica se é uma resposta válida
               if (!response || response.status !== 200 || response.type !== 'basic') {
                 return response;
               }
@@ -98,7 +98,7 @@ self.addEventListener('fetch', event => {
         // Para outros recursos, busca online
         return fetch(event.request)
           .catch(() => {
-            // Se estiver offline e for uma navegaÃ§Ã£o, mostra pÃ¡gina offline
+            // Se estiver offline e for uma navegação, mostra página offline
             if (event.request.mode === 'navigate') {
               return caches.match(OFFLINE_URL) || caches.match('/');
             }
@@ -110,13 +110,13 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Verificar versÃ£o remota periodicamente
+// Verificar versão remota periodicamente
 async function checkForUpdates() {
   try {
     const response = await fetch(VERSION_URL, { cache: 'no-cache' });
     const versionData = await response.json();
 
-    // Notificar clientes sobre verificaÃ§Ã£o de versÃ£o
+    // Notificar clientes sobre verificação de versão
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
       client.postMessage({
@@ -125,11 +125,11 @@ async function checkForUpdates() {
       });
     });
   } catch (error) {
-    console.log('Erro ao verificar versÃ£o:', error);
+    console.log('Erro ao verificar versão:', error);
   }
 }
 
-// Verificar atualizaÃ§Ãµes a cada 30 minutos
+// Verificar atualizações a cada 30 minutos
 setInterval(checkForUpdates, 10 * 60 * 1000);
 
 // Escutar mensagens do app principal
@@ -149,11 +149,11 @@ self.addEventListener('message', event => {
   }
 });
 
-// Notificar sobre atualizaÃ§Ãµes
+// Notificar sobre atualizações
 self.addEventListener('updatefound', () => {
-  console.log('Nova versÃ£o do Service Worker encontrada');
+  console.log('Nova versão do Service Worker encontrada');
 
-  // Notifica todos os clientes sobre a atualizaÃ§Ã£o
+  // Notifica todos os clientes sobre a atualização
   self.clients.matchAll().then(clients => {
     clients.forEach(client => {
       client.postMessage({
@@ -162,8 +162,4 @@ self.addEventListener('updatefound', () => {
     });
   });
 });
-
-
-
-
 

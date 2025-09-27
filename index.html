@@ -80,7 +80,7 @@
       </div>
       <div class="loading-text">
         <div class="loading-subtitle">Carregando aplicativo...</div>
-        <div class="loading-version">Versão <span id="loadingVersion">4.2.7</span></div>
+        <div class="loading-version">Versão <span id="loadingVersion">4.2.9</span></div>
       </div>
     </div>
   </div>
@@ -300,8 +300,12 @@
         </a>
         <div class="menu-item" style="opacity: 0.6; cursor: default;">
           <i class="fa-solid fa-code-branch"></i>
-          <span>Versão <span id="currentVersion">4.2.7</span></span>
+          <span>Versão <span id="currentVersion">4.2.9</span></span>
         </div>
+        <a class="menu-item" id="menuForceUpdate" href="#">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Forçar Atualizações</span>
+        </a>
       </div>
     </div>
   </aside>
@@ -356,7 +360,7 @@
 
   <!-- PWA Service Worker -->
   <script>
-    let currentAppVersion = '4.2.7';
+    let currentAppVersion = '4.2.9';
     let versionData = null;
 
     // Sistema de carregamento
@@ -564,6 +568,16 @@
       try {
         var mvh = document.getElementById('menuVersionHistory');
         if (mvh) mvh.addEventListener('click', function(e){ e.preventDefault(); showVersionHistory(); });
+      } catch (e) {}
+
+      // Forçar Atualizações: limpa completamente o localStorage e recarrega
+      try {
+        var mfu = document.getElementById('menuForceUpdate');
+        if (mfu) mfu.addEventListener('click', function(e){
+          e.preventDefault();
+          try { localStorage.clear(); } catch {}
+          location.reload();
+        });
       } catch (e) {}
 
       // Fechar modal de versões
