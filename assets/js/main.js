@@ -5170,6 +5170,107 @@ function setTopbarMode(internal){
         + '  <button id="btnCopiarForm" type="button" class="btn-action btn-action--red"><i class="fa-solid fa-copy"></i> Copiar</button>\n'
         + '</div>';
 
+        // Exclusividade do grupo "equipamento retirado" com "Nenhum" + confirmação e limpeza
+        try {
+          const get = (id) => root.querySelector('#' + id);
+          const noneEl = get('eq_sel_nenhum_ret');
+          const normals = ['eq_sel_ont','eq_sel_onu','eq_sel_rot','eq_sel_outro'].map(get).filter(Boolean);
+          const groupBox = (noneEl && (noneEl.closest('.choices') || noneEl.closest('.form-block'))) || null;
+          const showInlineAlert = (message) => {
+            try {
+              if (!groupBox) return;
+              const next = groupBox.nextElementSibling;
+              if (next && next.classList && (next.classList.contains('sinal-los-hint') || next.classList.contains('inline-alert'))) next.remove();
+              const el = document.createElement('div');
+              el.className = 'form-hint sinal-los-hint is-highlight';
+              if (!el.id) el.id = 'los_hint_' + Math.random().toString(36).slice(2);
+              el.textContent = message;
+              groupBox.insertAdjacentElement('afterend', el);
+              const close = () => { try { el.remove(); } catch {} };
+              el.addEventListener('click', close, { once: true });
+              setTimeout(close, 5000);
+            } catch {}
+          };
+          const clearMacListsByPrefixes = (prefixes) => {
+            try {
+              prefixes.forEach(pref => {
+                root.querySelectorAll('input[name^="' + pref + '"]').forEach(inp => { inp.value = ''; });
+                const list = root.querySelector('.mac-list[data-mac-prefix="' + pref + '"]');
+                if (list) {
+                  const rows = list.querySelectorAll('.mac-row');
+                  if (rows && rows.length) { Array.from(rows).slice(1).forEach(r => r.remove()); }
+                  const first = list.querySelector('.mac-row input') || list.querySelector('input');
+                  if (first) first.value = '';
+                }
+              });
+              // Limpa também entradas de "outros" se existirem
+              root.querySelectorAll('.outro-list[data-outro-list]').forEach(list => {
+                list.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+                const rowsWrap = list.querySelector('.outro-rows');
+                if (rowsWrap) {
+                  const rows = Array.from(rowsWrap.querySelectorAll('.outro-row'));
+                  rows.slice(1).forEach(r => r.remove());
+                }
+              });
+            } catch {}
+          };
+          if (noneEl) {
+            // Atualiza condicionais ao marcar/desmarcar as opções do grupo
+            try {
+              ['#eq_sel_ont','#eq_sel_onu','#eq_sel_rot','#eq_sel_outro','#eq_sel_nenhum_ret'].forEach(sel => {
+                const el = root.querySelector(sel);
+                if (el) el.addEventListener('change', () => { try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('inviabilidade-tecnica', root); } catch {} });
+              });
+            } catch {}
+            // Bloqueia clique em outros quando "Nenhum" estiver marcado (mensagem)
+            root.addEventListener('click', (e) => {
+              try {
+                const t = e.target;
+                if (!t || t.tagName !== 'INPUT' || t.type !== 'checkbox') return;
+                if (!normals.some(n => n === t) && t !== noneEl) return;
+                if (t !== noneEl && noneEl.checked) {
+                  showInlineAlert('Desmarque a opção "Nenhum" para selecionar algum equipamento.');
+                }
+              } catch {}
+            }, true);
+            // Enforce exclusividade + confirmação
+            root.addEventListener('change', async (e) => {
+              try {
+                const t = e.target; if (!t || t.type !== 'checkbox') return;
+                if (t === noneEl) {
+                  // Ao DESMARCAR 'Nenhum', remover aviso inline imediatamente
+                  try {
+                    if (!noneEl.checked && groupBox) {
+                      const next = groupBox.nextElementSibling;
+                      if (next && next.classList && (next.classList.contains('sinal-los-hint') || next.classList.contains('inline-alert'))) next.remove();
+                    }
+                  } catch {}
+                  if (noneEl.checked && normals.some(n => n && n.checked)) {
+                    const msgNenhum = 'Ao selecionar "Nenhum", as opções marcadas serão desmarcadas e os campos de MAC serão limpos. Confirmar?';
+                    const ok = (await (window.__appModal?.showConfirm(msgNenhum, { okText: 'Confirmar', cancelText: 'Cancelar', danger: true }) || Promise.resolve(null))) ?? window.confirm(msgNenhum);
+                    if (!ok) { noneEl.checked = false; try { const key = noneEl.name || noneEl.id; if (key && typeof setFormState === 'function') setFormState('inviabilidade-tecnica', { [key]: false }); } catch {}; return; }
+                    // Desmarca outros e limpa
+                    normals.forEach(n => { if (n && n.checked) { n.checked = false; try { const key = n.name || n.id; if (key && typeof setFormState === 'function') setFormState('inviabilidade-tecnica', { [key]: false }); } catch {} } });
+                    clearMacListsByPrefixes(['ont_mac_','onu_mac_','rot_mac_']);
+                    try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('inviabilidade-tecnica', root); } catch {}
+                  }
+                } else if (normals.includes(t)) {
+                  if (noneEl.checked) {
+                    // mantém Nenhum exclusivo
+                    t.checked = false;
+                    try { const key = t.name || t.id; if (key && typeof setFormState === 'function') setFormState('inviabilidade-tecnica', { [key]: false }); } catch {}
+                    showInlineAlert('Desmarque a opção "Nenhum" para selecionar algum equipamento.');
+                  } else {
+                    // algum normal foi marcado: garante Nenhum desmarcado
+                    if (noneEl.checked) { noneEl.checked = false; try { const key = noneEl.name || noneEl.id; if (key && typeof setFormState === 'function') setFormState('inviabilidade-tecnica', { [key]: false }); } catch {} }
+                  }
+                  try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility('inviabilidade-tecnica', root); } catch {}
+                }
+              } catch {}
+            });
+          }
+        } catch {}
+
         // Máscara e cálculo de metragem (apenas para cabeamento de rede; fibra não tem custo)
         try {
           const inp = root.querySelector('#cabometros');
@@ -6883,6 +6984,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
       // Se uma linha de MAC for seguida imediatamente por uma linha que não começa com "- ",
       // insere uma linha em branco para separar visualmente da próxima seção.
       text = text.replace(/(- .*?\(MAC\):[^\n]*\n)(?![-\n])/g, '$1\n');
+    }
+    if (__fid2 === 'inviabilidade-tecnica') {
+      // Se a última linha de MAC for seguida imediatamente por um cabeçalho (linhas que iniciam com "-- "),
+      // insere uma linha em branco para evitar que a seção seguinte (ex.: "-- INDICAÇÕES --") fique colada.
+      text = text.replace(/(- .*?\(MAC\):[^\n]*\n)(?=-- )/gm, '$1\n');
     }
   } catch {}
   // Normalização específica: substituir instrução de UI por cabeçalho canônico no texto copiado
