@@ -6217,9 +6217,6 @@ function postProcessInstalacoesMudancas(text) {
       // Espaço acima do título da seção INDICAÇÕES
       out = out.replace(/([^\n])\n(-- INDICAÇÕES --)/g, '$1\n\n$2');
       out = out.replace(/(-- AJUDA INTERNA --)\n\s*\n/g, '$1\n');
-      // Ajuste específico: não deixar linha em branco imediatamente após o título da seção "EQUIPAMENTOS DO ATENDIMENTO"
-      // Mantém os espaços em branco apenas entre perguntas e entre seções
-      out = out.replace(/(-- EQUIPAMENTOS DO ATENDIMENTO --)\n\s*\n/g, '$1\n');
       // Caso solicitado: garantir linha em branco após "FOI NECESSÁRIO A TROCA DE EQUIPAMENTO?" quando resposta = Sim
       out = out.replace(/(FOI NECESS[ÁA]RIO A TROCA DE EQUIPAMENTO[S]?\?\s*\n\s*Sim)\s*\n(\s*MAC DOS EQUIPAMENTOS RETIRADOS:)/i, '$1\n\n$2');
     } catch {}
@@ -7002,14 +6999,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
   try {
     text = text.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS RETIRADOS:)/g, '$1\n\n$2');
   } catch {}
-  // Remoção específica: não deixar linha em branco logo após o título da seção
-  // "-- EQUIPAMENTOS DO ATENDIMENTO --" no formulário de Instalações e Mudanças de Endereço
-  try {
-    const __fid = ((container && container.__formId) || '');
-    if (__fid === 'instalacoes-mudancas') {
-      text = text.replace(/(-- EQUIPAMENTOS DO ATENDIMENTO --)\n\s*\n(?=(EQUIPAMENTOS INSERIDOS:|MAC DOS EQUIPAMENTOS RETIRADOS:))/g, '$1\n');
-    }
-  } catch {}
+  
   // Ajuste: garantir espaço em branco antes de "AS FONTES FORAM RETIRADAS?" em Retirada de Equipamentos
   try {
     const __fid = ((container && container.__formId) || '');
@@ -7023,24 +7013,28 @@ const copyBtn = document.getElementById('btnCopiarForm');
     text = text.replace(/^\s*QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL:?/gmi, 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:');
   } catch {}
 
-  // Headings spacing mask: ensure 2 blank lines above every "-- ... --" title (except the first),
-  // and 1 blank line below each title, across all copied forms
+  // Headings spacing mask: ensure 2 blank lines (duas linhas vazias) acima de cada título "-- ... --"
+  // (exceto o primeiro título), e 1 linha vazia abaixo de cada título, em todos os formulários copiados
+  // (exceto comunicado de ausência)
   try {
-    const headerRe = /^-- [^\n]+ --$/gm;
-    const headers = text.match(headerRe) || [];
-    if (headers.length) {
-      const first = headers[0];
-      const sentinel = '__HDR_FIRST__' + Math.random().toString(36).slice(2) + '__';
-      // Preserve the first title to not add extra blank line above it
-      text = text.replace(first, sentinel);
-      // Add one more newline before every other title => 2 blank lines above
-      text = text.replace(/\n(?=-- [^\n]+ --)/g, '\n\n');
-      // Restore first title
-      text = text.replace(sentinel, first);
-      // Ensure exactly one blank line below every title
-      text = text.replace(/(^-- [^\n]+ --$)\n*/gm, '$1\n\n');
-      // Guard: compress 3+ blank lines to exactly 2 above titles
-      text = text.replace(/\n{3,}(?=-- [^\n]+ --)/g, '\n\n');
+    const __fid3 = ((container && container.__formId) || '');
+    if (__fid3 !== 'comunicado-ausencia') {
+      const headerRe = /^-- [^\n]+ --$/gm;
+      const headers = text.match(headerRe) || [];
+      if (headers.length) {
+        const first = headers[0];
+        const sentinel = '__HDR_FIRST__' + Math.random().toString(36).slice(2) + '__';
+        // Preserve the first title to not add extra blank line above it
+        text = text.replace(first, sentinel);
+        // Garantir 2 linhas vazias acima (3 quebra de linhas) antes de cada título remanescente
+        text = text.replace(/\n(?=-- [^\n]+ --)/g, '\n\n\n');
+        // Restore first title
+        text = text.replace(sentinel, first);
+        // Ensure exactly one blank line below every title
+        text = text.replace(/(^-- [^\n]+ --$)\n*/gm, '$1\n\n');
+        // Guarda: comprimir 4+ quebras consecutivas para exatamente 3 antes dos títulos
+        text = text.replace(/\n{4,}(?=^-- [^\n]+ --)/gm, '\n\n\n');
+      }
     }
   } catch {}
 
