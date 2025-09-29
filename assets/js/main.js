@@ -6217,6 +6217,9 @@ function postProcessInstalacoesMudancas(text) {
       // Espaço acima do título da seção INDICAÇÕES
       out = out.replace(/([^\n])\n(-- INDICAÇÕES --)/g, '$1\n\n$2');
       out = out.replace(/(-- AJUDA INTERNA --)\n\s*\n/g, '$1\n');
+      // Ajuste específico: não deixar linha em branco imediatamente após o título da seção "EQUIPAMENTOS DO ATENDIMENTO"
+      // Mantém os espaços em branco apenas entre perguntas e entre seções
+      out = out.replace(/(-- EQUIPAMENTOS DO ATENDIMENTO --)\n\s*\n/g, '$1\n');
       // Caso solicitado: garantir linha em branco após "FOI NECESSÁRIO A TROCA DE EQUIPAMENTO?" quando resposta = Sim
       out = out.replace(/(FOI NECESS[ÁA]RIO A TROCA DE EQUIPAMENTO[S]?\?\s*\n\s*Sim)\s*\n(\s*MAC DOS EQUIPAMENTOS RETIRADOS:)/i, '$1\n\n$2');
     } catch {}
@@ -6998,6 +7001,14 @@ const copyBtn = document.getElementById('btnCopiarForm');
   // Garantia global: inserir linha em branco antes de "MAC DOS EQUIPAMENTOS RETIRADOS:" quando vier logo após uma linha de texto
   try {
     text = text.replace(/([^\n])\n(MAC DOS EQUIPAMENTOS RETIRADOS:)/g, '$1\n\n$2');
+  } catch {}
+  // Remoção específica: não deixar linha em branco logo após o título da seção
+  // "-- EQUIPAMENTOS DO ATENDIMENTO --" no formulário de Instalações e Mudanças de Endereço
+  try {
+    const __fid = ((container && container.__formId) || '');
+    if (__fid === 'instalacoes-mudancas') {
+      text = text.replace(/(-- EQUIPAMENTOS DO ATENDIMENTO --)\n\s*\n(?=(EQUIPAMENTOS INSERIDOS:|MAC DOS EQUIPAMENTOS RETIRADOS:))/g, '$1\n');
+    }
   } catch {}
   // Ajuste: garantir espaço em branco antes de "AS FONTES FORAM RETIRADAS?" em Retirada de Equipamentos
   try {
