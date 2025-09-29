@@ -1,9 +1,19 @@
 ﻿{
-  "version": "4.2.9",
+  "version": "4.3.0",
   "buildDate": "2025-09-23T00:00:00.000Z",
   "minVersion": "4.0.0",
   "forceUpdate": true,
   "changelog": {
+    "4.3.0": {
+      "date": "2025-09-29",
+      "title": "Ajustes de copia e titulos",
+      "changes": [
+        "Padronizacao: 2 quebras acima e 1 abaixo de todos os titulos \"-- ... --\" no texto copiado",
+        "Correcao: remocao do espaco em branco extra logo abaixo de \"-- EQUIPAMENTOS DO ATENDIMENTO --\" ao copiar",
+        "Infra: atualizacao de versao exibida na UI e cache do Service Worker para 4.3.0"
+      ],
+      "type": "minor"
+    },
     "4.0.0": {
       "date": "2025-09-16",
       "title": "Nova VersÃ£o PWA Completa",

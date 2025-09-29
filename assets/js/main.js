@@ -7023,6 +7023,27 @@ const copyBtn = document.getElementById('btnCopiarForm');
     text = text.replace(/^\s*QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL:?/gmi, 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:');
   } catch {}
 
+  // Headings spacing mask: ensure 2 blank lines above every "-- ... --" title (except the first),
+  // and 1 blank line below each title, across all copied forms
+  try {
+    const headerRe = /^-- [^\n]+ --$/gm;
+    const headers = text.match(headerRe) || [];
+    if (headers.length) {
+      const first = headers[0];
+      const sentinel = '__HDR_FIRST__' + Math.random().toString(36).slice(2) + '__';
+      // Preserve the first title to not add extra blank line above it
+      text = text.replace(first, sentinel);
+      // Add one more newline before every other title => 2 blank lines above
+      text = text.replace(/\n(?=-- [^\n]+ --)/g, '\n\n');
+      // Restore first title
+      text = text.replace(sentinel, first);
+      // Ensure exactly one blank line below every title
+      text = text.replace(/(^-- [^\n]+ --$)\n*/gm, '$1\n\n');
+      // Guard: compress 3+ blank lines to exactly 2 above titles
+      text = text.replace(/\n{3,}(?=-- [^\n]+ --)/g, '\n\n');
+    }
+  } catch {}
+
   try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
   catch(e){
     

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'etecc-conclusoes-v4.2.9';
+const CACHE_NAME = 'etecc-conclusoes-v4.3.0';
 const OFFLINE_URL = '/offline.html';
 const VERSION_URL = '/version.json';
 
@@ -162,4 +162,3 @@ self.addEventListener('updatefound', () => {
     });
   });
 });
-
