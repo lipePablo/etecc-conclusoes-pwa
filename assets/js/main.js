@@ -6967,6 +6967,25 @@ const copyBtn = document.getElementById('btnCopiarForm');
             const firstRadio = seg.querySelector('input[type="radio"]');
             const groupName = (firstRadio && firstRadio.name) || '';
             const vLower = String(val||'').toLowerCase();
+            if (groupName === 'veltest_prints') {
+              const feito = (vLower === 'sim' || vLower === 'nao') ? 'Sim' : (vLower === 'nao-realizado' ? 'Não' : 'O técnico não preencheu este campo.');
+              printQuestionOnce('TESTE DE VELOCIDADE FEITO:');
+              let __feito = feito;
+              try {
+                if (/^n.?o$/i.test(vLower)) __feito = 'Sim';
+                else if (/^sim$/i.test(vLower)) __feito = 'Sim';
+                else if (/realizad/i.test(vLower)) __feito = 'Não';
+              } catch {}
+              if (__feito) secOut.push(__feito);
+              try {
+                if (vLower === 'nao-realizado') {
+                  const j = container.querySelector('#vel_motivo_nao_realizar');
+                  const jv = (j?.value || '').trim();
+                  if (jv) secOut.push(jv);
+                }
+              } catch {}
+              secOut.push('');
+            }
             if (groupName === 'tq_fic_ha_outros'){
               if (vLower === 'sim') { return; }
               if (vLower === 'nao' || vLower === 'não'){
