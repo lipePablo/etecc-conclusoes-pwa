@@ -1448,8 +1448,8 @@ function setTopbarMode(internal){
           const horaInput = root.querySelector('#aus_hora');
           const horaBlock = horaInput ? horaInput.closest('.form-block') : null;
           const retNormBlock = root.querySelector('input[name="aus_retorno"]') ? root.querySelector('input[name="aus_retorno"]').closest('.form-block') : null;
-          if (horaBlock && retNormBlock && !root.__ausHorarioPatched) {
-            root.__ausHorarioPatched = true;
+          if (horaBlock && retNormBlock && !root.querySelector('input[name="aus_hora_tipo"]')) {
+            try { root.__ausHorarioPatched = true; } catch {}
             const segBlk = document.createElement('div');
             segBlk.className = 'form-block';
             segBlk.innerHTML = ''
@@ -1521,7 +1521,7 @@ function setTopbarMode(internal){
                 const hh = (root.querySelector('#aus_hora')?.value || '[horário]').trim();
                 const mm = (root.querySelector('#aus_motivo')?.value || '[motivo]').trim();
                 const tipoSel = root.querySelector('input[name="aus_hora_tipo"]:checked');
-                const tipoVal = tipoSel ? String(tipoSel.value||'') : 'especifico';
+                const tipoVal = tipoSel ? String(tipoSel.value||'') : '';
                 const periodo = (tipoVal === 'dia_inteiro')
                   ? 'o dia inteiro'
                   : (tipoVal === 'especifico'
@@ -1589,6 +1589,21 @@ function setTopbarMode(internal){
                   + '  <label class="form-label" for="aus_sup_nome">Informe o nome do supervisor informado:</label>\n'
                   + '  <input id="aus_sup_nome" name="aus_sup_nome" type="text" class="form-input--underline" placeholder="Ex.: João Silva" autocomplete="name" required />';
                 supBlock.insertAdjacentElement('afterend', nomeBlk);
+                // Fallback de visibilidade independente do motor condicional
+                try {
+                  const applyNomeBlk = () => {
+                    try {
+                      const sel = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                      const isSim = !!(sel && String(sel.value||'').toLowerCase()==='sim');
+                      if (isSim) { try { nomeBlk.removeAttribute('hidden'); } catch {} nomeBlk.style.display = ''; }
+                      else { try { nomeBlk.setAttribute('hidden','hidden'); } catch {} nomeBlk.style.display = 'none'; }
+                      const inp = root.querySelector('#aus_sup_nome');
+                      if (inp) inp.required = !!isSim;
+                    } catch {}
+                  };
+                  applyNomeBlk();
+                  root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') applyNomeBlk(); }, true);
+                } catch {}
                 // Aviso discreto dentro do próprio bloco da pergunta (abaixo dos botões)
                 try {
                   const segEl = supBlock.querySelector('.segmented');
@@ -6033,7 +6048,7 @@ function updateConditionalVisibility(formId, container){
       // Ajuste final quando for "O dia inteiro":
       try {
         const tsel = container.querySelector('input[name="aus_hora_tipo"]:checked');
-        const tval = tsel ? String(tsel.value||'') : 'especifico';
+        const tval = tsel ? String(tsel.value||'') : '';
         if (tval === 'dia_inteiro') {
           try { text = text.replace(/no\s+h.{0,3}rio\s+das\s+[^,]+/i, 'o dia inteiro'); } catch {}
           try { text = text.replace(/^(Iniciarei a rota mais tarde\.|Retornarei para finalizar o expediente\.|N[o�]o retornarei para finalizar o expediente\.)$/m, 'Não estarei na rota neste dia.'); } catch {}
@@ -6285,6 +6300,61 @@ function updateConditionalVisibility(formId, container){
     if (formId === 'comunicado-ausencia' && typeof container.__updateAusenciaExample === 'function') {
       container.__updateAusenciaExample();
       setTimeout(()=>{ try { container.__updateAusenciaExample(); } catch {} }, 30);
+      // Reaplica visibilidade de horário/retorno e supervisor após restauração
+      try {
+        const reapplyAusenciaUI = () => {
+          try {
+            const horaInput = container.querySelector('#aus_hora');
+            const horaBlock = horaInput ? horaInput.closest('.form-block') : null;
+            const retNormBlock = container.querySelector('input[name="aus_retorno"]') ? container.querySelector('input[name="aus_retorno"]').closest('.form-block') : null;
+            const retAutoBlock = container.querySelector('[data-alt-ret="1"]');
+            const selHora = container.querySelector('input[name="aus_hora_tipo"]:checked');
+            const valHora = selHora ? String(selHora.value||'') : '';
+            if (horaBlock && retNormBlock && retAutoBlock) {
+              if (valHora === 'dia_inteiro') {
+                horaBlock.style.display = 'none';
+                retNormBlock.style.display = 'none';
+                retAutoBlock.style.display = '';
+                try { const auto = retAutoBlock.querySelector('input[name="aus_retorno"]'); if (auto) auto.checked = true; } catch {}
+              } else if (valHora === 'especifico') {
+                horaBlock.style.display = '';
+                retNormBlock.style.display = '';
+                retAutoBlock.style.display = 'none';
+              } else {
+                horaBlock.style.display = 'none';
+                retNormBlock.style.display = '';
+                retAutoBlock.style.display = 'none';
+              }
+            }
+          } catch {}
+          try {
+            const supBlock = container.querySelector('input[name="aus_sup_comunicada"]')?.closest('.form-block');
+            const nomeBlk = container.querySelector('#aus_sup_nome')?.closest('.form-block');
+            const hint = supBlock ? supBlock.querySelector('#sup_nao_hint') : null;
+            const selSup = container.querySelector('input[name="aus_sup_comunicada"]:checked');
+            const vSup = selSup ? String(selSup.value||'').toLowerCase() : '';
+            if (nomeBlk) {
+              if (vSup === 'sim') { try { nomeBlk.removeAttribute('hidden'); } catch {} nomeBlk.style.display = ''; }
+              else { try { nomeBlk.setAttribute('hidden','hidden'); } catch {} nomeBlk.style.display = 'none'; }
+              try { const inp=container.querySelector('#aus_sup_nome'); if (inp) inp.required = (vSup === 'sim'); } catch {}
+            }
+            if (hint) { hint.hidden = (vSup !== 'nao'); }
+          } catch {}
+          try { container.__updateAusenciaExample(); } catch {}
+        };
+        reapplyAusenciaUI();
+        setTimeout(reapplyAusenciaUI, 30);
+        // Reforço: manter UI sincronizada ao alternar campos mesmo após restauro
+        if (!container.__ausenciaUIWired) {
+          container.__ausenciaUIWired = true;
+          container.addEventListener('change', (e) => {
+            try {
+              const n = (e.target && e.target.name) || '';
+              if (n === 'aus_hora_tipo' || n === 'aus_sup_comunicada') reapplyAusenciaUI();
+            } catch {}
+          }, true);
+        }
+      } catch {}
     }
   } catch {}
   // Recalcula contadores de textareas após restaurar rascunho
@@ -6659,6 +6729,13 @@ const copyBtn = document.getElementById('btnCopiarForm');
         if (tval === 'dia_inteiro') {
           try { text = text.replace(/no\s+h.{0,3}rio\s+das\s+[^,]+/i, 'o dia inteiro'); } catch {}
           try { text = text.replace(/^(Iniciarei a rota mais tarde\.|Retornarei para finalizar o expediente\.|N[oô]o retornarei para finalizar o expediente\.)$/m, 'Não estarei na rota neste dia.'); } catch {}
+        }
+      } catch {}
+      try {
+        const tsel2 = container.querySelector('input[name="aus_hora_tipo"]:checked');
+        const tval2 = tsel2 ? String(tsel2.value||'') : '';
+        if (tval2 === 'dia_inteiro') {
+          try { text = text.replace(/no\s+ho.*?rio\s+das\s*,/i, 'o dia inteiro,'); } catch {}
         }
       } catch {}
       try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
