@@ -126,6 +126,22 @@ let __skipNextRender = false;
       // Observa apenas mudanças explícitas do campo; evita observar todo o body (performance)
       document.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') enforceSupPlaceholder(); }, true);
       setTimeout(enforceSupPlaceholder, 50);
+      // Força o placeholder do período a exibir "/ o dia inteiro" logo no carregamento
+      try {
+        const forceDiaInteiro = () => {
+          try {
+            const fc = document.getElementById('formContainer');
+            if (!fc || fc.__formId !== 'comunicado-ausencia') return;
+            const ex = document.querySelector('[data-ctx="exemplo-ausencia"]');
+            if (!ex) return;
+            const cur = ex.textContent || '';
+            if (cur && !(/\/ o dia inteiro/i.test(cur))) {
+              try { ex.textContent = cur.replace(/no\s+ho.*?rio\s+das\s+\[[^\]]*\]/i, (m) => m + ' / o dia inteiro'); } catch {}
+            }
+          } catch {}
+        };
+        setTimeout(forceDiaInteiro, 80);
+      } catch {}
     } catch {}
 
     // Saudação e frases motivacionais
@@ -1382,7 +1398,7 @@ function setTopbarMode(internal){
         + '  <div class="form-block">\n'
         + '    <label class="form-label">Exemplo de formato:</label>\n'
         + '    <div class="form-hint" data-ctx="exemplo-ausencia" style="white-space: pre-line; line-height:1.4;">' +
-               'Boa tarde, Venho, por meio deste, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].\n\n' +
+               'Boa tarde, Venho, por meio deste, informar que no dia [data], no horário das [horário] / o dia inteiro, precisarei me ausentar para [motivo].\n\n' +
                '( ) Iniciarei a rota mais tarde.\n' +
                '(✔) Retornarei para finalizar o expediente.\n' +
                '( ) Não retornarei para finalizar o expediente.' +
@@ -1427,15 +1443,225 @@ function setTopbarMode(internal){
         + '  <button id="btnCopiarForm" type="button" class="btn-action btn-action--red"><i class="fa-solid fa-copy"></i> Copiar</button>\n'
         + '</div>\n';
 
+        // Comunicado de Ausência: seleção de horário (específico vs dia inteiro) e retorno automático para dia inteiro
+        try {
+          const horaInput = root.querySelector('#aus_hora');
+          const horaBlock = horaInput ? horaInput.closest('.form-block') : null;
+          const retNormBlock = root.querySelector('input[name="aus_retorno"]') ? root.querySelector('input[name="aus_retorno"]').closest('.form-block') : null;
+          if (horaBlock && retNormBlock && !root.__ausHorarioPatched) {
+            root.__ausHorarioPatched = true;
+            const segBlk = document.createElement('div');
+            segBlk.className = 'form-block';
+            segBlk.innerHTML = ''
+              + '    <label class="form-label">Horário da Ausência:<span class="req">*</span></label>'
+              + '    <div class="segmented" role="radiogroup" aria-label="Horário da Ausência" aria-required="true">'
+              + '      <input type="radio" id="aus_horario_especifico" name="aus_hora_tipo" value="especifico">'
+              + '      <label for="aus_horario_especifico">Horário específico</label>'
+              + '      <input type="radio" id="aus_horario_dia" name="aus_hora_tipo" value="dia_inteiro">'
+              + '      <label for="aus_horario_dia">O dia inteiro</label>'
+              + '    </div>';
+            horaBlock.parentNode.insertBefore(segBlk, horaBlock);
+            // bloco alternativo para retorno automático em dia inteiro
+            const retAutoBlock = document.createElement('div');
+            retAutoBlock.className = 'form-block';
+            retAutoBlock.setAttribute('data-alt-ret', '1');
+            retAutoBlock.innerHTML = ''
+              + '    <label class="form-label">Opções de Retorno:<span class="req">*</span></label>'
+              + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Opções de Retorno" aria-required="true">'
+              + '      <input type="radio" id="ret_nao_retornar_auto" name="aus_retorno" value="nao_retornar" checked>'
+              + '      <label for="ret_nao_retornar_auto">Não estarei na rota neste dia</label>'
+              + '    </div>';
+            retNormBlock.parentNode.insertBefore(retAutoBlock, retNormBlock.nextSibling);
+            const applyHoraTipo = () => {
+              try {
+                const sel = root.querySelector('input[name="aus_hora_tipo"]:checked');
+                const val = sel ? String(sel.value || '') : '';
+                // Sempre limpar o campo de horário ao alternar o tipo
+                try { if (horaInput) horaInput.value = ''; } catch {}
+                if (val === 'dia_inteiro') {
+                  horaBlock.style.display = 'none';
+                  retNormBlock.style.display = 'none';
+                  retAutoBlock.style.display = '';
+                  try { const auto = retAutoBlock.querySelector('input[name="aus_retorno"]'); if (auto) auto.checked = true; } catch {}
+                } else if (val === 'especifico') {
+                  horaBlock.style.display = '';
+                  retNormBlock.style.display = '';
+                  retAutoBlock.style.display = 'none';
+                  try { Array.from(root.querySelectorAll('input[name="aus_retorno"]')).forEach(r => { r.checked = false; }); } catch {}
+                } else {
+                  // Nenhuma seleção: esconde horário e mantém opções padrão visíveis, sem seleção
+                  horaBlock.style.display = 'none';
+                  retNormBlock.style.display = '';
+                  retAutoBlock.style.display = 'none';
+                  try { Array.from(root.querySelectorAll('input[name="aus_retorno"]')).forEach(r => { r.checked = false; }); } catch {}
+                }
+                try { const exFn = (typeof root.__updateAusenciaExample === 'function') ? root.__updateAusenciaExample : null; if (exFn) exFn(); } catch {}
+                try { setTimeout(() => { try { const f = root.__updateAusenciaExample; if (typeof f === 'function') f(); } catch {} }, 0); } catch {}
+                // Garantir placeholder com "/ o dia inteiro" no carregamento
+                try {
+                  const exInit = root.querySelector('[data-ctx="exemplo-ausencia"]');
+                  if (exInit) {
+                    const t = exInit.textContent || '';
+                    if (t && !/\/ o dia inteiro/i.test(t)) {
+                      try { exInit.textContent = t.replace(/no\s+ho.*?rio\s+das\s+\[[^\]]*\]/i, (m)=> m + ' / o dia inteiro'); } catch {}
+                    }
+                  }
+                } catch {}
+              } catch {}
+            };
+            root.addEventListener('change', (e) => { const n = (e.target && e.target.name) || ''; if (n === 'aus_hora_tipo') applyHoraTipo(); }, true);
+            applyHoraTipo();
+            // Override final do exemplo para considerar o tipo de horário
+            const ensureExample = () => {
+              try {
+                const exEl = root.querySelector('[data-ctx="exemplo-ausencia"]');
+                if (!exEl) return;
+                const greet = (()=>{ try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } })();
+                const d = (root.querySelector('#aus_data')?.value || '[data]').trim();
+                const hh = (root.querySelector('#aus_hora')?.value || '[horário]').trim();
+                const mm = (root.querySelector('#aus_motivo')?.value || '[motivo]').trim();
+                const tipoSel = root.querySelector('input[name="aus_hora_tipo"]:checked');
+                const tipoVal = tipoSel ? String(tipoSel.value||'') : 'especifico';
+                const periodo = (tipoVal === 'dia_inteiro')
+                  ? 'o dia inteiro'
+                  : (tipoVal === 'especifico'
+                      ? ('no horário das ' + hh)
+                      : ('no horário das ' + hh + ' / o dia inteiro'));
+                const msg = `${greet} Venho por meio deste comunicado, informar que no dia ${d}, ${periodo}, precisarei me ausentar para ${mm}.`;
+                let retLine = '';
+                if (tipoVal === 'dia_inteiro') retLine = 'Não estarei na rota neste dia.';
+                else {
+                  const sel = root.querySelector('input[name="aus_retorno"]:checked');
+                  if (sel) { const lab = root.querySelector(`label[for="${sel.id}"]`); retLine = (lab && lab.textContent || '').trim() || ''; }
+                }
+                const supSel = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                const supLine = (supSel && String(supSel.value||'').toLowerCase()==='nao')
+                  ? 'A supervisão não foi previamente comunicada sobre a minha ausência.'
+                  : 'A supervisão foi previamente comunicada sobre a minha ausência.';
+                const parts = [msg, ''];
+                if (retLine) parts.push(`(?) ${retLine}`, '');
+                else parts.push('( ) Iniciarei a rota mais tarde.', '( ) Retornarei para finalizar o expediente.', '( ) Não retornarei para finalizar o expediente.', '');
+                parts.push(supLine);
+                exEl.textContent = parts.join('\n');
+                // Ajuste final: se supervisor foi comunicado e nome informado, refletir no exemplo
+                try {
+                  const supCk = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                  if (supCk && String(supCk.value||'').toLowerCase()==='sim') {
+                    const nm = (root.querySelector('#aus_sup_nome')?.value || '').trim();
+                    if (nm) {
+                      const fmt = (s)=> (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+                      const n2 = fmt(nm);
+                      const cur = exEl.textContent || '';
+                      try {
+                        exEl.textContent = cur.replace(/A supervis[^\n]*aus[^\n]*\./i, `O supervisor ${n2} foi previamente comunicada sobre a minha ausência.`);
+                      } catch {}
+                    }
+                  }
+                } catch {}
+              } catch {}
+            };
+            root.addEventListener('input', (e)=>{ const id=(e.target&&e.target.id)||''; if (id==='aus_data'||id==='aus_hora'||id==='aus_motivo'){ ensureExample(); } }, true);
+            root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'||n==='aus_hora_tipo'){ ensureExample(); } }, true);
+            setTimeout(ensureExample, 0);
+            // Ajuste imediato do placeholder para refletir ambos os modos na carga
+            try {
+              const exInit = root.querySelector('[data-ctx="exemplo-ausencia"]');
+              if (exInit) {
+                const t = exInit.textContent || '';
+                if (!/\/ o dia inteiro/i.test(t)) {
+                  exInit.textContent = t.replace(/no\s+ho.*?rio\s+das\s+\[[^\]]*\]/i, (m)=> m + ' / o dia inteiro');
+                }
+              }
+            } catch {}
+            try { root.__updateAusenciaExample = ensureExample; } catch {}
+            // Inserir campo de nome do supervisor (quando "Sim") e aviso (quando "Não")
+            try {
+              const supRadio = root.querySelector('input[name="aus_sup_comunicada"]');
+              const supBlock = supRadio ? supRadio.closest('.form-block') : null;
+              if (supBlock && !root.__supNomePatched) {
+                root.__supNomePatched = true;
+                const nomeBlk = document.createElement('div');
+                nomeBlk.className = 'form-block';
+                nomeBlk.setAttribute('data-when-field', 'aus_sup_comunicada');
+                nomeBlk.setAttribute('data-when-equals', 'sim');
+                nomeBlk.setAttribute('data-clear-on-hide', '1');
+                nomeBlk.innerHTML = ''
+                  + '  <label class="form-label" for="aus_sup_nome">Informe o nome do supervisor informado:</label>\n'
+                  + '  <input id="aus_sup_nome" name="aus_sup_nome" type="text" class="form-input--underline" placeholder="Ex.: João Silva" autocomplete="name" required />';
+                supBlock.insertAdjacentElement('afterend', nomeBlk);
+                // Aviso discreto dentro do próprio bloco da pergunta (abaixo dos botões)
+                try {
+                  const segEl = supBlock.querySelector('.segmented');
+                  if (segEl && !supBlock.querySelector('#sup_nao_hint')) {
+                    const hint = document.createElement('div');
+                    hint.id = 'sup_nao_hint';
+                    hint.className = 'form-hint';
+                    hint.style.cssText = 'color:#dc2626;font-style:italic;font-size:12px;margin-top:6px;';
+                    hint.textContent = 'Informe ao seu supervisor sobre esta ausência.';
+                    hint.hidden = true;
+                    segEl.insertAdjacentElement('afterend', hint);
+                    const applySupHint = () => {
+                      try {
+                        const sel = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                        const isNo = !!(sel && String(sel.value||'').toLowerCase()==='nao');
+                        hint.hidden = !isNo;
+                      } catch { hint.hidden = true; }
+                    };
+                    applySupHint();
+                    root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_sup_comunicada') applySupHint(); }, true);
+                  }
+                } catch {}
+                try {
+                  const inp = root.querySelector('#aus_sup_nome');
+                  if (inp && !inp.__wired){
+                    inp.__wired = true;
+                    const toTitle = (s) => (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+                // Permitir espaços livremente; capitalizar em tempo real e no blur
+                inp.addEventListener('input', () => {
+                  try {
+                    const cur = inp.value;
+                    const fmt = cur.replace(/(^|\s)([A-Za-zÀ-ÖØ-öø-ÿ])(\S*)/g, (m, sp, f, rest) => sp + f.toUpperCase() + rest.toLowerCase());
+                    if (cur !== fmt) {
+                      const pos = inp.selectionStart || fmt.length;
+                      inp.value = fmt;
+                      try { inp.setSelectionRange(pos, pos); } catch {}
+                    }
+                  } catch {}
+                  try { if (typeof root.__updateAusenciaExample==='function') root.__updateAusenciaExample(); } catch {}
+                });
+                inp.addEventListener('blur', () => {
+                  const cur = inp.value;
+                  const fmt = cur.replace(/(^|\s)([A-Za-zÀ-ÖØ-öø-ÿ])(\S*)/g, (m, sp, f, rest) => sp + f.toUpperCase() + rest.toLowerCase());
+                  if (cur !== fmt) inp.value = fmt;
+                  try { if (typeof root.__updateAusenciaExample==='function') root.__updateAusenciaExample(); } catch {}
+                });
+                  }
+                } catch {}
+                try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('comunicado-ausencia', root); } catch {}
+              }
+            } catch {}
+          }
+        } catch {}
+
         try {
           // Ajusta saudação do exemplo conforme hora atual
           try {
             const greet = (()=>{ try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia'; if (h<18) return 'Boa tarde'; return 'Boa noite'; } catch { return 'Olá'; } })();
             const ex = root.querySelector('[data-ctx="exemplo-ausencia"]');
             if (ex) {
-              const rest = 'Venho, por meio deste, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].\n\n( ) Iniciarei a rota mais tarde.\n(✔) Retornarei para finalizar o expediente.\n( ) Não retornarei para finalizar o expediente.';
+              const rest = 'Venho, por meio deste, informar que no dia [data], no horário das [horário] / o dia inteiro, precisarei me ausentar para [motivo].\n\n( ) Iniciarei a rota mais tarde.\n(✔) Retornarei para finalizar o expediente.\n( ) Não retornarei para finalizar o expediente.';
               ex.textContent = greet + '. ' + rest + '\nA supervisão [selecione] previamente comunicada sobre a minha ausência.';
             }
+            // Ajuste do exemplo: acrescentar "/ o dia inteiro" no placeholder inicial
+            try {
+              const exFix0 = root.querySelector('[data-ctx="exemplo-ausencia"]');
+              if (exFix0) {
+                const tFix0 = exFix0.textContent || '';
+                if (tFix0 && !(/\/ o dia inteiro/i.test(tFix0))) {
+                  try { exFix0.textContent = tFix0.replace(/no\s+ho.*?rio\s+das\s+\[[^\]]*\]/i, (m) => m + ' / o dia inteiro'); } catch {}
+                }
+              }
+            } catch {}
           } catch {}
           // Exemplo dinâmico: saudação + somente a opção selecionada
           try {
@@ -1443,7 +1669,7 @@ function setTopbarMode(internal){
             const getGreet = () => { try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } };
             const updateExample = () => {
               if (!ex) return;
-              const msg = getGreet() + ' Venho por meio deste comunicado, informar que no dia [data], no horário das [horário], precisarei me ausentar para [motivo].';
+              const msg = getGreet() + ' Venho por meio deste comunicado, informar que no dia [data], no horário das [horário] / o dia inteiro, precisarei me ausentar para [motivo].';
               const parts = [msg];
               try {
                 const sel = root.querySelector('input[name="aus_retorno"]:checked');
@@ -1457,7 +1683,14 @@ function setTopbarMode(internal){
                 const sup = root.querySelector('input[name="aus_sup_comunicada"]:checked');
                 if (sup) {
                   const v = String(sup.value||'').toLowerCase();
-                  parts.push('', (v === 'sim') ? 'A supervisão foi previamente comunicada sobre a minha ausência.' : 'Não foi previamente comunicada sobre a minha ausência.');
+                  if (v === 'sim') {
+                    const nm = (root.querySelector('#aus_sup_nome')?.value || '').trim();
+                    const fmt = (s)=> (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+                    const n2 = fmt(nm);
+                    parts.push('', n2 ? (`O supervisor ${n2} foi previamente comunicada sobre a minha ausência.`) : 'A supervisão foi previamente comunicada sobre a minha ausência.');
+                  } else {
+                    parts.push('', 'Não foi previamente comunicada sobre a minha ausência.');
+                  }
                 }
               } catch {}
               ex.textContent = parts.filter(Boolean).join('\n');
@@ -1474,13 +1707,26 @@ function setTopbarMode(internal){
                 const d = (root.querySelector('#aus_data')?.value || '[data]').trim();
                 const hh = (root.querySelector('#aus_hora')?.value || '[horário]').trim();
                 const mm = (root.querySelector('#aus_motivo')?.value || '[motivo]').trim();
-                const msg = getGreet2() + ` Venho por meio deste comunicado, informar que no dia ${d}, no horário das ${hh}, precisarei me ausentar para ${mm}.`;
+                const msg = getGreet2() + ` Venho por meio deste comunicado, informar que no dia ${d}, no horário das ${hh} / o dia inteiro, precisarei me ausentar para ${mm}.`;
                 let ret = 'Retornarei para finalizar o expediente.';
                 try { const sel = root.querySelector('input[name="aus_retorno"]:checked'); if (sel){ const lab = root.querySelector('label[for="'+sel.id+'"]'); const t=(lab&&lab.textContent||'').trim(); if (t) ret = t; } } catch {}
                 let supLine = 'A supervisão foi previamente comunicada sobre a minha ausência.';
                 try { const sup = root.querySelector('input[name="aus_sup_comunicada"]:checked'); if (sup){ const v=(sup.value||'').toLowerCase(); if (v==='nao') supLine = 'Não foi previamente comunicada sobre a minha ausência.'; } } catch {}
                 const out = [msg, '', '(✔) ' + ret, '', supLine].join('\n');
                 ex2.textContent = out;
+                // Ajuste final: nome do supervisor quando informado
+                try {
+                  const supCk = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                  if (supCk && String(supCk.value||'').toLowerCase()==='sim') {
+                    const nm = (root.querySelector('#aus_sup_nome')?.value || '').trim();
+                    if (nm) {
+                      const fmt = (s)=> (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+                      const n2 = fmt(nm);
+                      const cur = ex2.textContent || '';
+                      try { ex2.textContent = cur.replace(/A supervis[^\n]*aus[^\n]*\./i, `O supervisor ${n2} foi previamente comunicada sobre a minha ausência.`); } catch {}
+                    }
+                  }
+                } catch {}
               };
               updateExample2();
             try { root.__updateAusenciaExample = updateExample2; } catch {}
@@ -1495,7 +1741,14 @@ function setTopbarMode(internal){
                   const d = (root.querySelector('#aus_data')?.value || '[data]').trim();
                   const hh = (root.querySelector('#aus_hora')?.value || '[horário]').trim();
                   const mm = (root.querySelector('#aus_motivo')?.value || '[motivo]').trim();
-                  const msg = greet3() + ` Venho por meio deste comunicado, informar que no dia ${d}, no horário das ${hh}, precisarei me ausentar para ${mm}.`;
+                  const tipoSel = root.querySelector('input[name="aus_hora_tipo"]:checked');
+                  const tipoVal = tipoSel ? String(tipoSel.value||'') : '';
+                  const periodoStr = (tipoVal === 'dia_inteiro')
+                    ? 'o dia inteiro'
+                    : (tipoVal === 'especifico'
+                        ? (`no horário das ${hh}`)
+                        : (`no horário das ${hh} / o dia inteiro`));
+                  const msg = greet3() + ` Venho por meio deste comunicado, informar que no dia ${d}, ${periodoStr}, precisarei me ausentar para ${mm}.`;
                   let retornoLines = [];
                   const sel = root.querySelector('input[name="aus_retorno"]:checked');
                   if (sel) {
@@ -1514,6 +1767,19 @@ function setTopbarMode(internal){
                     ? 'A supervisão não foi previamente comunicada sobre a minha ausência.'
                     : 'A supervisão foi previamente comunicada sobre a minha ausência.';
                   ex3.textContent = [msg, '', ...retornoLines, '', supLine].join('\n');
+                  // Ajuste final: nome do supervisor quando informado
+                  try {
+                    const supSel2 = root.querySelector('input[name="aus_sup_comunicada"]:checked');
+                    if (supSel2 && String(supSel2.value||'').toLowerCase()==='sim') {
+                      const nm = (root.querySelector('#aus_sup_nome')?.value || '').trim();
+                      if (nm) {
+                        const fmt = (s)=> (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+                        const n2 = fmt(nm);
+                        const cur = ex3.textContent || '';
+                        try { ex3.textContent = cur.replace(/A supervis[^\n]*aus[^\n]*\./i, `O supervisor ${n2} foi previamente comunicada sobre a minha ausência.`); } catch {}
+                      }
+                    }
+                  } catch {}
                 };
                 try { root.__updateAusenciaExample = updateExample3; } catch {}
                 // Fix: placeholder de supervisão quando não houver seleção (exemplo de formato)
@@ -1546,7 +1812,7 @@ function setTopbarMode(internal){
                 } catch {}
                 try { updateExample3(); } catch {}
                 try { root.addEventListener('input', (e)=>{ const id=(e.target&&e.target.id)||''; if (id==='aus_data'||id==='aus_hora'||id==='aus_motivo'){ try { updateExample3(); } catch {} } }, true); } catch {}
-                try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'){ try { updateExample3(); } catch {} } }, true); } catch {}
+                try { root.addEventListener('change', (e)=>{ const n=(e.target&&e.target.name)||''; if (n==='aus_retorno'||n==='aus_sup_comunicada'||n==='aus_hora_tipo'){ try { updateExample3(); } catch {} } }, true); } catch {}
               } catch {}
             } catch {}
           } catch {}
@@ -5764,6 +6030,15 @@ function updateConditionalVisibility(formId, container){
           }
         }
       } catch {}
+      // Ajuste final quando for "O dia inteiro":
+      try {
+        const tsel = container.querySelector('input[name="aus_hora_tipo"]:checked');
+        const tval = tsel ? String(tsel.value||'') : 'especifico';
+        if (tval === 'dia_inteiro') {
+          try { text = text.replace(/no\s+h.{0,3}rio\s+das\s+[^,]+/i, 'o dia inteiro'); } catch {}
+          try { text = text.replace(/^(Iniciarei a rota mais tarde\.|Retornarei para finalizar o expediente\.|N[o�]o retornarei para finalizar o expediente\.)$/m, 'Não estarei na rota neste dia.'); } catch {}
+        }
+      } catch {}
     }
     let visible = false;
     if (inList) {
@@ -6283,13 +6558,16 @@ const copyBtn = document.getElementById('btnCopiarForm');
       };
       clearErrors();
       const data = (document.getElementById('aus_data')?.value || '').trim();
-      const horaRaw = (document.getElementById('aus_hora')?.value || '').trim();
+      let horaRaw = (document.getElementById('aus_hora')?.value || '').trim();
       const hora = horaRaw ? horaRaw.replace(':','h') : '';
       const motivo = (document.getElementById('aus_motivo')?.value || '').trim();
       let sel = '';
       try { const r = container.querySelector('input[name="aus_retorno"]:checked'); sel = (r && r.value) || ''; } catch {}
       let sup = '';
       try { const r2 = container.querySelector('input[name="aus_sup_comunicada"]:checked'); sup = (r2 && r2.value) || ''; } catch {}
+      // Tipo de horário selecionado
+      const __horaTipo = (function(){ try { const s=container.querySelector('input[name="aus_hora_tipo"]:checked'); return s ? String(s.value||'') : 'especifico'; } catch { return 'especifico'; } })();
+      if (__horaTipo === 'dia_inteiro') { try { if (!horaRaw) horaRaw = '08:00'; } catch {} }
       let hasErr = false; const reDate=/^\d{2}\/\d{2}\/\d{4}$/; const reTime=/^\d{2}:\d{2}$/;
       // Data: formato e ano máximo atual+1
       if (!data || !reDate.test(data)) { addError(document.getElementById('aus_data'), 'Preencha a data no formato dd/mm/aaaa.'); hasErr = true; }
@@ -6324,6 +6602,10 @@ const copyBtn = document.getElementById('btnCopiarForm');
       if (!motivo) { addError(document.getElementById('aus_motivo'), 'Informe o motivo da ausência.'); hasErr = true; }
       if (!sel) { const el = container.querySelector('div.segmented [name="aus_retorno"]').closest('.form-block'); if (el){ addError(el, 'Selecione uma opção de retorno.'); } hasErr = true; }
       if (!sup) { const el2 = container.querySelector('div.segmented [name="aus_sup_comunicada"]').closest('.form-block'); if (el2){ addError(el2, 'Informe se a supervisão foi previamente comunicada.'); } hasErr = true; }
+      else if (sup === 'sim') {
+        const nminp = container.querySelector('#aus_sup_nome');
+        if (!nminp || !String(nminp.value||'').trim()) { addError(nminp || (container.querySelector('div.segmented [name="aus_sup_comunicada"]').closest('.form-block')), 'Informe o nome do supervisor (obrigatório).'); hasErr = true; }
+      }
       if (hasErr) {
         try {
           // Localiza o elemento de erro mais acima na tela
@@ -6354,11 +6636,30 @@ const copyBtn = document.getElementById('btnCopiarForm');
       const greet = (function(){ try { const h=new Date().getHours(); if (h>=5&&h<12) return 'Bom dia.'; if (h<18) return 'Boa tarde.'; return 'Boa noite.'; } catch { return 'Olá.'; } })();
       const l01 = `${greet} Venho, por meio deste, informar que no dia ${data}, no horário das ${hora}, precisarei me ausentar para ${motivo}.`;
       const lRet = retornoLine || '';
-      const lSup = sup === 'sim' ? 'A supervisão foi previamente comunicada sobre a minha ausência.' : 'A supervisão não foi previamente comunicada sobre a minha ausência.';
+      let lSup = sup === 'sim' ? 'A supervisão foi previamente comunicada sobre a minha ausência.' : 'A supervisão não foi previamente comunicada sobre a minha ausência.';
+      try {
+        if (sup === 'sim') {
+          const nmRaw = (container.querySelector('#aus_sup_nome')?.value || '').trim();
+          if (nmRaw) {
+            const toTitle = (s) => (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+            const nm = toTitle(nmRaw);
+            lSup = `O supervisor ${nm} foi previamente comunicada sobre a minha ausência.`;
+          }
+        }
+      } catch {}
       let text = [header, l01, lRet, lSup].filter(Boolean).join('\n');
       try {
         const l01new = `${greet} Venho por meio deste comunicado, informar que no dia ${data}, no horário das ${hora}, precisarei me ausentar para ${motivo}.`;
         text = [header, l01new, lRet, lSup].filter(Boolean).join('\n');
+      } catch {}
+      // Ajuste final para opção "O dia inteiro": substitui o período e o retorno
+      try {
+        const tsel = container.querySelector('input[name="aus_hora_tipo"]:checked');
+        const tval = tsel ? String(tsel.value||'') : '';
+        if (tval === 'dia_inteiro') {
+          try { text = text.replace(/no\s+h.{0,3}rio\s+das\s+[^,]+/i, 'o dia inteiro'); } catch {}
+          try { text = text.replace(/^(Iniciarei a rota mais tarde\.|Retornarei para finalizar o expediente\.|N[oô]o retornarei para finalizar o expediente\.)$/m, 'Não estarei na rota neste dia.'); } catch {}
+        }
       } catch {}
       try { await navigator.clipboard.writeText(text); try { await window.__appModal?.showAlert('Texto copiado.', { title: 'Pronto' }); } catch {} }
       catch(e){
@@ -8854,6 +9155,8 @@ try {
     };
   }
 } catch {}
+
+
 
 
 

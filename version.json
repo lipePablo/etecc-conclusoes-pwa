@@ -1,9 +1,20 @@
 ﻿{
-  "version": "4.3.0",
-  "buildDate": "2025-09-23T00:00:00.000Z",
+  "version": "4.3.2",
+  "buildDate": "2025-09-30T00:00:00.000Z",
   "minVersion": "4.0.0",
   "forceUpdate": true,
   "changelog": {
+    "4.3.2": {
+      "date": "2025-09-30",
+      "title": "Ajustes Comunicado de Ausência",
+      "changes": [
+        "Exemplo inicial com '/ o dia inteiro'",
+        "Campo obrigatório: nome do supervisor (capitalização automática)",
+        "Aviso discreto quando supervisão = Não",
+        "Texto dinâmico inclui nome do supervisor"
+      ],
+      "type": "patch"
+    },
     "4.3.0": {
       "date": "2025-09-29",
       "title": "Ajustes de copia e titulos",

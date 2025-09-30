@@ -80,7 +80,7 @@
       </div>
       <div class="loading-text">
         <div class="loading-subtitle">Carregando aplicativo...</div>
-        <div class="loading-version">Versão <span id="loadingVersion">4.3.0</span></div>
+        <div class="loading-version">Versão <span id="loadingVersion">4.3.2</span></div>
       </div>
     </div>
   </div>
@@ -300,7 +300,7 @@
         </a>
         <div class="menu-item" style="opacity: 0.6; cursor: default;">
           <i class="fa-solid fa-code-branch"></i>
-          <span>Versão <span id="currentVersion">4.3.0</span></span>
+          <span>Versão <span id="currentVersion">4.3.2</span></span>
         </div>
         <a class="menu-item" id="menuForceUpdate" href="#">
           <i class="fa-solid fa-arrows-rotate"></i>
@@ -360,7 +360,7 @@
 
   <!-- PWA Service Worker -->
   <script>
-    let currentAppVersion = '4.3.0';
+    let currentAppVersion = '4.3.2';
     let versionData = null;
 
     // Sistema de carregamento
@@ -492,6 +492,7 @@
         navigator.serviceWorker.register('/sw.js')
           .then(registration => {
             console.log('SW registrado com sucesso:', registration);
+            try { window.__swReg = registration; } catch (e) {}
 
             // Aplicar imediatamente caso exista um SW em espera
             try {
@@ -511,6 +512,7 @@
                     }
                   } catch (e) {}
                   checkVersion(); // Revalidar versão
+                  try { (navigator.serviceWorker.controller || registration.active)?.postMessage({ type: 'CHECK_VERSION' }); } catch (e) {}
                 }
               });
             });
@@ -520,14 +522,18 @@
               setInterval(() => { try { registration.update(); } catch (e) {} }, 10 * 60 * 1000);
             } catch (e) {}
 
-            // Recarregar quando o novo SW assumir o controle
+            // Disparar checagem imediata e recarregar quando o novo SW assumir o controle
             try {
               let __didRefresh = false;
               navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (__didRefresh) return;
                 __didRefresh = true;
+                try { (navigator.serviceWorker.controller || registration.active)?.postMessage({ type: 'CHECK_VERSION' }); } catch (e) {}
                 window.location.reload();
               });
+              // Solicitar checagem imediata e update do SW já no registro
+              try { (navigator.serviceWorker.controller || registration.active)?.postMessage({ type: 'CHECK_VERSION' }); } catch (e) {}
+              try { registration.update(); } catch (e) {}
             } catch (e) {}
           })
           .catch(error => {
@@ -570,13 +576,32 @@
         if (mvh) mvh.addEventListener('click', function(e){ e.preventDefault(); showVersionHistory(); });
       } catch (e) {}
 
-      // Forçar Atualizações: limpa completamente o localStorage e recarrega
+      // Forçar Atualizações: dispara update do SW, aplica imediatamente e recarrega
       try {
         var mfu = document.getElementById('menuForceUpdate');
         if (mfu) mfu.addEventListener('click', function(e){
           e.preventDefault();
           try { localStorage.clear(); } catch {}
-          location.reload();
+          try {
+            var reg = window.__swReg;
+            if (reg) {
+              try { reg.update(); } catch (e) {}
+              try { if (reg.waiting) { reg.waiting.postMessage({ type:'SKIP_WAITING' }); } } catch (e) {}
+              try {
+                if (reg.installing) {
+                  reg.installing.addEventListener('statechange', function(){
+                    if (reg.installing.state === 'installed' && reg.waiting) {
+                      try { reg.waiting.postMessage({ type:'SKIP_WAITING' }); } catch (e) {}
+                    }
+                  });
+                }
+              } catch (e) {}
+              try { (navigator.serviceWorker.controller || reg.active)?.postMessage({ type: 'CHECK_VERSION' }); } catch (e) {}
+              setTimeout(function(){ location.reload(); }, 200);
+            } else {
+              location.reload();
+            }
+          } catch (e) { location.reload(); }
         });
       } catch (e) {}
 
