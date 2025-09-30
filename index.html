@@ -80,7 +80,7 @@
       </div>
       <div class="loading-text">
         <div class="loading-subtitle">Carregando aplicativo...</div>
-        <div class="loading-version">Versão <span id="loadingVersion">4.3.2</span></div>
+        <div class="loading-version">Versão <span id="loadingVersion">4.3.4</span></div>
       </div>
     </div>
   </div>
@@ -300,7 +300,7 @@
         </a>
         <div class="menu-item" style="opacity: 0.6; cursor: default;">
           <i class="fa-solid fa-code-branch"></i>
-          <span>Versão <span id="currentVersion">4.3.2</span></span>
+          <span>Versão <span id="currentVersion">4.3.4</span></span>
         </div>
         <a class="menu-item" id="menuForceUpdate" href="#">
           <i class="fa-solid fa-arrows-rotate"></i>
@@ -360,7 +360,7 @@
 
   <!-- PWA Service Worker -->
   <script>
-    let currentAppVersion = '4.3.2';
+    let currentAppVersion = '4.3.4';
     let versionData = null;
 
     // Sistema de carregamento
@@ -489,7 +489,7 @@
         if (!canProceed) return; // Para aqui se precisar de atualização forçada
 
         // Registrar SW
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.3.4'))
           .then(registration => {
             console.log('SW registrado com sucesso:', registration);
             try { window.__swReg = registration; } catch (e) {}
@@ -576,12 +576,14 @@
         if (mvh) mvh.addEventListener('click', function(e){ e.preventDefault(); showVersionHistory(); });
       } catch (e) {}
 
-      // Forçar Atualizações: não toca no localStorage; limpa caches + SW e recarrega para aplicar build novo
+      // Forçar Atualizações: limpa localStorage + caches + SW e recarrega para aplicar build novo
       try {
         var mfu = document.getElementById('menuForceUpdate');
         if (mfu) mfu.addEventListener('click', function(e){
           e.preventDefault();
-          // 1) Limpar caches do Service Worker
+          // 1) Limpar completamente o localStorage
+          try { localStorage.clear(); } catch (e) {}
+          // 2) Limpar caches do Service Worker
           try {
             if (window.caches && caches.keys) {
               caches.keys().then(function(keys){
@@ -590,7 +592,7 @@
               }).catch(function(){});
             }
           } catch (e) {}
-          // 2) Pedir update ao SW atual (se existir) e aplicar imediatamente
+          // 3) Pedir update ao SW atual (se existir) e aplicar imediatamente
           try {
             var reg = window.__swReg;
             if (reg) {
@@ -608,14 +610,14 @@
               try { (navigator.serviceWorker.controller || reg.active)?.postMessage({ type: 'CHECK_VERSION' }); } catch (e) {}
             }
           } catch (e) {}
-          // 3) Unregister de TODOS os SW para garantir recarregamento limpo
+          // 4) Unregister de TODOS os SW para garantir recarregamento limpo
           try {
             if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
               navigator.serviceWorker.getRegistrations().then(function(regs){
                 try { return Promise.all(regs.map(function(r){ return r.unregister().catch(function(){}); })); }
                 catch (e) { return Promise.resolve(); }
               }).finally(function(){
-                // 4) Recarregar com cache-buster para evitar CDNs
+                // 5) Recarregar com cache-buster para evitar CDNs
                 try {
                   var url = window.location.pathname + (window.location.search ? window.location.search + '&' : '?') + 't=' + Date.now() + window.location.hash;
                   window.location.replace(url);

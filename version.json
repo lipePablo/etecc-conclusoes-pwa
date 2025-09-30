@@ -1,9 +1,20 @@
 ﻿{
-  "version": "4.3.2",
+  "version": "4.3.4",
   "buildDate": "2025-09-30T00:00:00.000Z",
   "minVersion": "4.0.0",
   "forceUpdate": true,
   "changelog": {
+    "4.3.4": {
+      "date": "2025-09-30",
+      "title": "Ajustes Suporte e Ausência",
+      "changes": [
+        "Formulário: campo supervisor obrigatório e visível após histórico",
+        "Exemplo Comunicado: '/ o dia inteiro' no carregamento e cópia",
+        "Suporte Moto: linha 'TESTE DE VELOCIDADE FEITO' no texto copiado",
+        "Forçar atualização: opção sem limpar localStorage"
+      ],
+      "type": "patch"
+    },
     "4.3.2": {
       "date": "2025-09-30",
       "title": "Ajustes Comunicado de Ausência",
