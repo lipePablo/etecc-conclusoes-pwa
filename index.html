@@ -581,7 +581,16 @@
         var mfu = document.getElementById('menuForceUpdate');
         if (mfu) mfu.addEventListener('click', function(e){
           e.preventDefault();
-          try { localStorage.clear(); } catch {}
+          // Limpeza seletiva: manter apenas nome e tema
+          try {
+            var keep = {
+              'unificado.userName': localStorage.getItem('unificado.userName'),
+              'theme': localStorage.getItem('theme')
+            };
+            localStorage.clear();
+            try { if (keep['unificado.userName'] !== null && keep['unificado.userName'] !== undefined) localStorage.setItem('unificado.userName', keep['unificado.userName']); } catch (e) {}
+            try { if (keep['theme'] !== null && keep['theme'] !== undefined) localStorage.setItem('theme', keep['theme']); } catch (e) {}
+          } catch {}
           try {
             var reg = window.__swReg;
             if (reg) {

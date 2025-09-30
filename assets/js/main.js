@@ -335,7 +335,7 @@ let __skipNextRender = false;
     function timeGreeting(){
       try { const h = new Date().getHours(); if (h>=5 && h<12) return 'Bom dia'; if (h>=12 && h<18) return 'Boa tarde'; return 'Boa noite'; } catch { return 'Olá'; }
     }
-    // Emojis exibidos após o nome na saudação (variedade maior; corações aparecem menos)
+    // Emojis exibidos após o nome na saudação (variedade maior; corações aparecem o mínimo possível)
     const EMOJI_FACES = ['😊','😄','😀','😉','😎','🤗','🙂','😌','😇','😁','😃','🥳','😺'];
     const EMOJI_POS = ['👍','👊','👏','🙌','💪','🤝','🫶'];
     const EMOJI_STARS = ['✨','⭐️','🌟','💫','🌈'];
@@ -345,9 +345,9 @@ let __skipNextRender = false;
     function nextEmoji(){
       try {
         const r = Math.random();
-        // Pesos: Hearts ~8%, Faces ~32%, Positivos ~22%, Stars ~18%, Fun ~20%
+        // Pesos: Hearts ~0.5%, Faces ~32%, Positivos ~22%, Stars ~18%, Fun ~27.5%
         let arr;
-        if (r < 0.08) arr = EMOJI_HEARTS;
+        if (r < 0.005) arr = EMOJI_HEARTS;
         else if (r < 0.40) arr = EMOJI_FACES;
         else if (r < 0.62) arr = EMOJI_POS;
         else if (r < 0.80) arr = EMOJI_STARS;
