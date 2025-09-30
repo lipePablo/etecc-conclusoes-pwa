@@ -1,0 +1,14 @@
+/* Layout override: home cards side-by-side on large screens */
+/* Mobile-first: inherits single-column from base styles */
+
+/* Tablets/desktops: two columns (inherits from base at 840px) */
+
+/* Wide desktop: three columns */
+@media (min-width: 1120px) {
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
