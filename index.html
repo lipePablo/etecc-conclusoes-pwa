@@ -576,21 +576,21 @@
         if (mvh) mvh.addEventListener('click', function(e){ e.preventDefault(); showVersionHistory(); });
       } catch (e) {}
 
-      // Forçar Atualizações: dispara update do SW, aplica imediatamente e recarrega
+      // Forçar Atualizações: não toca no localStorage; limpa caches + SW e recarrega para aplicar build novo
       try {
         var mfu = document.getElementById('menuForceUpdate');
         if (mfu) mfu.addEventListener('click', function(e){
           e.preventDefault();
-          // Limpeza seletiva: manter apenas nome e tema
+          // 1) Limpar caches do Service Worker
           try {
-            var keep = {
-              'unificado.userName': localStorage.getItem('unificado.userName'),
-              'theme': localStorage.getItem('theme')
-            };
-            localStorage.clear();
-            try { if (keep['unificado.userName'] !== null && keep['unificado.userName'] !== undefined) localStorage.setItem('unificado.userName', keep['unificado.userName']); } catch (e) {}
-            try { if (keep['theme'] !== null && keep['theme'] !== undefined) localStorage.setItem('theme', keep['theme']); } catch (e) {}
-          } catch {}
+            if (window.caches && caches.keys) {
+              caches.keys().then(function(keys){
+                try { return Promise.all(keys.map(function(k){ return caches.delete(k).catch(function(){}); })); }
+                catch (e) { return Promise.resolve(); }
+              }).catch(function(){});
+            }
+          } catch (e) {}
+          // 2) Pedir update ao SW atual (se existir) e aplicar imediatamente
           try {
             var reg = window.__swReg;
             if (reg) {
@@ -606,11 +606,26 @@
                 }
               } catch (e) {}
               try { (navigator.serviceWorker.controller || reg.active)?.postMessage({ type: 'CHECK_VERSION' }); } catch (e) {}
-              setTimeout(function(){ location.reload(); }, 200);
-            } else {
-              location.reload();
             }
-          } catch (e) { location.reload(); }
+          } catch (e) {}
+          // 3) Unregister de TODOS os SW para garantir recarregamento limpo
+          try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+              navigator.serviceWorker.getRegistrations().then(function(regs){
+                try { return Promise.all(regs.map(function(r){ return r.unregister().catch(function(){}); })); }
+                catch (e) { return Promise.resolve(); }
+              }).finally(function(){
+                // 4) Recarregar com cache-buster para evitar CDNs
+                try {
+                  var url = window.location.pathname + (window.location.search ? window.location.search + '&' : '?') + 't=' + Date.now() + window.location.hash;
+                  window.location.replace(url);
+                } catch (e) { location.reload(); }
+              });
+              return;
+            }
+          } catch (e) {}
+          // Fallback: recarrega a página
+          setTimeout(function(){ location.reload(); }, 200);
         });
       } catch (e) {}
 
