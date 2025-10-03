@@ -1,9 +1,19 @@
 ﻿{
-  "version": "4.3.7",
-  "buildDate": "2025-10-03T00:00:00.000Z",
+  "version": "4.3.8",
+  "buildDate": "2025-10-03T12:00:00.000Z",
   "minVersion": "4.0.0",
   "forceUpdate": true,
   "changelog": {
+    "4.3.8": {
+      "date": "2025-10-03",
+      "title": "Ajustes de cópia e atualização",
+      "changes": [
+        "Cabeçalhos dos testes por extenso (até TRIGÉSIMO + composição)",
+        "Forçar atualizações retorna para a tela inicial",
+        "Melhorias gerais de UX nos testes de velocidade"
+      ],
+      "type": "patch"
+    },
     "4.3.7": {
       "date": "2025-10-03",
       "title": "Ajustes Suporte Técnico – Testes de Velocidade",

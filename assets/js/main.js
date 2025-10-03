@@ -7080,6 +7080,36 @@ const copyBtn = document.getElementById('btnCopiarForm');
       return false;
     };
     const toSentence = (s) => { try { const t=String(s||'').trim(); return t ? (t.charAt(0).toUpperCase()+t.slice(1).toLowerCase()) : t; } catch { return s||''; } };
+    let __velTestIndex = 0;
+    const ordinalPt = (n) => {
+      switch (n) {
+        case 1: return 'PRIMEIRO';
+        case 2: return 'SEGUNDO';
+        case 3: return 'TERCEIRO';
+        case 4: return 'QUARTO';
+        case 5: return 'QUINTO';
+        default: try { return String(n) + 'º'; } catch { return String(n); }
+      }
+    };
+    const ordinalExtenso = (n) => {
+      try {
+        const M = {
+          1:'PRIMEIRO', 2:'SEGUNDO', 3:'TERCEIRO', 4:'QUARTO', 5:'QUINTO',
+          6:'SEXTO', 7:'SÉTIMO', 8:'OITAVO', 9:'NONO', 10:'DÉCIMO',
+          11:'DÉCIMO PRIMEIRO', 12:'DÉCIMO SEGUNDO', 13:'DÉCIMO TERCEIRO', 14:'DÉCIMO QUARTO', 15:'DÉCIMO QUINTO',
+          16:'DÉCIMO SEXTO', 17:'DÉCIMO SÉTIMO', 18:'DÉCIMO OITAVO', 19:'DÉCIMO NONO', 20:'VIGÉSIMO',
+          21:'VIGÉSIMO PRIMEIRO', 22:'VIGÉSIMO SEGUNDO', 23:'VIGÉSIMO TERCEIRO', 24:'VIGÉSIMO QUARTO', 25:'VIGÉSIMO QUINTO',
+          26:'VIGÉSIMO SEXTO', 27:'VIGÉSIMO SÉTIMO', 28:'VIGÉSIMO OITAVO', 29:'VIGÉSIMO NONO', 30:'TRIGÉSIMO'
+        };
+        if (M[n]) return M[n];
+        const dezenas = { 30: 'TRIGÉSIMO', 40: 'QUADRAGÉSIMO', 50: 'QUINQUAGÉSIMO', 60: 'SEXAGÉSIMO', 70: 'SEPTUAGÉSIMO', 80: 'OCTOGÉSIMO', 90: 'NONAGÉSIMO', 100: 'CENTÉSIMO' };
+        const unidades = { 1:'PRIMEIRO',2:'SEGUNDO',3:'TERCEIRO',4:'QUARTO',5:'QUINTO',6:'SEXTO',7:'SÉTIMO',8:'OITAVO',9:'NONO' };
+        const d = Math.floor(n/10)*10; const u = n%10;
+        if (dezenas[d] && u===0) return dezenas[d];
+        if (dezenas[d] && unidades[u]) return dezenas[d] + ' ' + unidades[u];
+        return String(n);
+      } catch { return String(n); }
+    };
     const printQuestionOnce = (q) => {
       try {
         let k = String(q || '').toUpperCase();
@@ -7117,10 +7147,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
       const u = block.querySelector('.vel-up') || block.querySelector('#vel_up');
       const p = block.querySelector('.vel-ping') || block.querySelector('#vel_ping');
       if (d || u || p){
+        __velTestIndex++;
         const dVal = (d?.value || '').trim();
         const uVal = (u?.value || '').trim();
         const pVal = (p?.value || '').trim();
-        secOut.push('RESULTADO DOS TESTES:');
+        secOut.push('RESULTADO DO ' + (typeof ordinalExtenso==='function' ? ordinalExtenso(__velTestIndex) : ordinalPt(__velTestIndex)) + ' TESTE:');
         secOut.push(`- DOWNLOAD: ${dVal ? dVal + 'MB' : 'O técnico não preencheu este campo.'}`);
         secOut.push(`- UPLOAD: ${uVal ? uVal + 'MB' : 'O técnico não preencheu este campo.'}`);
         secOut.push(`- PING: ${pVal ? pVal + 'MS' : 'O técnico não preencheu este campo.'}`);
