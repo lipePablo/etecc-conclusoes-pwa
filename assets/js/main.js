@@ -8492,7 +8492,18 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try {
         let st2 = document.getElementById('veltestStyles2');
         if (!st2){ st2 = document.createElement('style'); st2.id = 'veltestStyles2'; document.head.appendChild(st2); }
-        st2.textContent = '.form-block[data-veltest-block="1"] .vel-del{border:1px solid var(--brand);color:var(--brand);background:transparent;border-radius:8px;padding:4px 8px;display:inline-flex;align-items:center;gap:6px}.form-block[data-veltest-block="1"] .vel-del:hover{background:rgba(255,77,77,.08)}';
+        st2.textContent = ''
+          + '.form-block[data-veltest-block="1"] .vel-del{'
+          + '  border:1px solid var(--brand);'
+          + '  color:var(--brand);'
+          + '  background:transparent;'
+          + '  border-radius:10px;'
+          + '  padding:0;'
+          + '  width:30px; height:30px;'
+          + '  display:inline-flex; align-items:center; justify-content:center;'
+          + '}'
+          + '.form-block[data-veltest-block="1"] .vel-del i{ font-size:16px; }'
+          + '.form-block[data-veltest-block="1"] .vel-del:hover{background:rgba(255,77,77,.08)}';
       } catch {}
     } catch {}
   }
@@ -8510,6 +8521,58 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try {
         const blocks = Array.from((sec||container).querySelectorAll('.form-block[data-veltest-block="1"]'));
         blocks.forEach((b, i) => { if (i > 0) wireDelButton(b, container); });
+      } catch {}
+
+      // Garantir posicionamento do motivo (NAO) logo abaixo do bloco de prints
+      try {
+        const printsBlock = (sec||container).querySelector('.form-block input[name="veltest_prints"]')?.closest('.form-block');
+        const motivoBlk = (sec||container).querySelector('#vel_motivo_nao_anexar')?.closest('.form-block');
+        if (printsBlock && motivoBlk && printsBlock.nextElementSibling !== motivoBlk){
+          printsBlock.insertAdjacentElement('afterend', motivoBlk);
+        }
+      } catch {}
+
+      // Ao alternar a seleção de prints, limpar e manter somente o primeiro bloco de testes
+      try {
+        (sec||container).addEventListener('change', (e) => {
+          const t = e.target; if (!t) return;
+          if ((t.name||'') !== 'veltest_prints') return;
+          try {
+            const formId = (container && container.__formId) || '';
+            const all = Array.from((sec||container).querySelectorAll('.form-block[data-veltest-block="1"]'));
+            if (all.length > 1){
+              // remover blocos adicionais e limpar estado
+              all.slice(1).forEach(blk => {
+                try {
+                  if (formId && typeof getFormState === 'function'){
+                    const st = getFormState(formId) || {};
+                    blk.querySelectorAll('input').forEach(inp => {
+                      const name = inp.name || '';
+                      const id = inp.id || '';
+                      if (name) delete st[name];
+                      if (id && id !== name) delete st[id];
+                    });
+                  }
+                } catch {}
+                try { blk.remove(); } catch {}
+              });
+            }
+            // limpar valores do primeiro bloco
+            const first = (sec||container).querySelector('.form-block[data-veltest-block="1"]');
+            if (first){
+              try {
+                first.querySelectorAll('input').forEach(inp => {
+                  const type = (inp.type||'').toLowerCase();
+                  if (type === 'radio' || type === 'checkbox') inp.checked = false; else inp.value = '';
+                });
+              } catch {}
+              // re-aplicar máscaras caso necessário
+              try { if (typeof setupSpeedMasks === 'function') setupSpeedMasks(first); } catch {}
+            }
+            // reavaliar condicionais
+            try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+          } catch {}
+        }, true);
       } catch {}
 
       function wireDelButton(blk, ctx){
