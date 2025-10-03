@@ -645,6 +645,7 @@ let __skipNextRender = false;
     const body = document.getElementById('appModalBody');
     const footer = document.getElementById('appModalFooter');
     const btnClose = document.getElementById('appModalClose');
+    const header = modal ? modal.querySelector('.modal-header') : null;
     if (!modal || !title || !body || !footer || !btnClose) return;
     let resolver = null;
     let rejecter = null;
@@ -680,6 +681,25 @@ let __skipNextRender = false;
       lastFocus = document.activeElement;
       title.textContent = opts.title || (opts.type==='confirm' ? 'Confirmar' : 'Aviso');
       body.innerHTML = typeof opts.html === 'string' ? opts.html : '';
+      // Exibir sem header quando solicitado (ex.: alerts destacados)
+      try {
+        const noHeader = !!opts.noHeader;
+        if (noHeader) {
+          try { modal.classList.add('no-header'); } catch {}
+          if (header) header.style.display = 'none';
+          // garantir que o botão X fique dentro do body
+          if (btnClose && body && btnClose.parentElement !== body) {
+            try { body.insertBefore(btnClose, body.firstChild || null); } catch {}
+          }
+        } else {
+          try { modal.classList.remove('no-header'); } catch {}
+          if (header) header.style.display = '';
+          // garantir que o botão X volte para o header
+          if (btnClose && header && btnClose.parentElement !== header) {
+            try { header.appendChild(btnClose); } catch {}
+          }
+        }
+      } catch {}
       if (!opts.html) {
         const p = document.createElement('p');
         p.textContent = opts.message || '';
@@ -719,6 +739,16 @@ let __skipNextRender = false;
       modal.classList.add('active');
       modal.removeAttribute('aria-hidden');
       document.addEventListener('keydown', onKey);
+      // Efeito de tremor opcional para chamar atenção
+      try {
+        if (opts && opts.shake) {
+          const box = modal.querySelector('.modal-box');
+          if (box) {
+            box.classList.add('modal-shake');
+            setTimeout(() => { try { box.classList.remove('modal-shake'); } catch {} }, 360);
+          }
+        }
+      } catch {}
       const primary = footer.querySelector('[data-primary="1"]') || footer.querySelector('button');
       if (primary) setTimeout(()=>{ try { primary.focus(); } catch {} }, 0);
     }
@@ -729,6 +759,9 @@ let __skipNextRender = false;
           type: 'alert',
           title: opts?.title || 'Aviso',
           message,
+          html: opts?.html,
+          noHeader: opts?.noHeader,
+          shake: opts?.shake,
           buttons: [ { text: opts?.okText || 'OK', value: true, primary: true, autofocus: true, className: (opts?.className || 'btn-action btn-action--red') } ]
         });
       });
@@ -1578,8 +1611,8 @@ function setTopbarMode(internal){
             try {
               const supRadio = root.querySelector('input[name="aus_sup_comunicada"]');
               const supBlock = supRadio ? supRadio.closest('.form-block') : null;
-              if (supBlock && !root.__supNomePatched) {
-                root.__supNomePatched = true;
+              // Inserir somente se o campo ainda não existir no DOM
+              if (supBlock && !root.querySelector('#aus_sup_nome')) {
                 const nomeBlk = document.createElement('div');
                 nomeBlk.className = 'form-block';
                 nomeBlk.setAttribute('data-when-field', 'aus_sup_comunicada');
@@ -5588,6 +5621,43 @@ function setTopbarMode(internal){
             root.innerHTML = markup;
             // Ajustes específicos da Equipe Carro (desacoplado do Moto)
             try {
+              // MOTIVO DO CANCELAMENTO: atualizar texto da instrução e incluir "Inviabilidade técnica" como primeira opção
+              try {
+                const motivoSeg = root.querySelector('.segmented[aria-label="Motivo do cancelamento"]');
+                const motivoBlock = motivoSeg ? motivoSeg.closest('.form-block') : null;
+                const motivoLabel = motivoBlock ? motivoBlock.querySelector('.form-label') : null;
+                if (motivoLabel) {
+                  // Texto de instrução do campo
+                  motivoLabel.textContent = 'Selecione o motivo que ocasionou esta retirada/cancelamento do cliente';
+                }
+                if (motivoSeg && !root.querySelector('#mot_inv')) {
+                  // Nova opção no topo: Inviabilidade técnica
+                  const invInput = document.createElement('input');
+                  invInput.type = 'radio';
+                  invInput.id = 'mot_inv';
+                  invInput.name = 'motivo';
+                  invInput.value = 'inviabilidade';
+                  const invLabel = document.createElement('label');
+                  invLabel.setAttribute('for', 'mot_inv');
+                  invLabel.textContent = 'Inviabilidade técnica';
+                  // Inserir como primeira opção do grupo
+                  motivoSeg.insertBefore(invInput, motivoSeg.firstChild);
+                  motivoSeg.insertBefore(invLabel, invInput.nextSibling);
+                  // Bloco condicional: descrição da inviabilidade técnica
+                  if (motivoBlock) {
+                    const invBlk = document.createElement('div');
+                    invBlk.className = 'form-block';
+                    invBlk.setAttribute('data-when-field', 'motivo');
+                    invBlk.setAttribute('data-when-equals', 'inviabilidade');
+                    invBlk.setAttribute('data-clear-on-hide', '1');
+                    invBlk.innerHTML = ''
+                      + '    <label class="form-label" for="mot_inv_desc">Descreva qual foi a inviabilidade técnica</label>\n'
+                      + '    <textarea id="mot_inv_desc" name="mot_inv_desc" class="form-input--underline auto-expand" placeholder="Digite..." rows="2" data-min-height="80"></textarea>\n'
+                      + '    <div class="textarea-counter">0 caracteres</div>';
+                    motivoBlock.insertAdjacentElement('afterend', invBlk);
+                  }
+                }
+              } catch {}
               const insat = root.querySelector('.form-block[data-when-field="motivo"][data-when-equals="insatisfacao"]');
               if (insat){
                 // Remover "O cliente recebeu visita técnica?"
@@ -6756,6 +6826,157 @@ const copyBtn = document.getElementById('btnCopiarForm');
         }
       } catch {}
       return;
+    }
+    else if (formId === 'retirada-equipamentos-carro') {
+      // Validação: quando "Os equipamentos foram retirados?" = Sim, os MACs tornam-se obrigatórios
+      try {
+        const ensureErrShakeStyle = () => {
+          try {
+            if (document.getElementById('errShakeStyle')) return;
+            const st = document.createElement('style'); st.id='errShakeStyle';
+            st.textContent = '@keyframes errshake{0%{transform:translateX(0)}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}100%{transform:translateX(0)}} .error-shake{animation:errshake .32s ease}';
+            document.head.appendChild(st);
+          } catch {}
+        };
+        const clearInlineErrors = () => {
+          try { Array.from(container.querySelectorAll('.form-hint.sinal-los-hint[data-error="1"]')).forEach(el => el.remove()); } catch {}
+          try { Array.from(container.querySelectorAll('.form-input--underline.error')).forEach(el => { el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; }); } catch {}
+          try { Array.from(container.querySelectorAll('.segmented.error, .choices.error')).forEach(seg => { seg.classList.remove('error'); seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; }); } catch {}
+        };
+        const addBlockError = (block, targetEl, msg) => {
+          try {
+            ensureErrShakeStyle();
+            const host = block || targetEl || container;
+            const m = document.createElement('div');
+            m.className = 'form-hint sinal-los-hint is-highlight';
+            m.setAttribute('data-error','1');
+            m.textContent = msg || 'Preencha este campo.';
+            host.appendChild(m);
+            const el = targetEl;
+            if (el && el.classList) {
+              el.classList.add('error');
+              if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') { el.style.borderBottomColor = '#ff4d4d'; el.style.boxShadow = '0 2px 0 rgba(255,77,77,.5)'; }
+              try { el.classList.add('error-shake'); setTimeout(()=>{ try { el.classList.remove('error-shake'); } catch {} }, 360); } catch {}
+            } else if (block) {
+              const seg = block.querySelector('.segmented, .choices');
+              if (seg) {
+                seg.classList.add('error');
+                try { seg.classList.add('error-shake'); setTimeout(()=>{ try { seg.classList.remove('error-shake'); } catch {} }, 360); } catch {}
+              }
+            }
+            // Remoção automática após 7s
+            setTimeout(() => {
+              try { m.remove(); } catch {}
+              try {
+                if (el && el.classList) { el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; }
+                else if (block) { const seg = block.querySelector('.segmented, .choices'); if (seg){ seg.classList.remove('error'); seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; } }
+              } catch {}
+            }, 7000);
+            // Remoção antecipada quando o bloco for ocultado (condicional desligada)
+            try {
+              const targetBlock = block || (el ? el.closest && el.closest('.form-block') : null);
+              if (targetBlock) {
+                const obs = new MutationObserver(() => {
+                  try {
+                    if (targetBlock.hasAttribute('hidden') || (window.getComputedStyle(targetBlock).display === 'none')) {
+                      try { m.remove(); } catch {}
+                      try { if (el && el.classList) { el.classList.remove('error'); el.style.boxShadow=''; el.style.borderBottomColor=''; } } catch {}
+                      try { const seg = targetBlock.querySelector('.segmented, .choices'); if (seg){ seg.classList.remove('error'); seg.style.boxShadow=''; seg.style.border=''; seg.style.borderColor=''; } } catch {}
+                      try { obs.disconnect(); } catch {}
+                    }
+                  } catch {}
+                });
+                obs.observe(targetBlock, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+              }
+            } catch {}
+          } catch {}
+        };
+        clearInlineErrors();
+        const retSel = container.querySelector('input[name="ret_equip"]:checked');
+        const isRetirado = !!(retSel && String(retSel.value||'').toLowerCase() === 'sim');
+        if (isRetirado) {
+          const errActions = [];
+          let firstFocusEl = null;
+          const eqBlock = container.querySelector('.form-block[data-when-field="ret_equip"][data-when-equals="sim"]');
+          const eqOnt = container.querySelector('#eq_sel_ont');
+          const eqOnu = container.querySelector('#eq_sel_onu');
+          const eqRot = container.querySelector('#eq_sel_rot');
+          const eqOut = container.querySelector('#eq_sel_outro');
+          const eqChecked = [eqOnt, eqOnu, eqRot, eqOut].filter(e => e && e.checked);
+          if (eqChecked.length === 0) {
+            if (!firstFocusEl) {
+              try { firstFocusEl = eqBlock ? (eqBlock.querySelector('input[type="checkbox"]') || eqBlock) : null; } catch {}
+            }
+            errActions.push(() => addBlockError(eqBlock, null, 'Selecione ao menos um equipamento retirado.'));
+          }
+          // Helper para checar lista de MAC por prefixo
+          const hasAnyMacByPrefix = (prefix) => {
+            try {
+              const inputs = Array.from(container.querySelectorAll('input[name^="'+prefix+'"][type="text"]'));
+              return inputs.some(i => (i.value||'').trim() !== '');
+            } catch { return false; }
+          };
+          // ONT
+          if (eqOnt && eqOnt.checked) {
+            if (!hasAnyMacByPrefix('ont_mac_')) {
+              const blk = container.querySelector('.form-block[data-when-field="eq_sel_ont"][data-when-equals="true"]');
+              const first = blk ? (blk.querySelector('input[name^="ont_mac_"]') || blk) : null;
+              if (!firstFocusEl) firstFocusEl = first;
+              errActions.push(() => addBlockError(blk, first, 'Informe ao menos um MAC ONT.'));
+            }
+          }
+          // ONU
+          if (eqOnu && eqOnu.checked) {
+            if (!hasAnyMacByPrefix('onu_mac_')) {
+              const blk = container.querySelector('.form-block[data-when-field="eq_sel_onu"][data-when-equals="true"]');
+              const first = blk ? (blk.querySelector('input[name^="onu_mac_"]') || blk) : null;
+              if (!firstFocusEl) firstFocusEl = first;
+              errActions.push(() => addBlockError(blk, first, 'Informe ao menos um MAC ONU.'));
+            }
+          }
+          // Roteador
+          if (eqRot && eqRot.checked) {
+            if (!hasAnyMacByPrefix('rot_mac_')) {
+              const blk = container.querySelector('.form-block[data-when-field="eq_sel_rot"][data-when-equals="true"]');
+              const first = blk ? (blk.querySelector('input[name^="rot_mac_"]') || blk) : null;
+              if (!firstFocusEl) firstFocusEl = first;
+              errActions.push(() => addBlockError(blk, first, 'Informe ao menos um MAC do roteador.'));
+            }
+          }
+          // Outros: exigir pelo menos um MAC em outro_mac_
+          if (eqOut && eqOut.checked) {
+            const hasOutroMac = hasAnyMacByPrefix('outro_mac_');
+            if (!hasOutroMac) {
+              const blk = container.querySelector('.form-block[data-when-field="eq_sel_outro"][data-when-equals="true"]');
+              // Tenta focar no primeiro campo de MAC dos "outros"
+              let first = null;
+              try { first = blk ? blk.querySelector('input[name^="outro_mac_"]') : null; } catch {}
+              if (!firstFocusEl) firstFocusEl = first || blk;
+              errActions.push(() => addBlockError(blk, first, 'Informe ao menos um MAC dos outros equipamentos.'));
+            }
+          }
+          if (errActions.length > 0) {
+            try {
+              const html = '<div style="display:flex;gap:10px;align-items:flex-start;background:rgba(220,38,38,.08);border-left:4px solid #dc2626;padding:12px;border-radius:6px;color:#dc2626;">'
+                + '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>'
+                + '<div><div style="font-weight:700;margin-bottom:4px;">Alerta</div>'
+                + '<div>Preencha os campos obrigatórios de MAC dos equipamentos retirados.</div></div>'
+                + '</div>';
+              await (window.__appModal?.showAlert('', { title: 'Alerta', html, okText: 'Entendi', noHeader: true, shake: true }));
+            } catch {}
+            try { errActions.forEach(fn => { try { fn(); } catch {} }); } catch {}
+            try {
+              const tgt = firstFocusEl;
+              if (tgt && typeof tgt.scrollIntoView === 'function') {
+                tgt.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              const focusEl = (tgt && tgt.tagName && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA')) ? tgt : (tgt ? tgt.querySelector && tgt.querySelector('input, textarea') : null);
+              try { if (focusEl && typeof focusEl.focus === 'function') focusEl.focus(); } catch {}
+            } catch {}
+            return;
+          }
+        }
+      } catch {}
     }
   } catch {}
   try { localStorage.setItem(formStateKey(formId), JSON.stringify((typeof collectCurrentFormState === "function") ? collectCurrentFormState(container) : getFormState(formId))); } catch {}

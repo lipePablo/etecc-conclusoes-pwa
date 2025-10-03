@@ -1,7 +1,14 @@
 /* Layout override: home cards side-by-side on large screens */
 /* Mobile-first: inherits single-column from base styles */
 
-/* Tablets/desktops: two columns (inherits from base at 840px) */
+/* A partir de 870px: três colunas */
+@media (min-width: 870px) {
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
 
 /* Wide desktop: three columns */
 @media (min-width: 1120px) {
@@ -11,4 +18,10 @@
     gap: 16px;
   }
 }
+/* Modal genérico: preparar posicionamento do botão X quando sem header */
+.modal-box { position: relative; }
+#appModal.no-header .modal-body #appModalClose { position: absolute; top: 8px; right: 10px; }
 
+/* Efeito de tremor para modal de alerta */
+@keyframes modalshake { 0%{transform:translateX(0)} 20%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 60%{transform:translateX(-2px)} 80%{transform:translateX(2px)} 100%{transform:translateX(0)} }
+.modal-shake { animation: modalshake .32s ease; }
