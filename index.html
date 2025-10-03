@@ -361,7 +361,7 @@
 
   <!-- PWA Service Worker -->
   <script>
-    let currentAppVersion = '4.3.6';
+    let currentAppVersion = '4.3.7';
     let versionData = null;
 
     // Sistema de carregamento
@@ -374,6 +374,12 @@
         }, 500);
       }
     }
+
+    // Definir versão inicial na UI antes de buscar remoto
+    try {
+      var lv = document.getElementById('loadingVersion'); if (lv) lv.textContent = currentAppVersion;
+      var cv = document.getElementById('currentVersion'); if (cv) cv.textContent = currentAppVersion;
+    } catch (e) {}
 
     // Verificar versão e compatibilidade
     async function checkVersion() {
@@ -490,7 +496,7 @@
         if (!canProceed) return; // Para aqui se precisar de atualização forçada
 
         // Registrar SW
-        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.3.6'))
+        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.3.7'))
           .then(registration => {
             console.log('SW registrado com sucesso:', registration);
             try { window.__swReg = registration; } catch (e) {}

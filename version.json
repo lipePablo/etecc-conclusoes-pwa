@@ -1,9 +1,21 @@
 ﻿{
-  "version": "4.3.6",
-  "buildDate": "2025-09-30T00:00:00.000Z",
+  "version": "4.3.7",
+  "buildDate": "2025-10-03T00:00:00.000Z",
   "minVersion": "4.0.0",
   "forceUpdate": true,
   "changelog": {
+    "4.3.7": {
+      "date": "2025-10-03",
+      "title": "Ajustes Suporte Técnico – Testes de Velocidade",
+      "changes": [
+        "Campos adicionais no bloco de Resultado dos testes (dispositivo e via)",
+        "Botão para adicionar outro teste realizado e suporte a múltiplos testes",
+        "Máscaras aplicadas em todos os blocos de teste",
+        "Texto copiado inclui dispositivo e via para cada teste",
+        "Botão de excluir (lixeira) para remover blocos adicionais"
+      ],
+      "type": "patch"
+    },
     "4.3.4": {
       "date": "2025-09-30",
       "title": "Ajustes Suporte e Ausência",

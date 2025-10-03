@@ -2397,13 +2397,25 @@ function setTopbarMode(internal){
         + '      <label for="veltest_prints_naoreal">Teste não realizado</label>\n'
         + '    </div>\n'
         + '  </div>\n'
-        + '  <div class="form-block" data-when-field="veltest_prints" data-when-in="sim,nao" data-clear-on-hide="1" data-clear-on-hide="1">\n'
+        + '  <div class="form-block" data-when-field="veltest_prints" data-when-in="sim,nao" data-clear-on-hide="1" data-clear-on-hide="1" data-veltest-block="1">\n'
         + '    <label class="form-label">Resultado dos testes de velocidade:</label>\n'
         + '    <div class="triple-inputs">\n'
-        + '      <input id="vel_down" name="vel_down" type="text" class="form-input--underline" placeholder="DOWN" inputmode="decimal" />\n'
-        + '      <input id="vel_up" name="vel_up" type="text" class="form-input--underline" placeholder="UP" inputmode="decimal" />\n'
-        + '      <input id="vel_ping" name="vel_ping" type="text" class="form-input--underline" placeholder="PING" inputmode="numeric" />\n'
+        + '      <input id="vel_down" name="vel_down_1" type="text" class="form-input--underline vel-down" placeholder="DOWN" inputmode="decimal" />\n'
+        + '      <input id="vel_up" name="vel_up_1" type="text" class="form-input--underline vel-up" placeholder="UP" inputmode="decimal" />\n'
+        + '      <input id="vel_ping" name="vel_ping_1" type="text" class="form-input--underline vel-ping" placeholder="PING" inputmode="numeric" />\n'
         + '    </div>\n'
+        + '    <label class="form-label" for="vel_device_1">Informe em qual dispositivo você realizou esse teste:</label>\n'
+        + '    <input id="vel_device_1" name="vel_device_1" type="text" class="form-input--underline vel-device" placeholder="Ex.: Notebook do cliente, celular do técnico..." />\n'
+        + '    <label class="form-label">O teste foi realizado via:</label>\n'
+        + '    <div class="segmented vel-via" role="radiogroup" aria-label="Teste realizado via">\n'
+        + '      <input type="radio" id="vel_via_1_cabo" name="vel_via_1" value="cabo">\n'
+        + '      <label for="vel_via_1_cabo">Cabo de rede</label>\n'
+        + '      <input type="radio" id="vel_via_1_wifi" name="vel_via_1" value="wifi">\n'
+        + '      <label for="vel_via_1_wifi">Wi-Fi</label>\n'
+        + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="veltest_prints" data-when-in="sim,nao" data-clear-on-hide="1" data-veltest-add="1">\n'
+        + '    <button type="button" class="btn-ghost vel-add"><i class="fa-solid fa-plus"></i> Adicionar outro teste realizado</button>\n'
         + '  </div>\n'
         + '  <div class="form-block" data-when-field="veltest_prints" data-when-equals="nao" data-clear-on-hide="1">\n'
         + '    <label class="form-label" for="vel_motivo_nao_anexar">Motivo de não anexar as fotos do resultado do teste de velocidade:</label>\n'
@@ -6279,6 +6291,7 @@ function updateConditionalVisibility(formId, container){
     if (formId === 'suporte-moto') { try { appendTrocaEquipamentosSection(container); } catch {} }
     try { setupMacLists(container); } catch {}
     try { setupOutroList(container); } catch {}
+    try { setupVelTestDynamic(container); } catch {}
     try { ensureFotosJustificativa(container); } catch {}
     try { setupSpeedMasks(container); } catch {}
     // Acrescenta AJUDA INTERNA somente onde é desejado (Suporte Moto)
@@ -7100,9 +7113,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
           }
         }
       } catch {}
-      const d = block.querySelector('#vel_down');
-      const u = block.querySelector('#vel_up');
-      const p = block.querySelector('#vel_ping');
+      const d = block.querySelector('.vel-down') || block.querySelector('#vel_down');
+      const u = block.querySelector('.vel-up') || block.querySelector('#vel_up');
+      const p = block.querySelector('.vel-ping') || block.querySelector('#vel_ping');
       if (d || u || p){
         const dVal = (d?.value || '').trim();
         const uVal = (u?.value || '').trim();
@@ -7111,6 +7124,12 @@ const copyBtn = document.getElementById('btnCopiarForm');
         secOut.push(`- DOWNLOAD: ${dVal ? dVal + 'MB' : 'O técnico não preencheu este campo.'}`);
         secOut.push(`- UPLOAD: ${uVal ? uVal + 'MB' : 'O técnico não preencheu este campo.'}`);
         secOut.push(`- PING: ${pVal ? pVal + 'MS' : 'O técnico não preencheu este campo.'}`);
+        const dev = block.querySelector('.vel-device');
+        const devVal = (dev?.value || '').trim();
+        let viaVal = '';
+        try { const viaSel = block.querySelector('input[name^="vel_via_"]:checked'); viaVal = (viaSel?.value || '').trim(); } catch {}
+        secOut.push(`- DISPOSITIVO: ${devVal ? devVal : 'O técnico não preencheu este campo.'}`);
+        secOut.push(`- VIA: ${viaVal ? (viaVal === 'cabo' ? 'Cabo de rede' : 'Wi-Fi') : 'O técnico não preencheu este campo.'}`);
         secOut.push('');
         return;
       }
@@ -8267,9 +8286,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
   // Máscaras simples para DOWN/UP/PING
   function setupSpeedMasks(root){
     const ctx = root || document;
-    const d = ctx.querySelector('#vel_down');
-    const u = ctx.querySelector('#vel_up');
-    const p = ctx.querySelector('#vel_ping');
+    const dList = Array.from(ctx.querySelectorAll('.vel-down, #vel_down'));
+    const uList = Array.from(ctx.querySelectorAll('.vel-up, #vel_up'));
+    const pList = Array.from(ctx.querySelectorAll('.vel-ping, #vel_ping'));
     function onDecimalInput(el){
       if (!el) return;
       const handler = () => {
@@ -8293,7 +8312,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
       el.addEventListener('blur', handler);
       el.setAttribute('inputmode','numeric');
     }
-    onDecimalInput(d); onDecimalInput(u); onIntInput(p, 4);
+    dList.forEach(onDecimalInput);
+    uList.forEach(onDecimalInput);
+    pList.forEach((el) => onIntInput(el, 4));
   }
 
   // Máscara dinâmica para telefones brasileiros (DDD + 8/9 dígitos)
@@ -8452,6 +8473,133 @@ const copyBtn = document.getElementById('btnCopiarForm');
         try { if (addBtn.dataset) addBtn.dataset.outroWired = '1'; } catch {}
       }
     });
+  }
+
+  // CSS runtime para ajustar espaçamentos do bloco de testes de velocidade
+  function ensureVelTestStyles(){
+    try {
+      const css = [
+        '.form-block[data-veltest-block="1"] .triple-inputs + label.form-label{margin-top:14px;display:block}',
+        '.form-block[data-veltest-block="1"] .vel-device + label.form-label{margin-top:14px;display:block}',
+        // Botão de adicionar outro teste: ocupar toda a largura mantendo o estilo btn-ghost e cores da mac-add
+        '.form-block[data-veltest-add="1"] .vel-add{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-color:var(--brand);color:var(--brand);font-weight:700}',
+        '.form-block[data-veltest-add="1"] .vel-add:hover{background:rgba(255,77,77,.08)}'
+      ].join('');
+      let st = document.getElementById('veltestStyles');
+      if (!st){ st = document.createElement('style'); st.id = 'veltestStyles'; document.head.appendChild(st); }
+      st.textContent = css;
+      // estilos adicionais para botão lixeira dos blocos de teste
+      try {
+        let st2 = document.getElementById('veltestStyles2');
+        if (!st2){ st2 = document.createElement('style'); st2.id = 'veltestStyles2'; document.head.appendChild(st2); }
+        st2.textContent = '.form-block[data-veltest-block="1"] .vel-del{border:1px solid var(--brand);color:var(--brand);background:transparent;border-radius:8px;padding:4px 8px;display:inline-flex;align-items:center;gap:6px}.form-block[data-veltest-block="1"] .vel-del:hover{background:rgba(255,77,77,.08)}';
+      } catch {}
+    } catch {}
+  }
+
+  // Suporte Técnico: adicionar dinamicamente novos blocos de "RESULTADO DOS TESTES DE VELOCIDADE"
+  function setupVelTestDynamic(root){
+    try {
+      const container = root || document;
+      try { ensureVelTestStyles(); } catch {}
+      const addBtn = container.querySelector('.vel-add');
+      if (!addBtn) return;
+      if (addBtn.__wired) return; addBtn.__wired = true;
+      const sec = addBtn.closest('.form-section');
+      // Cria/estiliza botão de excluir em blocos existentes (exceto o primeiro)
+      try {
+        const blocks = Array.from((sec||container).querySelectorAll('.form-block[data-veltest-block="1"]'));
+        blocks.forEach((b, i) => { if (i > 0) wireDelButton(b, container); });
+      } catch {}
+
+      function wireDelButton(blk, ctx){
+        try {
+          if (!blk) return;
+          if (blk.__velDelWired) return;
+          blk.__velDelWired = true;
+          // garante posicionamento relativo do bloco para posicionar a lixeira
+          try { if (!blk.style.position) blk.style.position = 'relative'; } catch {}
+          // evita adicionar lixeira no primeiro bloco
+          try {
+            const all = Array.from((sec||ctx||document).querySelectorAll('.form-block[data-veltest-block="1"]'));
+            const idx = all.indexOf(blk);
+            if (idx === 0) return; // primeiro bloco não tem lixeira
+          } catch {}
+          // cria botão
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'btn-ghost vel-del';
+          del.setAttribute('aria-label', 'Excluir este teste');
+          del.innerHTML = '<i class="fa-solid fa-trash"></i>';
+          // posiciona no canto superior direito
+          del.style.position = 'absolute';
+          del.style.top = '6px';
+          del.style.right = '6px';
+          // handler de exclusão
+          del.addEventListener('click', () => {
+            try {
+              const formId = (ctx && ctx.__formId) || (container && container.__formId) || '';
+              // limpa valores do estado
+              try {
+                if (formId && typeof getFormState === 'function'){
+                  const st = getFormState(formId) || {};
+                  Array.from(blk.querySelectorAll('input')).forEach((inp) => {
+                    const name = inp.name || '';
+                    const id = inp.id || '';
+                    if (name) delete st[name];
+                    if (id && id !== name) delete st[id];
+                  });
+                }
+              } catch {}
+              // remove do DOM
+              blk.remove();
+              // reavalia condicionais
+              try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, ctx||container); } catch {}
+            } catch {}
+          });
+          blk.appendChild(del);
+        } catch {}
+      }
+      addBtn.addEventListener('click', () => {
+        try {
+          if (!sec) return;
+          const existing = Array.from(sec.querySelectorAll('.form-block[data-veltest-block="1"]'));
+          const nextIdx = existing.length + 1;
+          const blk = document.createElement('div');
+          blk.className = 'form-block';
+          blk.setAttribute('data-veltest-block','1');
+          blk.setAttribute('data-when-field','veltest_prints');
+          blk.setAttribute('data-when-in','sim,nao');
+          blk.setAttribute('data-clear-on-hide','1');
+          blk.innerHTML = ''
+            + '    <label class="form-label">Resultado dos testes de velocidade:</label>'
+            + '    <div class="triple-inputs">'
+            + '      <input name="vel_down_' + nextIdx + '" type="text" class="form-input--underline vel-down" placeholder="DOWN" inputmode="decimal" />'
+            + '      <input name="vel_up_' + nextIdx + '" type="text" class="form-input--underline vel-up" placeholder="UP" inputmode="decimal" />'
+            + '      <input name="vel_ping_' + nextIdx + '" type="text" class="form-input--underline vel-ping" placeholder="PING" inputmode="numeric" />'
+            + '    </div>'
+            + '    <label class="form-label" for="vel_device_' + nextIdx + '">Informe em qual dispositivo você realizou esse teste:</label>'
+            + '    <input id="vel_device_' + nextIdx + '" name="vel_device_' + nextIdx + '" type="text" class="form-input--underline vel-device" placeholder="Ex.: Notebook do cliente, celular do técnico..." />'
+            + '    <label class="form-label">O teste foi realizado via:</label>'
+            + '    <div class="segmented vel-via" role="radiogroup" aria-label="Teste realizado via">'
+            + '      <input type="radio" id="vel_via_' + nextIdx + '_cabo" name="vel_via_' + nextIdx + '" value="cabo">'
+            + '      <label for="vel_via_' + nextIdx + '_cabo">Cabo de rede</label>'
+            + '      <input type="radio" id="vel_via_' + nextIdx + '_wifi" name="vel_via_' + nextIdx + '" value="wifi">'
+            + '      <label for="vel_via_' + nextIdx + '_wifi">Wi-Fi</label>'
+            + '    </div>';
+          // inserir antes do bloco do botão de adicionar
+          const addWrap = addBtn.closest('.form-block');
+          sec.insertBefore(blk, addWrap);
+          wireDelButton(blk, container);
+          try { if (typeof setupSpeedMasks === 'function') setupSpeedMasks(blk); } catch {}
+          try {
+            const formId = (container && container.__formId) || '';
+            if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
+          } catch {}
+          try { blk.querySelector('input')?.focus(); } catch {}
+        } catch {}
+      });
+    } catch {}
   }
 
   // Acrescenta dinamicamente a seção "TROCA DE EQUIPAMENTOS" ao final do formulário

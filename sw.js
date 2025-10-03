@@ -1,4 +1,4 @@
-const CACHE_NAME = 'etecc-conclusoes-v4.3.6';
+const CACHE_NAME = 'etecc-conclusoes-v4.3.7';
 const OFFLINE_URL = '/offline.html';
 const VERSION_URL = '/version.json';
 
