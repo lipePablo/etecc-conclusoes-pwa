@@ -1932,6 +1932,12 @@ function setTopbarMode(internal){
         + '    <label class="form-label" for="clienteNome">Quem acompanhou</label>\n'
         + '    <input id="clienteNome" name="clienteNome" type="text" class="form-input" placeholder="Ex.: Maria Souza" autocomplete="name" />\n'
         + '  </div>\n'
+        + '  <div class="form-block">\n'
+        + '    <label class="form-label" for="cliente_relato">Relato do Cliente</label>\n'
+        + '    <div class="form-hint" style="margin-top:6px;">Relate a dificuldade explicada diretamente pelo cliente no local</div>\n'
+        + '    <textarea id="cliente_relato" name="cliente_relato" class="form-input--underline auto-expand" placeholder="Digite o relato do cliente..." rows="3" data-min-height="90"></textarea>\n'
+        + '    <div class="textarea-counter">0 caracteres</div>\n'
+        + '  </div>\n'
         + '  <div class="form-cond" data-when-field="tipo_serv" data-when-equals="cabeamento" data-clear-on-hide="1">\n'
         + '    <div class="form-block">\n'
         + '      <label class="form-label">Cabeamento viável:</label>\n'
@@ -2116,31 +2122,31 @@ function setTopbarMode(internal){
         + '    <div class="form-title"><i class="fa-regular fa-square-check"></i> Conferências Técnicas</div>\n'
         + '    <div class="form-subtitle">Checklist de verificações técnicas</div>\n'
         + '  </div>\n'
-        + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,avaliacao_cab,instalacao" data-clear-on-hide="1">\n'
-        + '    <label class="form-label">Conferiu o cabo de rede que interliga até o roteador:</label>\n'
-        + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Conferiu o cabo até o roteador?">\n'
-        + '      <input type="radio" id="caborede_fast" name="caborede" value="fast">\n'
-        + '      <label for="caborede_fast">Fast</label>\n'
-        + '      <input type="radio" id="caborede_gigabit" name="caborede" value="gigabit">\n'
-        + '      <label for="caborede_gigabit">Gigabit</label>\n'
-        + '      <input type="radio" id="caborede_ontcomp" name="caborede" value="ont-onu-compartilhada">\n'
-        + '      <label for="caborede_ontcomp">No local é ONT/ONU compartilhada</label>\n'
-        + '      <input type="radio" id="caborede_naoconf" name="caborede" value="nao-conferido">\n'
-        + '      <label for="caborede_naoconf">Não foi conferido</label>\n'
-        + '    </div>\n'
-        + '  </div>\n'
-        + '  <div class="form-block" data-when-field="caborede" data-when-equals="nao-conferido" data-clear-on-hide="1">\\n'
-        + '    <label class="form-label" for="caborede_motivo">Motivo de não ter realizado a conferência:</label>\\n'
-        + '    <input id="caborede_motivo" name="caborede_motivo" type="text" class="form-input--underline" placeholder="Descreva o motivo..." />\\n'
-        + '  </div>\\n' 
-        + '  <div class="form-block">\\n'
-        + '    <label class="form-label">As fotos dos equipamentos no local e do serviço realizado foram anexadas?</label>\\n'
-        + '    <div class="segmented" role="radiogroup" aria-label="Fotos dos equipamentos anexadas?">\\n'
-        + '      <input type="radio" id="fotos_anex_sim" name="fotos_anex" value="sim">\\n'
-        + '      <label for="fotos_anex_sim"><i class="fa-solid fa-check"></i> Sim</label>\\n'
-        + '      <input type="radio" id="fotos_anex_nao" name="fotos_anex" value="nao">\\n'
-        + '      <label for="fotos_anex_nao"><i class="fa-solid fa-xmark"></i> Não</label>\\n'
+        + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,avaliacao_cab,instalacao" data-clear-on-hide="1">\\n'
+        + '    <label class="form-label">Verificação dos cabos de rede do roteador</label>\\n'
+        + '    <div class="form-hint" style="margin-top:6px;">O que foi verificado referente aos cabos de rede do local:</div>\\n'
+        + '    <label class="form-label" style="margin-top:10px;">Cabo de Rede da WAN:</label>\\n'
+        + '    <div class="choices">\\n' 
+        + '      <label class="choice"><input type="checkbox" id="wan_gigabit" name="wan_gigabit"><span>Cabo de rede Gigabit</span></label>\\n'
+        + '      <label class="choice"><input type="checkbox" id="wan_powermitter" name="wan_powermitter"><span>Teste no Powermitter</span></label>\\n'
+        + '      <label class="choice"><input type="checkbox" id="wan_ping" name="wan_ping"><span>Teste de Ping no Cabo</span></label>\\n'
         + '    </div>\\n'
+        + '    <label class="form-label" for="wan_obs" style="margin-top:10px;">Observação adicional sobre o cabo de rede (caso tenha):</label>\\n'
+        + '    <textarea id="wan_obs" name="wan_obs" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>\\n'
+        + '  </div>\\n'
+        + '  <div class="form-block" data-wan-add="1">\\n'
+        + '    <button type="button" class="btn-ghost wan-add"><i class="fa-solid fa-plus"></i> Adicionar verificação adicional (cabo de rede)</button>\\n'
+        + '  </div>\\n'
+        + '  <div class="form-block">\\n'
+        + '    <label class="form-label">Verificação das Fontes</label>\\n'        + '    <div class="form-hint" style="margin-top:6px;margin-bottom:6px;">Marque todas as conferências realizadas sobre as fontes dos equipamentos</div>\\n'
+        + '    <div class="choices">\\n'
+        + '      <label class="choice"><input type="checkbox" id="fonte_mau_contato" name="fonte_mau_contato"><span>Mau contato mecânico (manipulou a fonte para verificar se terá queda de energia)</span></label>\\n'
+        + '      <label class="choice"><input type="checkbox" id="fonte_amperagem_tipo" name="fonte_amperagem_tipo"><span>Verificou se as Amperagens e se o tipo de fonte estão corretas</span></label>\\n'
+        + '      <label class="choice"><input type="checkbox" id="fonte_uso_corretamente" name="fonte_uso_corretamente"><span>Se estão sendo usadas corretamente (Ex.: Filtro de Linha)</span></label>\\n'
+        + '    </div>\\n'
+        + '    <label class="form-label" for="fonte_obs" style="margin-top:10px;">Observações (caso tenha) sobre as fontes dos equipamentos no local:</label>\\n'
+        + '    <textarea id="fonte_obs" name="fonte_obs" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>\\n'
+        + '  </div>\\n'
         + '  </div>\\n'
         + ''
         + '  <div class="form-block">\n'
@@ -2229,6 +2235,14 @@ function setTopbarMode(internal){
         + '      <label for="limpeza_onucomp">ONU compartilhada (não teve acesso)</label>\n'
         + '    </div>\n' 
         + '  </div>\n' 
+        + '  <div class="form-block">\\n'
+        + '    <label class="form-label">As fotos dos equipamentos no local e do serviço realizado foram anexadas?</label>\\n'
+        + '    <div class="segmented" role="radiogroup" aria-label="Fotos dos equipamentos anexadas?">\\n'
+        + '      <input type="radio" id="fotos_anex_sim" name="fotos_anex" value="sim">\\n'
+        + '      <label for="fotos_anex_sim"><i class="fa-solid fa-check"></i> Sim</label>\\n'
+        + '      <input type="radio" id="fotos_anex_nao" name="fotos_anex" value="nao">\\n'
+        + '      <label for="fotos_anex_nao"><i class="fa-solid fa-xmark"></i> Não</label>\\n'
+        + '    </div>\\n'
         + '  </div>\n' 
         + '  <div class="form-cond" data-when-field="tipo_serv" data-when-equals="cabeamento" data-clear-on-hide="1">\n'
         + '    <div class="form-block">\n'
@@ -6292,6 +6306,8 @@ function updateConditionalVisibility(formId, container){
     try { setupMacLists(container); } catch {}
     try { setupOutroList(container); } catch {}
     try { setupVelTestDynamic(container); } catch {}
+    try { ensureGlobalCheckboxStyles(); } catch {}
+    try { setupWanDynamic(container); } catch {}
     try { ensureFotosJustificativa(container); } catch {}
     try { setupSpeedMasks(container); } catch {}
     // Acrescenta AJUDA INTERNA somente onde é desejado (Suporte Moto)
@@ -8539,6 +8555,39 @@ const copyBtn = document.getElementById('btnCopiarForm');
     } catch {}
   }
 
+  // Estilos globais para checkboxes com check vermelho
+  function ensureGlobalCheckboxStyles(){
+    try {
+      const css = [
+        '.choice input:checked{border-color:#e11d1d;background:transparent}',
+        '.choice input:checked::after{content:"\\2713";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#e11d1d;font-size:12px;line-height:1}',
+        'input[type="checkbox"]{appearance:none;width:16px;height:16px;border:2px solid var(--border);border-radius:4px;background:transparent;position:relative;margin:0}',
+        'input[type="checkbox"]:focus{outline:none;box-shadow:0 0 0 3px rgba(255,77,77,.15)}',
+        'input[type="checkbox"]:checked{border-color:#e11d1d;background:transparent}',
+        'input[type="checkbox"]:checked::after{content:"\\2713";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#e11d1d;font-size:12px;line-height:1}'
+      ].join('');
+      let st = document.getElementById('globalCheckboxStyles');
+      if (!st){ st = document.createElement('style'); st.id = 'globalCheckboxStyles'; document.head.appendChild(st); }
+      st.textContent = css;
+    } catch {}
+  }
+  // WAN: estilos do botão de adicionar verificação adicional
+  function ensureWanStyles(){
+    try {
+      const css = [
+        '.form-block[data-wan-add="1"] .wan-add{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-color:var(--brand);color:var(--brand);font-weight:700}',
+        '.form-block[data-wan-add="1"] .wan-add:hover{background:rgba(255,77,77,.08)}',
+        // Lixeira: manter mesmo estilo visual dos testes de velocidade
+        '.form-block[data-wan-block="1"] .vel-del{border:1px solid var(--brand);color:var(--brand);background:transparent;border-radius:10px;padding:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}',
+        '.form-block[data-wan-block="1"] .vel-del i{font-size:16px}',
+        '.form-block[data-wan-block="1"] .vel-del:hover{background:rgba(255,77,77,.08)}'
+      ].join('');
+      let st = document.getElementById('wanStyles');
+      if (!st){ st = document.createElement('style'); st.id = 'wanStyles'; document.head.appendChild(st); }
+      st.textContent = css;
+    } catch {}
+  }
+
   // Suporte Técnico: adicionar dinamicamente novos blocos de "RESULTADO DOS TESTES DE VELOCIDADE"
   function setupVelTestDynamic(root){
     try {
@@ -8665,6 +8714,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
           blk.setAttribute('data-when-field','veltest_prints');
           blk.setAttribute('data-when-in','sim,nao');
           blk.setAttribute('data-clear-on-hide','1');
+          blk.style.position = 'relative';
           blk.innerHTML = ''
             + '    <label class="form-label">Resultado dos testes de velocidade:</label>'
             + '    <div class="triple-inputs">'
@@ -8690,6 +8740,52 @@ const copyBtn = document.getElementById('btnCopiarForm');
             const formId = (container && container.__formId) || '';
             if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
           } catch {}
+          try { blk.querySelector('input')?.focus(); } catch {}
+        } catch {}
+      });
+    } catch {}
+  }
+
+  // Conferências Técnicas: adicionar dinamicamente blocos de "Verificação de cabo de rede adicional"
+  function setupWanDynamic(root){
+    try {
+      const container = root || document;
+      try { ensureWanStyles(); } catch {}
+      const addBtn = container.querySelector('.wan-add');
+      if (!addBtn) return;
+      if (addBtn.__wired) return; addBtn.__wired = true;
+      const sec = addBtn.closest('.form-section');
+      addBtn.addEventListener('click', () => {
+        try {
+          if (!sec) return;
+          const existing = Array.from(sec.querySelectorAll('.form-block[data-wan-block="1"]'));
+          const nextIdx = existing.length + 1;
+          const blk = document.createElement('div');
+          blk.className = 'form-block';
+          blk.setAttribute('data-wan-block','1');
+          blk.setAttribute('data-when-field','tipo_serv');
+          blk.setAttribute('data-when-in','avaliacao,avaliacao_cab,instalacao');
+          blk.setAttribute('data-clear-on-hide','1');
+          blk.style.position = 'relative';
+          blk.innerHTML = ''
+            + '    <label class="form-label">Verificação de cabo de rede adicional</label>'
+            + '    <label class="form-label" for="wan_ativo_' + nextIdx + '" style="margin-top:10px;">Aparelho ligado por esse cabo:</label>'
+            + '    <input id="wan_ativo_' + nextIdx + '" name="wan_ativo_' + nextIdx + '" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TV\'s, PC\'s e etc" />'
+            + '    <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
+            + '    <div class="choices" style="margin-top:10px;">'
+            + '      <label class="choice"><input type="checkbox" id="wan_gigabit_' + nextIdx + '" name="wan_gigabit_' + nextIdx + '"><span>Cabo de rede Gigabit</span></label>'
+            + '      <label class="choice"><input type="checkbox" id="wan_powermitter_' + nextIdx + '" name="wan_powermitter_' + nextIdx + '"><span>Teste no Powermitter</span></label>'
+            + '      <label class="choice"><input type="checkbox" id="wan_ping_' + nextIdx + '" name="wan_ping_' + nextIdx + '"><span>Teste de Ping no Cabo</span></label>'
+            + '    </div>'
+            + '    <label class="form-label" for="wan_obs_' + nextIdx + '" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>'
+            + '    <textarea id="wan_obs_' + nextIdx + '" name="wan_obs_' + nextIdx + '" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>'
+            + '    <button type="button" class="btn-ghost vel-del" aria-label="Excluir este teste" style="position: absolute; top: 6px; right: 6px;"><i class="fa-solid fa-trash"></i></button>';
+          const addWrap = addBtn.closest('.form-block');
+          sec.insertBefore(blk, addWrap);
+          try { if (typeof setupAutoExpand === 'function') setupAutoExpand(blk); } catch {}
+          try { const del = blk.querySelector('.vel-del'); if (del && !del.__wired) { del.__wired = true; del.addEventListener('click', () => { try { blk.remove(); } catch {} }); } } catch {}
+          try { if (typeof setupAutoExpand === 'function') setupAutoExpand(container); } catch {}
+          try { const formId = (container && container.__formId) || ''; if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
           try { blk.querySelector('input')?.focus(); } catch {}
         } catch {}
       });
@@ -9594,6 +9690,7 @@ try {
           try { setupQtdCabosDispLabel(container); } catch {}
           try { ensureMotoTipoServDefault(container); } catch {}
           try { enforceMotoFinalOrder(container); } catch {}
+          try { setupAutoExpand(container); } catch {}
         } catch {}
       };
       const obs = new MutationObserver(() => { try { clearTimeout(to); } catch {}; to = setTimeout(run, 50); });
@@ -9714,6 +9811,11 @@ try {
     };
   }
 } catch {}
+
+
+
+
+
 
 
 
