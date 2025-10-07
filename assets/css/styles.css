@@ -1,4 +1,4 @@
-* { box-sizing: border-box; }
+Ôªø* { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -9,8 +9,8 @@ body {
 /* Bloqueia rolagem de fundo quando o menu estiver aberto */
 body.no-scroll { overflow: hidden; }
 
-/* Remover sublinhado padr„o e cor de link em todo o app
-   Evita que conte˙dos como os cards (formcard) apareÁam sublinhados
+/* Remover sublinhado padr√£o e cor de link em todo o app
+   Evita que conte√∫dos como os cards (formcard) apare√ßam sublinhados
    quando algum <a> ancestral est? presente. */
 a, a:visited, a:hover, a:active {
   color: inherit;
@@ -86,7 +86,7 @@ body:not(.dark-theme) .recent__panel.fade-on::after {
   height: 80px;
   pointer-events: none;
   z-index: 1;
-  /* Fade ajustado para fundir com o fundo geral da p·gina (var(--bg)) */
+  /* Fade ajustado para fundir com o fundo geral da p√°gina (var(--bg)) */
   background: linear-gradient(
     to bottom,
     rgba(246,247,251,0) 0%,   /* #f6f7fb (var(--bg)), transparente no topo */
@@ -97,7 +97,7 @@ body:not(.dark-theme) .recent__panel.fade-on::after {
   );
 }
 
-/* CrÈditos discretos no rodapÈ do conte˙do */
+/* Cr√©ditos discretos no rodap√© do conte√∫do */
 .app-credit { font-size: 11px; color: var(--muted); text-align: center; opacity: .5; margin: 28px 0 -8px; }
 body.route-home .app-credit { margin-top: 12px; }
 .view.pre-active { display: block; }
@@ -112,10 +112,10 @@ body.route-home .app-credit { margin-top: 12px; }
 .hero { text-align:center; margin: 6px 0 14px; }
 .hero--sub { margin-top: 4px; }
 .hero__title { font-size: 26px; font-weight: 800; letter-spacing: .3px; text-shadow: 0 2px 10px rgba(0,0,0,.25); }
-/* Menor tÌtulo na tela de Conclusıes */
+/* Menor t√≠tulo na tela de Conclus√µes */
 body.route-conclusoes .hero__title { font-size: 22px; }
 .hero__subtitle { color: var(--muted); margin-top: 6px; }
-/* Menor subtÌtulo na tela de Conclusıes */
+/* Menor subt√≠tulo na tela de Conclus√µes */
 body.route-conclusoes .hero__subtitle { font-size: 13px; }
 .hero__title .hero__logo { display:block; margin: 0 auto; max-width: 200px; height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.25)); animation: heroFloat 3.8s ease-in-out infinite; transform-origin: 50% 50%; }
 
@@ -127,16 +127,21 @@ body.route-conclusoes .hero__subtitle { font-size: 13px; }
 .home-quote__caption { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
 .home-quote__text { color: var(--muted); font-style: italic; font-size: 13px; }
 .home-quote__credit { font-size: 10px; color: var(--muted); margin-top: 6px; }
-/* Escolhas m˙ltiplas simples (checkboxes) */
+/* Escolhas m√∫ltiplas simples (checkboxes) */
 .choices { display: flex; gap: 8px; flex-wrap: wrap; }
 .choice { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; cursor: pointer; transition: background .15s ease, border-color .15s ease, box-shadow .15s ease; }
 .choice:hover { filter: brightness(1.02); }
-.choice input { appearance: none; width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 4px; background: transparent; display: inline-block; position: relative; margin: 0; }
-.choice input:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,77,77,.15); }
-.choice input:checked { border-color: #e11d1d; background: #e11d1d; }
-.choice input:checked::after { content: ''; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; background: #fff; border-radius: 2px; }
+.choice input { appearance: none; -webkit-appearance: none; -moz-appearance: none; width: 18px; height: 18px; border: 2px solid #e11d1d; border-radius: 5px; background-color: transparent; background-repeat: no-repeat; background-position: center; background-size: 14px 14px; display: inline-block; vertical-align: middle; margin: 0; }
+.choice input:focus { outline: none; box-shadow: 0 0 0 3px rgba(225,29,29,.15); }
+.choice input:checked { border-color: #e11d1d; background-color: transparent; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="%23e11d1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'); }
+.choice input:checked::after { content: none; }
 .choice span { font-size: 14px; }
 .choice input:checked + span { color: var(--brand); font-weight: 700; }
+/* Checkbox global: aplica o mesmo estilo aos demais checkboxes */
+input[type="checkbox"] { appearance: none; -webkit-appearance: none; -moz-appearance: none; width: 18px; height: 18px; border: 2px solid #e11d1d; border-radius: 5px; background-color: transparent; background-repeat: no-repeat; background-position: center; background-size: 14px 14px; display: inline-block; vertical-align: middle; margin: 0; }
+input[type="checkbox"]:focus { outline: none; box-shadow: 0 0 0 3px rgba(225,29,29,.15); }
+input[type="checkbox"]:checked { border-color: #e11d1d; background-color: transparent; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="%23e11d1d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>'); }
+input[type="checkbox"]:checked::after { content: none; }
 /* Tema claro: fundo do bloco motivacional um cinza claro para contraste suave */
 body:not(.dark-theme) .home-quote { background: #f1f5f9 !important; }
 body:not(.dark-theme) .home-quote__text { color: #475569; }
@@ -155,7 +160,7 @@ body:not(.dark-theme) .home-quote__caption { color: #374151; }
 .card__badge { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(145deg, #ff3b3b, #cc1e1e); color: #fff; display:flex; align-items:center; justify-content:center; box-shadow: 0 6px 18px rgba(255,59,59,.35), inset 0 1px 0 rgba(255,255,255,.15); }
 .card__title-row { display:flex; align-items:center; gap:8px; }
 .card__title { font-weight: 800; letter-spacing: .2px; }
-/* Chevron grande alinhado ‡ direita e centralizado verticalmente */
+/* Chevron grande alinhado √† direita e centralizado verticalmente */
 .card__titlechev { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 22px; opacity: .95; pointer-events: none; }
 .card__subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .card__chev { display: none; }
@@ -165,10 +170,10 @@ body:not(.dark-theme) .home-quote__caption { color: #374151; }
 
 /* Recent */
 .recent__panel { --recent-pad-bottom: 36px; --recent-fade-bottom-adjust: -20px; background: var(--card-strong); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 26px 16px 36px; box-shadow: inset 0 1px 0 rgba(255,255,255,.03); overflow: hidden; }
-/* Mais espaÁamento acima da seÁ„o Atividade Recente na Home */
+/* Mais espa√ßamento acima da se√ß√£o Atividade Recente na Home */
 .recent.section--spaced-lg { margin-top: 24px; padding-top: 20px; }
 .recent.section--spaced-lg > .section__title { margin-top: 0; margin-bottom: 6px; }
-/* Aproxima o painel do tÌtulo nesta seÁ„o */
+/* Aproxima o painel do t√≠tulo nesta se√ß√£o */
 .recent.section--spaced-lg .recent__panel { padding-top: 18px; }
 /* Dark theme: recent panel without background */
 body.dark-theme .recent__panel { background: transparent; border-color: transparent; box-shadow: none; }
@@ -177,7 +182,7 @@ body.dark-theme .recent__panel { background: transparent; border-color: transpar
 /* Oculta a barra de rolagem visual mantendo o scroll ativo */
 .recent__list::-webkit-scrollbar { width: 0; height: 0; }
 
-/* Modal "Nossos Planos": manter scroll habilitado e invisÌvel */
+/* Modal "Nossos Planos": manter scroll habilitado e invis√≠vel */
 #planosModal .modal-body { overflow-y: auto; -ms-overflow-style: none; scrollbar-width: none; }
 #planosModal .modal-body::-webkit-scrollbar { width: 0; height: 0; }
 #plansContent { overflow-y: auto; -ms-overflow-style: none; scrollbar-width: none; }
@@ -223,7 +228,7 @@ body.dark-theme .recent__panel { background: transparent; border-color: transpar
 /* Forms placeholder */
 .forms-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
-/* Home cards (Equipe Moto/Carro) È apenas o invÛlucro */
+/* Home cards (Equipe Moto/Carro) √© apenas o inv√≥lucro */
 .card.card--team { background: var(--card-strong); border: 1px solid var(--border); border-radius: 14px; color: var(--text); }
 .card.card--team .card__subtitle { color: var(--muted); }
 
@@ -234,15 +239,15 @@ body.dark-theme .recent__panel { background: transparent; border-color: transpar
 .bottombar__item[hidden] { display: none !important; }
 .bottombar__item i { font-size: 16px; }
 .bottombar__item.is-active, .bottombar__item:active { color: var(--brand); }
-/* 3 colunas quando estiver em tela de formul·rio */
+/* 3 colunas quando estiver em tela de formul√°rio */
 body.route-form .bottombar { }
 
 /* Menu overlay */
 .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(2px); z-index: 140; 
-  /* animaÁ„o suave de fade para overlay; sempre presente porÈm inerte sem .active */
+  /* anima√ß√£o suave de fade para overlay; sempre presente por√©m inerte sem .active */
   display: block; opacity: 0; pointer-events: none; transition: opacity .22s ease; }
 .menu-overlay.active { opacity: 1; pointer-events: auto; }
-/* painel desliza da direita com transiÁ„o */
+/* painel desliza da direita com transi√ß√£o */
 .menu-panel { position: absolute; right: 0; top: 0; bottom: 0; width: min(92vw, 360px); background: var(--surface); border-left: 1px solid var(--border); 
   transform: translateX(16px); opacity: 0; transition: transform .22s ease, opacity .22s ease; display: flex; flex-direction: column; box-shadow: -8px 0 28px rgba(0,0,0,.25); }
 .menu-overlay.active .menu-panel { transform: translateX(0); opacity: 1; }
@@ -272,9 +277,9 @@ input:checked + .slider:before { transform: translateX(20px); }
 .modal-title { font-weight: 700; }
 .modal-close { appearance: none; border: 0; background: none; color: var(--text); font-size: 20px; cursor: pointer; }
 .modal-body { padding: 12px; font-size: 13px; line-height: 1.5; }
-/* Modal footer (aÁıes) */
+/* Modal footer (a√ß√µes) */
 .modal-footer { display:flex; gap:12px; justify-content:center; align-items:center; padding: 10px 12px 16px; border-top: 1px solid var(--border); }
-/* Unificar tamanho dos botıes no modal */
+/* Unificar tamanho dos bot√µes no modal */
 .modal-footer .modal-btn {
   display: inline-flex;
   align-items: center;
@@ -288,7 +293,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   font-weight: 700;
   line-height: 1;
 }
-/* Garantir que o ghost siga o mesmo padr„o de peso/altura no modal */
+/* Garantir que o ghost siga o mesmo padr√£o de peso/altura no modal */
 .modal-footer .btn-ghost { font-weight: 700; }
 .planos-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .planos-grid img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--card-strong); }
@@ -364,7 +369,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .form-hint { font-size: 12px; color: var(--muted); }
 .modal-box .form-block .form-hint { margin-top: 6px; }
 .form-subnote { font-size: 12px; font-style: italic; color: var(--muted); margin-top: 4px; }
-/* EspaÁo pequeno entre a subnota e a input no modal */
+/* Espa√ßo pequeno entre a subnota e a input no modal */
 .modal-box .form-subnote { margin-bottom: 6px; }
 .placeholder-text { color: var(--muted); }
 
@@ -401,7 +406,7 @@ input:checked + .slider:before { transform: translateX(20px); }
   outline: none; box-shadow: 0 2px 0 #ff3b3b; border-bottom-color: #ff3b3b;
 }
 
-/* Form actions (rodapÈ) */
+/* Form actions (rodap√©) */
 .form-actions { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 16px; }
 .btn-action { width: 100%; display:flex; gap:8px; align-items:center; justify-content:center; padding: 12px 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
 .btn-action--gray { border: 1px solid var(--border); background: var(--surface); color: var(--text); }
@@ -454,14 +459,14 @@ input:checked + .slider:before { transform: translateX(20px); }
 .outro-list .outro-add { margin-top: 14px; border-color: var(--brand); color: var(--brand); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
 .outro-list .outro-add:hover { background: rgba(255,77,77,.08); }
 
-/* Textarea auto-expansÌvel */
+/* Textarea auto-expans√≠vel */
 .textarea-counter { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: right; }
 textarea.auto-expand { resize: none; overflow: hidden; display: block; width: 100%; line-height: 1.35; }
 /* Garantir cor correta no textarea */
 textarea.form-input--underline { color: var(--text) !important; background: transparent; caret-color: var(--text); }
 
 /* Light theme: improve button visibility */
-/* Unifica visual tambÈm no modo n„o-escuro */
+/* Unifica visual tamb√©m no modo n√£o-escuro */
 body:not(.dark-theme) .btn-action { border: 1px solid var(--border); box-shadow: none; }
 body:not(.dark-theme) .btn-action--gray { background: var(--surface) !important; color: var(--text); border-color: var(--border); box-shadow: none; }
 body:not(.dark-theme) .form-actions .btn-action--gray { background: var(--surface) !important; color: var(--text); border-color: var(--border); box-shadow: none; }
@@ -511,7 +516,7 @@ body.dark-theme .inline-alert {
 /* Hint de Sem sinal destacado por 5s */
 .sinal-los-hint.is-highlight { background: rgba(255,77,77,.10); border: 1px solid rgba(255,77,77,.35); color: #ff4d4d; padding: 6px 8px; border-radius: 8px; }
 
-/* Garante visibilidade do bot„o 'Sem sinal' no tema claro quando ativo */
+/* Garante visibilidade do bot√£o 'Sem sinal' no tema claro quando ativo */
 body:not(.dark-theme) .btn-los.is-active {
   background: linear-gradient(145deg, #ff3b3b, #d31f1f) !important;
   color: #fff !important;
@@ -519,5 +524,6 @@ body:not(.dark-theme) .btn-los.is-active {
   box-shadow: 0 10px 22px rgba(255,59,59,.18), inset 0 1px 0 rgba(255,255,255,.15) !important;
 }
 body:not(.dark-theme) .btn-los.is-active i { color: #fff !important; }
+
 
 
