@@ -1933,9 +1933,9 @@ function setTopbarMode(internal){
         + '    <input id="clienteNome" name="clienteNome" type="text" class="form-input" placeholder="Ex.: Maria Souza" autocomplete="name" />\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label" for="cliente_relato">Relato do Cliente</label>\n'
+        + '    <label class="form-label" for="cliente_relato">Relato do cliente</label>\n'
         + '    <div class="form-hint" style="margin-top:6px;">Relate a dificuldade explicada diretamente pelo cliente no local</div>\n'
-        + '    <textarea id="cliente_relato" name="cliente_relato" class="form-input--underline auto-expand" placeholder="Digite o relato do cliente..." rows="3" data-min-height="90"></textarea>\n'
+        + '    <textarea id="cliente_relato" name="cliente_relato" class="form-input--underline auto-expand" placeholder="Digite o relato do cliente..." rows="2" data-min-height="60"></textarea>\n'
         + '    <div class="textarea-counter">0 caracteres</div>\n'
         + '  </div>\n'
         + '  <div class="form-cond" data-when-field="tipo_serv" data-when-equals="cabeamento" data-clear-on-hide="1">\n'
@@ -2475,7 +2475,7 @@ function setTopbarMode(internal){
                 mapaBlock.innerHTML =
                   '    <label class="form-label">Mapa de calor</label>\n'
                 + '    <div class="form-hint" style="margin-top:6px;">Descrição geral do teste realizado, incluindo se toda a casa foi inspecionada, identificação de possíveis pontos de sombra e a reação do cliente às informações fornecidas.</div>\n'
-                + '    <textarea id="mapa_calor_desc" name="mapa_calor_desc" class="form-input--underline auto-expand" placeholder="Digite..." rows="3" data-min-height="90"></textarea>\n';
+                + '    <textarea id="mapa_calor_desc" name="mapa_calor_desc" class="form-input--underline auto-expand" placeholder="Digite..." rows="2" data-min-height="90"></textarea>\n';
               }
               navBlock.insertAdjacentElement('afterend', mapaBlock);
 
@@ -2522,7 +2522,7 @@ function setTopbarMode(internal){
                 + '      <label class="choice"><input type="checkbox" id="qtd_acima_sim" name="qtd_acima_sim"><span>Sim</span></label>\\n'
                 + '      <label class="choice"><input type="checkbox" id="qtd_acima_nao" name="qtd_acima_nao"><span>Não</span></label>\\n'
                 + '    </div>\\n'
-                + '    <div class="form-block" data-when-field="qtd_acima_sim" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '    <div class="form-block" data-when-field="qtd_acima" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
                 + '      <label class="form-label" for="qtd_acima_val">Informe a quantidade de ativos conectados</label>\\n'
                 + '      <input id="qtd_acima_val" name="qtd_acima_val" type="text" class="form-input--underline" placeholder="Digite o valor..." inputmode="numeric" />\\n'
                 + '    </div>\\n'
@@ -2531,7 +2531,7 @@ function setTopbarMode(internal){
                 + '      <label class="choice"><input type="checkbox" id="tempo_acima_sim" name="tempo_acima_sim"><span>Sim</span></label>\\n'
                 + '      <label class="choice"><input type="checkbox" id="tempo_acima_nao" name="tempo_acima_nao"><span>Não</span></label>\\n'
                 + '    </div>\\n'
-                + '    <div class="form-block" data-when-field="tempo_acima_sim" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '    <div class="form-block" data-when-field="tempo_acima" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
                 + '      <label class="form-label" for="tempo_acima_val">Informe o tempo de atividade</label>\\n'
                 + '      <input id="tempo_acima_val" name="tempo_acima_val" type="text" class="form-input--underline" placeholder="Digite o tempo..." />\\n'
                 + '    </div>\\n'
@@ -2541,6 +2541,81 @@ function setTopbarMode(internal){
               }
               const anchorBlock = mapaBlock || navBlock || limpezaBlock;
               if (anchorBlock) anchorBlock.insertAdjacentElement('afterend', confRotBlock);
+
+              // Ajustes pós-inserção: espaçamento, textarea DNS, e botões segmentados
+              try {
+                // 1) Espaçamento da legenda do Teste de navegação
+                const navHint = navBlock?.querySelector('.form-hint');
+                if (navHint) navHint.style.marginBottom = '10px';
+
+                const confBlock = root.querySelector('[data-conf-rot="1"]');
+                if (confBlock) {
+                  // Atualiza a legenda principal do bloco de conferências
+                  try {
+                    const mainHint = confBlock.querySelector('.form-hint');
+                    if (mainHint) mainHint.textContent = 'Selecione as verificações e modificações realizadas na configuração dos roteadores do cliente.';
+                  } catch {}
+                  // 2) DNS Outro: transformar em textarea de 1 linha com novo rótulo/placeholder
+                  try {
+                    const dnsOutroBlk = confBlock.querySelector('.form-block[data-when-field="dns_outro"]');
+                    if (dnsOutroBlk) {
+                      const lbl = dnsOutroBlk.querySelector('label.form-label');
+                      if (lbl) lbl.textContent = 'Informe qual foi o DNS utilizado';
+                      const oldInput = dnsOutroBlk.querySelector('#dns_outro_val');
+                      if (oldInput) {
+                        const ta = document.createElement('textarea');
+                        ta.id = 'dns_outro_val';
+                        ta.name = 'dns_outro_val';
+                        ta.className = 'form-input--underline auto-expand';
+                        ta.placeholder = 'Digite...';
+                        ta.rows = 1;
+                        ta.setAttribute('data-min-height','32');
+                        oldInput.replaceWith(ta);
+                      }
+                    }
+                  } catch {}
+
+                  // 3) Quantidade de ativos: converter checkboxes em botões segmentados (Sim/Não)
+                  try {
+                    const qLabel = Array.from(confBlock.querySelectorAll('label.form-label')).find(el => (el.textContent||'').trim().toLowerCase().startsWith('quantidade de ativos acima do normal'));
+                    const qChoices = qLabel ? qLabel.nextElementSibling : null;
+                    if (qLabel && qChoices && qChoices.classList.contains('choices')) {
+                      const seg = document.createElement('div');
+                      seg.className = 'segmented';
+                      seg.setAttribute('role','radiogroup');
+                      seg.setAttribute('aria-label', qLabel.textContent || '');
+                      seg.innerHTML = ''
+                        + '      <input type="radio" id="qtd_acima_sim" name="qtd_acima" value="sim">'
+                        + '      <label for="qtd_acima_sim"><i class="fa-solid fa-check"></i> Sim</label>'
+                        + '      <input type="radio" id="qtd_acima_nao" name="qtd_acima" value="nao">'
+                        + '      <label for="qtd_acima_nao"><i class="fa-solid fa-xmark"></i> Não</label>';
+                      qChoices.replaceWith(seg);
+                    }
+                    const qValBlk = confBlock.querySelector('.form-block[data-when-field="qtd_acima"]');
+                    if (qValBlk) { qValBlk.setAttribute('data-when-field','qtd_acima'); qValBlk.setAttribute('data-when-equals','sim'); }
+                  } catch {}
+
+                  // 4) Tempo de atividade: converter checkboxes em botões segmentados (Sim/Não)
+                  try {
+                    const tLabel = Array.from(confBlock.querySelectorAll('label.form-label')).find(el => (el.textContent||'').trim().toLowerCase().startsWith('tempo de atividade acima do normal'));
+                    const tChoices = tLabel ? tLabel.nextElementSibling : null;
+                    if (tLabel && tChoices && tChoices.classList.contains('choices')) {
+                      const seg2 = document.createElement('div');
+                      seg2.className = 'segmented';
+                      seg2.setAttribute('role','radiogroup');
+                      seg2.setAttribute('aria-label', tLabel.textContent || '');
+                      seg2.innerHTML = ''
+                        + '      <input type="radio" id="tempo_acima_sim" name="tempo_acima" value="sim">'
+                        + '      <label for="tempo_acima_sim"><i class="fa-solid fa-check"></i> Sim</label>'
+                        + '      <input type="radio" id="tempo_acima_nao" name="tempo_acima" value="nao">'
+                        + '      <label for="tempo_acima_nao"><i class="fa-solid fa-xmark"></i> Não</label>';
+                      tChoices.replaceWith(seg2);
+                    }
+                    const tValBlk = confBlock.querySelector('.form-block[data-when-field="tempo_acima"]');
+                    if (tValBlk) { tValBlk.setAttribute('data-when-field','tempo_acima'); tValBlk.setAttribute('data-when-equals','sim'); }
+                  } catch {}
+                }
+              } catch {}
             }
           } catch {}
           try { appendIndicacaoSection(root); } catch {}
@@ -3748,7 +3823,7 @@ function setTopbarMode(internal){
         + '    </div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label">Equipamentos da ETECC que estão no local: <span class="form-hint">(Exceto os acima, se houver. Múltipla escolha.)</span></label>\n'
+        + '    <label class="form-label">Equipamentos da ETECC (comodato ou compra) que estão no local: <span class="form-hint">(Exceto os acima, se houver. Múltipla escolha.)</span></label>\n'
         + '    <div class="choices">\n'
         + '      <label class="choice"><input type="checkbox" id="estao_sel_ont" name="estao_sel_ont"><span>ONT</span></label>\n'
         + '      <label class="choice"><input type="checkbox" id="estao_sel_onu" name="estao_sel_onu"><span>ONU</span></label>\n'
@@ -5156,7 +5231,7 @@ function setTopbarMode(internal){
         + '    </div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
-        + '    <label class="form-label">Equipamentos da ETECC que estão no local: <span class="form-hint">(Exceto os acima, se houver. Múltipla escolha.)</span></label>\n'
+        + '    <label class="form-label">Equipamentos da ETECC (comodato ou compra) que estão no local: <span class="form-hint">(Exceto os acima, se houver. Múltipla escolha.)</span></label>\n'
         + '    <div class="choices">\n'
         + '      <label class="choice"><input type="checkbox" id="estao_sel_ont" name="estao_sel_ont"><span>ONT</span></label>\n'
         + '      <label class="choice"><input type="checkbox" id="estao_sel_onu" name="estao_sel_onu"><span>ONU</span></label>\n'
@@ -8912,7 +8987,7 @@ function appendTrocaEquipamentosSection(container){
     const formId = (container && container.__formId) || '';
     if (formId === 'suporte-moto') {
       const fragNo = document.createElement('div');
-      const labNo = document.createElement('label'); labNo.className='form-label'; labNo.innerHTML = 'Equipamentos da ETECC que estão no local: <span class="form-hint">(múltipla escolha)</span>';
+      const labNo = document.createElement('label'); labNo.className='form-label'; labNo.innerHTML = 'Equipamentos da ETECC (comodato ou compra) que estão no local: <span class="form-hint">(múltipla escolha)</span>';
       fragNo.appendChild(labNo);
       const chNo = document.createElement('div'); chNo.className='choices';
       chNo.innerHTML = [
@@ -8936,7 +9011,7 @@ function appendTrocaEquipamentosSection(container){
       fragNoOut.appendChild(olNo);
       addBlock({ whenField:'tq_local_outro', whenEquals:'true', clearOnHide:1, content: fragNoOut });
     } else {
-      addBlock({ whenField:'tq_troca', whenEquals:'nao', clearOnHide:1, label:'Equipamentos da ETECC que estão no local:', content: makeSegmented('tq_local', [['onu','Somente ONU/ONT'],['roteador','Somente Roteador (podem ser vários)'],['ambos','Ambos']]) });
+      addBlock({ whenField:'tq_troca', whenEquals:'nao', clearOnHide:1, label:'Equipamentos da ETECC (comodato ou compra) que estão no local:', content: makeSegmented('tq_local', [['onu','Somente ONU/ONT'],['roteador','Somente Roteador (podem ser vários)'],['ambos','Ambos']]) });
       addBlock({ whenField:'tq_local', whenIn:'onu,ambos', clearOnHide:1, label:'ONU/ONT MAC:', content: makeMacList('onu_mac_') });
       addBlock({ whenField:'tq_local', whenIn:'roteador,ambos', clearOnHide:1, label:'ROTEADOR MAC:', content: makeMacList('roteador_mac_') });
     }
@@ -9895,6 +9970,8 @@ try {
     };
   }
 } catch {}
+
+
 
 
 
