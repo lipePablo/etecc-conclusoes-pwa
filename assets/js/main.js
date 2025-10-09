@@ -2466,7 +2466,7 @@ function setTopbarMode(internal){
             const limpezaBlock = root.querySelector('#limpeza_sim')?.closest('.form-block');
             if (navBlock && limpezaBlock) {
               // posiciona o bloco de Teste de navegação logo após o bloco de limpeza
-              limpezaBlock.insertAdjacentElement('afterend', navBlock);
+              /* nav será reposicionado após Conferências */
               // cria e posiciona o bloco "Mapa de calor" imediatamente abaixo do Teste de navegação
               let mapaBlock = root.querySelector('#mapa_calor_desc')?.closest('.form-block');
               if (!mapaBlock) {
@@ -2477,7 +2477,7 @@ function setTopbarMode(internal){
                 + '    <div class="form-hint" style="margin-top:6px;">Descrição geral do teste realizado, incluindo se toda a casa foi inspecionada, identificação de possíveis pontos de sombra e a reação do cliente às informações fornecidas.</div>\n'
                 + '    <textarea id="mapa_calor_desc" name="mapa_calor_desc" class="form-input--underline auto-expand" placeholder="Digite..." rows="2" data-min-height="90"></textarea>\n';
               }
-              navBlock.insertAdjacentElement('afterend', mapaBlock);
+              /* mapa será reposicionado após Conferências/Navegação */
 
               // bloco: Conferências nos roteadores
               let confRotBlock = root.querySelector('[data-conf-rot="1"]');
@@ -2522,7 +2522,7 @@ function setTopbarMode(internal){
                 + '      <label class="choice"><input type="checkbox" id="qtd_acima_sim" name="qtd_acima_sim"><span>Sim</span></label>\\n'
                 + '      <label class="choice"><input type="checkbox" id="qtd_acima_nao" name="qtd_acima_nao"><span>Não</span></label>\\n'
                 + '    </div>\\n'
-                + '    <div class="form-block" data-when-field="qtd_acima" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '    <div class="form-block" data-when-field="qtd_acima" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:12px;">\\n'
                 + '      <label class="form-label" for="qtd_acima_val">Informe a quantidade de ativos conectados</label>\\n'
                 + '      <input id="qtd_acima_val" name="qtd_acima_val" type="text" class="form-input--underline" placeholder="Digite o valor..." inputmode="numeric" />\\n'
                 + '    </div>\\n'
@@ -2531,7 +2531,7 @@ function setTopbarMode(internal){
                 + '      <label class="choice"><input type="checkbox" id="tempo_acima_sim" name="tempo_acima_sim"><span>Sim</span></label>\\n'
                 + '      <label class="choice"><input type="checkbox" id="tempo_acima_nao" name="tempo_acima_nao"><span>Não</span></label>\\n'
                 + '    </div>\\n'
-                + '    <div class="form-block" data-when-field="tempo_acima" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '    <div class="form-block" data-when-field="tempo_acima" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:12px;">\\n'
                 + '      <label class="form-label" for="tempo_acima_val">Informe o tempo de atividade</label>\\n'
                 + '      <input id="tempo_acima_val" name="tempo_acima_val" type="text" class="form-input--underline" placeholder="Digite o tempo..." />\\n'
                 + '    </div>\\n'
@@ -2539,8 +2539,15 @@ function setTopbarMode(internal){
                 + '    <div class="form-hint" style="margin-top:6px;">Registre observações sobre configurações realizadas além desta lista ou detalhes adicionais relacionados à rede do cliente.</div>\\n'
                 + '    <textarea id="rot_obs" name="rot_obs" class="form-input--underline auto-expand" placeholder="Descreva mais informações..." rows="3" data-min-height="90"></textarea>\\n';
               }
-              const anchorBlock = mapaBlock || navBlock || limpezaBlock;
-              if (anchorBlock) anchorBlock.insertAdjacentElement('afterend', confRotBlock);
+              limpezaBlock.insertAdjacentElement('afterend', confRotBlock);
+
+              // Reposiciona Teste de navegação abaixo de Conferências
+              if (navBlock) confRotBlock.insertAdjacentElement('afterend', navBlock);
+
+              // Reposiciona Mapa de calor abaixo de Navegação (ou Conferências, se não houver)
+              const __afterNav = navBlock || confRotBlock;
+              if (mapaBlock && __afterNav) __afterNav.insertAdjacentElement('afterend', mapaBlock);
+
 
               // Ajustes pós-inserção: espaçamento, textarea DNS, e botões segmentados
               try {
@@ -2619,6 +2626,7 @@ function setTopbarMode(internal){
             }
           } catch {}
           try { appendIndicacaoSection(root); } catch {}
+          try { appendLentidaoTests(root); } catch {}
         }
     },
     'retencao-clientes': {
@@ -6418,7 +6426,9 @@ function updateConditionalVisibility(formId, container){
   try {
     container.querySelectorAll('.form-title').forEach(t => {
       const icon = t.querySelector('i');
-      const text = (t.textContent || '').trim().toUpperCase();
+      const keepOriginal = !!t.closest('.lentidao-header');
+      const raw = (t.textContent || '').trim();
+      const text = keepOriginal ? raw : raw.toUpperCase();
       while (t.firstChild) t.removeChild(t.firstChild);
       if (icon) { t.appendChild(icon); t.appendChild(document.createTextNode(' ')); }
       t.appendChild(document.createTextNode(text));
@@ -8957,11 +8967,7 @@ function appendTrocaEquipamentosSection(container){
   try { const fid = (container && container.__formId) || ''; if (fid !== 'suporte-moto') return; } catch {}
   // Evita duplicação
   try { if (container.querySelector('[data-section="troca-equipamentos"]')) return; } catch {}
-  const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','troca-equipamentos');
-  const head = document.createElement('div'); head.className='form-header';
-  const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> TROCA DE EQUIPAMENTOS';
-  head.appendChild(ttl); sec.appendChild(head);
-  const makeSegmented = (name, items) => {
+  const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','troca-equipamentos');const makeSegmented = (name, items) => {
     const wrap = document.createElement('div');
     const cls = (items && items.length === 2) ? 'segmented' : 'segmented segmented--stack';
     wrap.className = cls;
@@ -9271,11 +9277,7 @@ function appendTrocaEquipamentosSection(container){
     try { const fid = (container && container.__formId) || ''; if (fid !== 'suporte-moto') return; } catch {}
     // Evita duplicação
     try { if (container.querySelector('[data-section="ajuda-interna"]')) return; } catch {}
-    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','ajuda-interna');
-    const head = document.createElement('div'); head.className='form-header';
-    const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-solid fa-hands-helping"></i> AJUDA INTERNA';
-    head.appendChild(ttl); sec.appendChild(head);
-    const addBlock = (opts) => {
+    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','ajuda-interna');const addBlock = (opts) => {
       const b=document.createElement('div'); b.className='form-block';
       const isConditional = !!opts.whenField;
       if (opts.whenField){ b.setAttribute('data-when-field', opts.whenField); }
@@ -9367,11 +9369,7 @@ function setupAutoExpand(root){
 }function appendDescricaoOSSection(container){
     if (!container) return;
     try { if (container.querySelector('#descricao_os')) return; } catch {}
-    const sec = document.createElement('section'); sec.className='form-section';
-    const head = document.createElement('div'); head.className='form-header';
-    const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S';
-    head.appendChild(ttl); sec.appendChild(head);
-    const block = document.createElement('div'); block.className='form-block';
+    const sec = document.createElement('section'); sec.className='form-section';const block = document.createElement('div'); block.className='form-block';
     const lab = document.createElement('label'); lab.className='form-label'; lab.textContent='Relato da solução para a visita técnica:'; block.appendChild(lab);
     const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder='Digite aqui o relato da solução...'; ta.rows = 4; ta.dataset.minHeight = '120'; block.appendChild(ta);
     const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres'; block.appendChild(counter);
@@ -9864,11 +9862,7 @@ try {
     if (!container) return;
     // Evita duplicação se já existir
     try { if (container.querySelector('[data-section="indicacao"]')) return; } catch {}
-    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','indicacao');
-    const head = document.createElement('div'); head.className='form-header';
-    const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-solid fa-bullhorn"></i> INDICAÇÕES';
-    head.appendChild(ttl); sec.appendChild(head);
-    const addBlock = (opts) => {
+    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','indicacao');const addBlock = (opts) => {
       const b=document.createElement('div'); b.className='form-block';
       if (opts.whenField){ b.setAttribute('data-when-field', opts.whenField); }
       if (opts.whenEquals!=null){ b.setAttribute('data-when-equals', String(opts.whenEquals)); }
@@ -10004,3 +9998,95 @@ try {
 
 
 
+
+// Seção: Testes relacionados a lentidão
+function appendLentidaoTests(container){
+  try { if (!container) return; } catch { return; }
+  try { if (container.querySelector('.form-block[data-lentidao="1"]')) return; } catch {}
+  try {
+    const block = document.createElement('div');
+    block.className = 'form-block lentidao-block';
+    block.setAttribute('data-lentidao','1');
+    block.innerHTML = ''
+      + '  <div class="form-header lentidao-header">'
+      + '    <div class="form-title">Testes relacionados a lentid\u00E3o</div>'
+      + '  </div>'
+      + '  <div class="lentidao-card lentidao-card--ping">'
+      + '    <div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-tachograph-digital"></i> Pings</span></div>'
+      + '    <div class="form-hint">Campo relacionado a todos os testes de ping realizados no local.</div>'
+      + '    <div class="lentidao-list" data-lent-ping-list="1"></div>'
+      + '    <button type="button" class="btn-ghost lent-add" data-lent-ping-add="1"><i class="fa-solid fa-plus"></i> Adicionar ping</button>'
+      + '  </div>'
+      + '  <div class="lentidao-card lentidao-card--tracert">'
+      + '    <div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-route"></i> Tracert</span></div>'
+      + '    <div class="form-hint">Campo para agrupar todos os tracerts realizados no local.</div>'
+      + '    <div class="lentidao-list" data-lent-tracert-list="1"></div>'
+      + '    <button type="button" class="btn-ghost lent-add" data-lent-tracert-add="1"><i class="fa-solid fa-plus"></i> Adicionar tracert</button>'
+      + '  </div>';
+
+    const anchor = container.querySelector('#mapa_calor_desc')?.closest('.form-block') || container.querySelector('[data-conf-rot="1"]') || container;
+    if (anchor && anchor.parentElement) anchor.insertAdjacentElement('afterend', block);
+    else container.appendChild(block);
+
+    const addPing = () => {
+      const list = block.querySelector('[data-lent-ping-list="1"]'); if (!list) return;
+      const idx = Array.from(list.querySelectorAll('[data-ping-item]')).reduce((m, el) => { const n = parseInt(el.getAttribute('data-idx') || '0', 10) || 0; return Math.max(m, n); }, 0) + 1;
+      const item = document.createElement('div');
+      item.className = 'lent-entry';
+      item.setAttribute('data-ping-item','1');
+      item.setAttribute('data-idx', String(idx));
+      item.innerHTML = ''
+        + '  <div class="lent-entry__header">'
+        + '    <div class="lent-entry__badge"><i class="fa-solid fa-wave-square"></i> Ping ' + idx + '</div>'
+        + '    <button type="button" class="btn-ghost lent-remove" data-remove-ping="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover ping</button>'
+        + '  </div>'
+        + '  <label class="form-label">Título do teste</label>'
+        + '  <input type="text" class="form-input--underline" name="ping_titulo_' + idx + '" placeholder="Ex.: Ativo do cliente ou da empresa" />'
+        + '  <label class="form-label">Resultados obtidos</label>'
+        + '  <div class="lent-grid">'
+        + '    <input type="text" class="form-input--underline" name="ping_minima_' + idx + '" placeholder="Mínima" inputmode="numeric" />'
+        + '    <input type="text" class="form-input--underline" name="ping_media_' + idx + '" placeholder="Média" inputmode="numeric" />'
+        + '    <input type="text" class="form-input--underline" name="ping_maxima_' + idx + '" placeholder="Máxima" inputmode="numeric" />'
+        + '    <input type="text" class="form-input--underline" name="ping_enviados_' + idx + '" placeholder="Enviados" inputmode="numeric" />'
+        + '    <input type="text" class="form-input--underline" name="ping_recebidos_' + idx + '" placeholder="Recebidos" inputmode="numeric" />'
+        + '    <input type="text" class="form-input--underline" name="ping_perdidos_' + idx + '" placeholder="Perdidos" inputmode="numeric" />'
+        + '  </div>';
+      list.appendChild(item);
+    };
+    const addTracert = () => {
+      const list = block.querySelector('[data-lent-tracert-list="1"]'); if (!list) return;
+      const idx = Array.from(list.querySelectorAll('[data-tracert-item]')).reduce((m, el) => { const n = parseInt(el.getAttribute('data-idx') || '0', 10) || 0; return Math.max(m, n); }, 0) + 1;
+      const item = document.createElement('div');
+      item.className = 'lent-entry';
+      item.setAttribute('data-tracert-item','1');
+      item.setAttribute('data-idx', String(idx));
+      item.innerHTML = ''
+        + '  <div class="lent-entry__header">'
+        + '    <div class="lent-entry__badge"><i class="fa-solid fa-road"></i> Tracert ' + idx + '</div>'
+        + '    <button type="button" class="btn-ghost lent-remove" data-remove-tracert="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover tracert</button>'
+        + '  </div>'
+        + '  <label class="form-label">Local do tracert</label>'
+        + '  <input type="text" class="form-input--underline" name="tracert_local_' + idx + '" placeholder="Ex.: Ativo do cliente ou da empresa" />'
+        + '  <label class="form-label">URL utilizada</label>'
+        + '  <input type="text" class="form-input--underline" name="tracert_url_' + idx + '" placeholder="Ex.: https://exemplo.com" />';
+      list.appendChild(item);
+    };
+    block.addEventListener('click', (ev) => {
+      const btn = ev.target && ev.target.closest && ev.target.closest('button'); if (!btn) return;
+      if (btn.hasAttribute('data-lent-ping-add')) { ev.preventDefault(); addPing(); }
+      else if (btn.hasAttribute('data-lent-tracert-add')) { ev.preventDefault(); addTracert(); }
+      else if (btn.hasAttribute('data-remove-ping')) {
+        ev.preventDefault();
+        const id = btn.getAttribute('data-remove-ping');
+        const it = block.querySelector('.lent-entry[data-ping-item="1"][data-idx="' + id + '"]');
+        if (it) it.remove();
+      }
+      else if (btn.hasAttribute('data-remove-tracert')) {
+        ev.preventDefault();
+        const id = btn.getAttribute('data-remove-tracert');
+        const it = block.querySelector('.lent-entry[data-tracert-item="1"][data-idx="' + id + '"]');
+        if (it) it.remove();
+      }
+    }, true);
+  } catch {}
+}
