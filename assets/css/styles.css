@@ -541,6 +541,8 @@ body:not(.dark-theme) .btn-los.is-active i { color: #fff !important; }
 .lentidao-block { display: flex; flex-direction: column; gap: 6px; }
 .lentidao-card { border: 1px solid var(--border); border-radius: 14px; padding: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 12px; }
 .lentidao-header { margin-bottom: 2px; }
+/* Título principal da seção de lentidão maior (pedido: 16px) */
+.lentidao-header .form-title { font-size: 16px; }
 .lentidao-card + .lentidao-card { margin-top: 4px; }
 .lentidao-card .form-hint { margin-top: 4px; }
 .lentidao-card__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

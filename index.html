@@ -81,7 +81,7 @@
       </div>
       <div class="loading-text">
         <div class="loading-subtitle">Carregando aplicativo...</div>
-        <div class="loading-version">Versão <span id="loadingVersion">4.4.4</span></div>
+        <div class="loading-version">Versão <span id="loadingVersion">4.4.6</span></div>
       </div>
     </div>
   </div>
@@ -301,7 +301,7 @@
         </a>
         <div class="menu-item" style="opacity: 0.6; cursor: default;">
           <i class="fa-solid fa-code-branch"></i>
-          <span>Versão <span id="currentVersion">4.4.4</span></span>
+          <span>Versão <span id="currentVersion">4.4.6</span></span>
         </div>
         <a class="menu-item" id="menuForceUpdate" href="#">
           <i class="fa-solid fa-arrows-rotate"></i>
@@ -361,7 +361,7 @@
 
   <!-- PWA Service Worker -->
   <script>
-    let currentAppVersion = '4.4.4';
+    let currentAppVersion = '4.4.6';
     let versionData = null;
 
     // Sistema de carregamento
@@ -501,7 +501,7 @@
         if (!canProceed) return; // Para aqui se precisar de atualização forçada
 
         // Registrar SW
-        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.4.4'))
+        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.4.6'))
           .then(registration => {
             console.log('SW registrado com sucesso:', registration);
             try { window.__swReg = registration; } catch (e) {}

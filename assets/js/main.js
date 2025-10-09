@@ -9377,6 +9377,88 @@ function setupAutoExpand(root){
     try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
   }
 
+  // Override: torna a última pergunta do Suporte Moto condicional (Sim/Não)
+  function appendDescricaoOSSection(container){
+    if (!container) return;
+    try { if (container.querySelector('#descricao_os')) return; } catch {}
+    const formId = (container && container.__formId) || '';
+    const sec = document.createElement('section'); sec.className='form-section';
+
+    if (formId === 'suporte-moto') {
+      // Pergunta final: deseja acrescentar informações adicionais?
+      const qBlock = document.createElement('div'); qBlock.className='form-block';
+      const qLab = document.createElement('label'); qLab.className='form-label'; qLab.textContent='Deseja acrescentar informações adicionais sobre a visita técnica?';
+      qBlock.appendChild(qLab);
+      const seg = document.createElement('div'); seg.className = 'segmented'; seg.setAttribute('role','radiogroup'); seg.setAttribute('aria-label','Adicionar informações adicionais');
+      const mkRadio = (val, text, icon) => {
+        const inp = document.createElement('input'); inp.type='radio'; inp.id='moto_desc_extra_'+val; inp.name='moto_desc_extra'; inp.value=val;
+        const lab = document.createElement('label'); lab.setAttribute('for', inp.id);
+        lab.innerHTML = (icon ? ('<i class="fa-solid '+icon+'"></i> ') : '') + text;
+        seg.appendChild(inp); seg.appendChild(lab);
+        return inp;
+      };
+      const rSim = mkRadio('sim','Sim','fa-check');
+      mkRadio('nao','Não','fa-xmark');
+      qBlock.appendChild(seg);
+      sec.appendChild(qBlock);
+
+      // Bloco condicional (conteúdo criado somente quando SIM)
+      const cond = document.createElement('div'); cond.className='form-block';
+      cond.setAttribute('data-when-field','moto_desc_extra');
+      cond.setAttribute('data-when-equals','sim');
+      cond.setAttribute('data-clear-on-hide','1');
+      try { cond.setAttribute('hidden','hidden'); } catch {}
+      cond.setAttribute('data-moto-desc-extra','1');
+      sec.appendChild(cond);
+
+      const ensureTextarea = () => {
+        if (container.querySelector('#descricao_os')) return;
+        const lab = document.createElement('label'); lab.className='form-label'; lab.textContent='Relatos adicionais para a visita técnica:';
+        const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder='Digite aqui os relatos adicionais...'; ta.rows = 4; ta.dataset.minHeight = '120';
+        const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres';
+        cond.appendChild(lab); cond.appendChild(ta); cond.appendChild(counter);
+        try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+        try { if (typeof setupAutoExpand === 'function') setupAutoExpand(container); } catch {}
+      };
+      const removeTextarea = () => {
+        const ta = container.querySelector('#descricao_os');
+        const secTa = ta ? (ta.closest && ta.closest('.form-section')) : null;
+        if (ta && secTa === sec) {
+          try {
+            const lab = ta.previousElementSibling; const counter = ta.nextElementSibling;
+            if (lab && lab.classList && lab.classList.contains('form-label')) lab.remove();
+            if (counter && counter.classList && counter.classList.contains('textarea-counter')) counter.remove();
+            ta.remove();
+          } catch {}
+          try { if (typeof setFormState === 'function') setFormState(formId, { descricao_os: '' }); } catch {}
+        }
+        try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+      };
+      const update = () => {
+        try {
+          const sel = container.querySelector('input[name="moto_desc_extra"]:checked');
+          const v = (sel && sel.value || '').toLowerCase();
+          if (v === 'sim') ensureTextarea(); else removeTextarea();
+        } catch {}
+      };
+      try { container.addEventListener('change', (e)=>{ const t=e.target; if (!t) return; if ((t.name||'')==='moto_desc_extra') update(); }, true); } catch {}
+      // Prefill: se houver valor salvo, marcar SIM para restaurar corretamente
+      try { const st = container.__prefillState || {}; if (st && typeof st['descricao_os'] === 'string' && st['descricao_os'].trim() !== '') { rSim.checked = true; } } catch {}
+
+      try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
+      try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+      update();
+    } else {
+      // Padrão para outros formulários
+      const block = document.createElement('div'); block.className='form-block';
+      const lab = document.createElement('label'); lab.className='form-label'; lab.textContent='Relato da solução para a visita técnica:'; block.appendChild(lab);
+      const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder='Digite aqui o relato da solução...'; ta.rows = 4; ta.dataset.minHeight = '120'; block.appendChild(ta);
+      const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres'; block.appendChild(counter);
+      sec.appendChild(block);
+      try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
+    }
+  }
+
   // Formatação para cópia: normaliza 'Sinal da fibra' conforme regras solicitadas
   function formatSinalFibraForCopy(raw){
     try {
@@ -10052,6 +10134,13 @@ function appendLentidaoTests(container){
         + '    <input type="text" class="form-input--underline" name="ping_perdidos_' + idx + '" placeholder="Perdidos" inputmode="numeric" />'
         + '  </div>';
       list.appendChild(item);
+      // Ajusta inputmode dos campos de 'Resultados obtidos' para decimal
+      try {
+        ['minima','media','maxima','enviados','recebidos','perdidos'].forEach(function(suf){
+          var el = item.querySelector('[name="ping_' + suf + '_' + idx + '"]');
+          if (el) el.setAttribute('inputmode','decimal');
+        });
+      } catch {}
     };
     const addTracert = () => {
       const list = block.querySelector('[data-lent-tracert-list="1"]'); if (!list) return;
