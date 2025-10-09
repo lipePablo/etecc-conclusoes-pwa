@@ -2461,6 +2461,88 @@ function setTopbarMode(internal){
         + '  <button id="btnLimparForm" type="button" class="btn-action btn-action--gray"><i class="fa-solid fa-eraser"></i> Limpar respostas</button>\n'
         + '  <button id="btnCopiarForm" type="button" class="btn-action btn-action--red"><i class="fa-solid fa-copy"></i> Copiar</button>\n'
           + '</div>';
+          try {
+            const navBlock = root.querySelector('#nav_ativos')?.closest('.form-block');
+            const limpezaBlock = root.querySelector('#limpeza_sim')?.closest('.form-block');
+            if (navBlock && limpezaBlock) {
+              // posiciona o bloco de Teste de navegação logo após o bloco de limpeza
+              limpezaBlock.insertAdjacentElement('afterend', navBlock);
+              // cria e posiciona o bloco "Mapa de calor" imediatamente abaixo do Teste de navegação
+              let mapaBlock = root.querySelector('#mapa_calor_desc')?.closest('.form-block');
+              if (!mapaBlock) {
+                mapaBlock = document.createElement('div');
+                mapaBlock.className = 'form-block';
+                mapaBlock.innerHTML =
+                  '    <label class="form-label">Mapa de calor</label>\n'
+                + '    <div class="form-hint" style="margin-top:6px;">Descrição geral do teste realizado, incluindo se toda a casa foi inspecionada, identificação de possíveis pontos de sombra e a reação do cliente às informações fornecidas.</div>\n'
+                + '    <textarea id="mapa_calor_desc" name="mapa_calor_desc" class="form-input--underline auto-expand" placeholder="Digite..." rows="3" data-min-height="90"></textarea>\n';
+              }
+              navBlock.insertAdjacentElement('afterend', mapaBlock);
+
+              // bloco: Conferências nos roteadores
+              let confRotBlock = root.querySelector('[data-conf-rot="1"]');
+              if (!confRotBlock) {
+                confRotBlock = document.createElement('div');
+                confRotBlock.className = 'form-block';
+                confRotBlock.setAttribute('data-conf-rot','1');
+                confRotBlock.innerHTML =
+                  '    <label class="form-label">Conferências nos roteadores</label>\\n'
+                + '    <div class="form-hint" style="margin-top:6px;margin-bottom:12px;">Selecione as modificações realizadas na configuração dos roteadores do cliente.</div>\\n'
+                + '    <div class="choices" style="display:flex;flex-direction:row;gap:12px;align-items:center;flex-wrap:wrap;">\\n'
+                + '      <label class="choice"><input type="checkbox" id="conf_dns" name="conf_dns"><span>DNS configurado:</span></label>\\n'
+                + '    </div>\\n'
+                + '    <div class="form-block" data-when-field="conf_dns" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '      <div class="choices" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">\\n'
+                + '        <label class="choice"><input type="checkbox" id="dns_etecc" name="dns_etecc"><span>Etecc</span></label>\\n'
+                + '        <label class="choice"><input type="checkbox" id="dns_google" name="dns_google"><span>Google</span></label>\\n'
+                + '        <label class="choice"><input type="checkbox" id="dns_outro" name="dns_outro"><span>Outro</span></label>\\n'
+                + '      </div>\\n'
+                + '    </div>\\n'
+                + '    <div class="form-block" data-when-field="dns_outro" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 24px;margin-top:2px;">\\n'
+                + '      <label class="form-label" for="dns_outro_val">Qual foi o DNS utilizado?</label>\\n'
+                + '      <input id="dns_outro_val" name="dns_outro_val" type="text" class="form-input--underline" placeholder="Digite o DNS..." />\\n'
+                + '    </div>\\n'
+                + '    <div class="choices" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-top:8px;">\\n'
+                + '      <label class="choice"><input type="checkbox" id="upnp_ok" name="upnp_ok"><span>UPnP: Verifiquei/Habilitei</span></label>\\n'
+                + '      <label class="choice"><input type="checkbox" id="ipv6_slaac" name="ipv6_slaac"><span>IPv6: Ativado no protocolo SLAAC</span></label>\\n'
+                + '      <label class="choice"><input type="checkbox" id="lb24_parent" name="lb24_parent"><span>Largura de banda da rede 2.4:</span></label>\\n'
+                + '    </div>\\n'
+                + '    <div class="form-block" data-when-field="lb24_parent" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '      <div class="choices" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">\\n'
+                + '        <label class="choice"><input type="checkbox" id="lb24_20" name="lb24_20"><span>20MHz</span></label>\\n'
+                + '        <label class="choice"><input type="checkbox" id="lb24_40" name="lb24_40"><span>40MHz</span></label>\\n'
+                + '        <label class="choice"><input type="checkbox" id="lb24_20_40" name="lb24_20_40"><span>20/40MHz</span></label>\\n'
+                + '      </div>\\n'
+                + '    </div>\\n'
+                + '    <div class="choices" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-top:8px;">\\n'
+                + '      <label class="choice"><input type="checkbox" id="acesso_remoto" name="acesso_remoto"><span>Acesso remoto: Confirmei se os IPs estavam corretos e, se necessário, reconfigurei para os padrões de acesso remoto</span></label>\\n'
+                + '    </div>\\n'
+                + '    <label class="form-label" style="margin-top:10px;">Quantidade de ativos acima do normal?</label>\\n'
+                + '    <div class="choices" style="display:flex;flex-direction:row;gap:12px;align-items:center;flex-wrap:wrap;">\\n'
+                + '      <label class="choice"><input type="checkbox" id="qtd_acima_sim" name="qtd_acima_sim"><span>Sim</span></label>\\n'
+                + '      <label class="choice"><input type="checkbox" id="qtd_acima_nao" name="qtd_acima_nao"><span>Não</span></label>\\n'
+                + '    </div>\\n'
+                + '    <div class="form-block" data-when-field="qtd_acima_sim" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '      <label class="form-label" for="qtd_acima_val">Informe a quantidade de ativos conectados</label>\\n'
+                + '      <input id="qtd_acima_val" name="qtd_acima_val" type="text" class="form-input--underline" placeholder="Digite o valor..." inputmode="numeric" />\\n'
+                + '    </div>\\n'
+                + '    <label class="form-label" style="margin-top:10px;">Tempo de atividade acima do normal?</label>\\n'
+                + '    <div class="choices" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">\\n'
+                + '      <label class="choice"><input type="checkbox" id="tempo_acima_sim" name="tempo_acima_sim"><span>Sim</span></label>\\n'
+                + '      <label class="choice"><input type="checkbox" id="tempo_acima_nao" name="tempo_acima_nao"><span>Não</span></label>\\n'
+                + '    </div>\\n'
+                + '    <div class="form-block" data-when-field="tempo_acima_sim" data-when-equals="true" data-clear-on-hide="1" hidden style="border:none;background:transparent;box-shadow:none;padding:4px 0 0 12px;margin-top:2px;">\\n'
+                + '      <label class="form-label" for="tempo_acima_val">Informe o tempo de atividade</label>\\n'
+                + '      <input id="tempo_acima_val" name="tempo_acima_val" type="text" class="form-input--underline" placeholder="Digite o tempo..." />\\n'
+                + '    </div>\\n'
+                + '    <label class="form-label" for="rot_obs" style="margin-top:10px;">Observações adicionais</label>\\n'
+                + '    <div class="form-hint" style="margin-top:6px;">Registre observações sobre configurações realizadas além desta lista ou detalhes adicionais relacionados à rede do cliente.</div>\\n'
+                + '    <textarea id="rot_obs" name="rot_obs" class="form-input--underline auto-expand" placeholder="Descreva mais informações..." rows="3" data-min-height="90"></textarea>\\n';
+              }
+              const anchorBlock = mapaBlock || navBlock || limpezaBlock;
+              if (anchorBlock) anchorBlock.insertAdjacentElement('afterend', confRotBlock);
+            }
+          } catch {}
           try { appendIndicacaoSection(root); } catch {}
         }
     },
