@@ -480,6 +480,13 @@ textarea.form-input--underline:focus-visible {
 body:not(.dark-theme) .btn-action { border: 1px solid var(--border); box-shadow: none; }
 body:not(.dark-theme) .btn-action--gray { background: var(--surface) !important; color: var(--text); border-color: var(--border); box-shadow: none; }
 body:not(.dark-theme) .form-actions .btn-action--gray { background: var(--surface) !important; color: var(--text); border-color: var(--border); box-shadow: none; }
+/* Mantém o texto branco no botão "Grupo de Indicações" em tema claro, inclusive no hover */
+body:not(.dark-theme) .btn-gradient-red,
+body:not(.dark-theme) .btn-gradient-red:hover,
+body:not(.dark-theme) .btn-gradient-red:focus,
+body:not(.dark-theme) .btn-gradient-red:active,
+body:not(.dark-theme) .btn-gradient-red:visited { color: #fff !important; }
+body:not(.dark-theme) .btn-gradient-red i { color: #fff !important; }
 body:not(.dark-theme) .btn-ghost { border-color: var(--border); background: transparent; box-shadow: none; }
 body:not(.dark-theme) .segmented label { background: var(--surface); border-color: var(--border); border-width: 1px; box-shadow: none; }
 body:not(.dark-theme) .plan-tab { background: var(--surface); border-color: var(--border); box-shadow: none; }
@@ -490,21 +497,15 @@ body:not(.dark-theme) .plan-tab { background: var(--surface); border-color: var(
 
 /* Aviso inline abaixo de grupos de checkbox */
 .inline-alert {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: linear-gradient(145deg, #fffbeb, #fff7d6);
-  border: 1px solid #facc15;
-  color: #713f12;
-  font-weight: 700;
-  font-size: 13px;
-  box-shadow: 0 8px 18px rgba(124,45,18,.18), inset 0 1px 0 rgba(255,255,255,.65);
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255,77,77,.10);
+  border: 1px solid rgba(255,77,77,.35);
+  color: #ff4d4d;
+  font-weight: 600;
+  font-size: 12px;
   cursor: pointer;
-}
-body.dark-theme .inline-alert {
-  background: linear-gradient(145deg, rgba(250,204,21,.18), rgba(250,204,21,.12));
-  border-color: rgba(250,204,21,.55);
-  color: #fde68a;
 }
 
 

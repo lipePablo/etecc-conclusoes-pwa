@@ -8577,7 +8577,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try { const lbl = (list.closest('.form-block')?.querySelector('.form-label')?.textContent||'MAC').trim(); inp.setAttribute('aria-label', lbl || 'MAC'); } catch {}
       row.appendChild(inp);
       if (canDelete){
-        const del = document.createElement('button'); del.type='button'; del.className='mac-del'; del.innerHTML='<i class="fa-solid fa-trash"></i>';
+        const del = document.createElement('button'); del.type='button'; del.className='btn-ghost lent-remove mac-del'; del.innerHTML='<i class="fa-solid fa-trash-can"></i>';
         del.addEventListener('click', () => {
           try { const key = inp.name || inp.id; if (formId && key && typeof getFormState==='function'){ const st=getFormState(formId); if (st) delete st[key]; } } catch {}
           row.remove();
@@ -8602,6 +8602,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
       if (addBtn){
         // Proteção: evita ligar o mesmo listener múltiplas vezes
         if (addBtn.dataset && addBtn.dataset.macWired === '1') return;
+        try { addBtn.classList.add('lent-add'); } catch {}
         addBtn.addEventListener('click', () => {
           try {
             const prefix = addBtn.getAttribute('data-mac-prefix') || list.getAttribute('data-mac-prefix') || '';
@@ -8615,6 +8616,16 @@ const copyBtn = document.getElementById('btnCopiarForm');
         });
         try { if (addBtn.dataset) addBtn.dataset.macWired = '1'; } catch {}
       }
+      // Envolver a lista em um card visual, se ainda não estiver
+      try {
+        if (!list.closest('.lentidao-card')){
+          const card = document.createElement('div'); card.className='lentidao-card mac-card';
+          const title = (list.closest('.form-block')?.querySelector('.form-label')?.textContent || 'MACs').trim();
+          card.innerHTML = '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-network-wired"></i> ' + title + '</span></div>';
+          list.parentNode.insertBefore(card, list);
+          card.appendChild(list);
+        }
+      } catch {}
     });
   }
 
@@ -8656,7 +8667,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
       } catch {}
       macWrap.appendChild(mac);
       if (canDelete){
-        const del = document.createElement('button'); del.type='button'; del.className='mac-del'; del.innerHTML='<i class="fa-solid fa-trash"></i>';
+        const del = document.createElement('button'); del.type='button'; del.className='btn-ghost lent-remove mac-del'; del.innerHTML='<i class="fa-solid fa-trash-can"></i>';
         del.addEventListener('click', () => {
           try {
             const nkey = nome.name || nome.id; const mkey = mac.name || mac.id;
@@ -8679,6 +8690,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
       if (addBtn){
         // Proteção: evita ligar o mesmo listener múltiplas vezes
         if (addBtn.dataset && addBtn.dataset.outroWired === '1') return;
+        try { addBtn.classList.add('lent-add'); } catch {}
         addBtn.addEventListener('click', () => {
           const namePref = list.getAttribute('data-outro-name-prefix') || 'outro_nome_';
           const nextIdx = rows.querySelectorAll('input[name^="'+namePref+'"]').length + 1;
@@ -8688,6 +8700,16 @@ const copyBtn = document.getElementById('btnCopiarForm');
         });
         try { if (addBtn.dataset) addBtn.dataset.outroWired = '1'; } catch {}
       }
+      // Card visual para OUTROS
+      try {
+        if (!list.closest('.lentidao-card')){
+          const card = document.createElement('div'); card.className='lentidao-card outro-card';
+          const title = (list.closest('.form-block')?.querySelector('.form-label')?.textContent || 'Outros').trim();
+          card.innerHTML = '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-boxes-stacked"></i> ' + title + '</span></div>';
+          list.parentNode.insertBefore(card, list);
+          card.appendChild(list);
+        }
+      } catch {}
     });
   }
 
@@ -8744,6 +8766,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
   function ensureWanStyles(){
     try {
       const css = [
+        '.form-block .wan-card{margin-top:18px}',
         '.form-block[data-wan-add="1"] .wan-add{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-color:var(--brand);color:var(--brand);font-weight:700}',
         '.form-block[data-wan-add="1"] .wan-add:hover{background:rgba(255,77,77,.08)}',
         // Lixeira: manter mesmo estilo visual dos testes de velocidade
@@ -8762,156 +8785,68 @@ const copyBtn = document.getElementById('btnCopiarForm');
     try {
       const container = root || document;
       try { ensureVelTestStyles(); } catch {}
-      const addBtn = container.querySelector('.vel-add');
-      if (!addBtn) return;
+      try { ensureSpeedCardLayout(container); } catch {}
+      const sec = container.querySelector('.form-block[data-veltest-block="1"]');
+      const addBtn = sec ? sec.querySelector('[data-veltest-add="1"]') : null;
+      const list = sec ? sec.querySelector('[data-veltest-list="1"]') : null;
+      if (!addBtn || !list) return;
       if (addBtn.__wired) return; addBtn.__wired = true;
-      const sec = addBtn.closest('.form-section');
-      // Cria/estiliza botão de excluir em blocos existentes (exceto o primeiro)
-      try {
-        const blocks = Array.from((sec||container).querySelectorAll('.form-block[data-veltest-block="1"]'));
-        blocks.forEach((b, i) => { if (i > 0) wireDelButton(b, container); });
-      } catch {}
-
-      // Garantir posicionamento do motivo (NAO) logo abaixo do bloco de prints
-      try {
-        const printsBlock = (sec||container).querySelector('.form-block input[name="veltest_prints"]')?.closest('.form-block');
-        const motivoBlk = (sec||container).querySelector('#vel_motivo_nao_anexar')?.closest('.form-block');
-        if (printsBlock && motivoBlk && printsBlock.nextElementSibling !== motivoBlk){
-          printsBlock.insertAdjacentElement('afterend', motivoBlk);
+      // Clique para adicionar novo teste
+      addBtn.addEventListener('click', () => {
+        try {
+          const idx = Array.from(list.querySelectorAll('[data-veltest-item="1"]')).length + 1;
+          const item = document.createElement('div'); item.className='lent-entry'; item.setAttribute('data-veltest-item','1'); item.setAttribute('data-idx', String(idx));
+          item.innerHTML = ''
+            + '  <div class="lent-entry__header">'
+            + '    <div class="lent-entry__badge"><i class="fa-solid fa-gauge-high"></i> Teste ' + idx + '</div>'
+            + '    <button type="button" class="btn-ghost lent-remove" data-remove-veltest="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover teste</button>'
+            + '  </div>'
+            + '  <label class="form-label">Resultados obtidos</label>'
+            + '  <div class="triple-inputs">'
+            + '    <input name="vel_down_' + idx + '" type="text" class="form-input--underline vel-down" placeholder="DOWN" inputmode="decimal" />'
+            + '    <input name="vel_up_' + idx + '" type="text" class="form-input--underline vel-up" placeholder="UP" inputmode="decimal" />'
+            + '    <input name="vel_ping_' + idx + '" type="text" class="form-input--underline vel-ping" placeholder="PING" inputmode="numeric" />'
+            + '  </div>'
+            + '  <label class="form-label" for="vel_device_' + idx + '">Informe em qual dispositivo realizou esse teste:</label>'
+            + '  <input id="vel_device_' + idx + '" name="vel_device_' + idx + '" type="text" class="form-input--underline vel-device" placeholder="Ex.: Notebook do cliente, celular do técnico..." />'
+            + '  <label class="form-label">O teste foi realizado via:</label>'
+            + '  <div class="segmented vel-via" role="radiogroup" aria-label="Teste realizado via">'
+            + '    <input type="radio" id="vel_via_' + idx + '_cabo" name="vel_via_' + idx + '" value="cabo">'
+            + '    <label for="vel_via_' + idx + '_cabo">Cabo de rede</label>'
+            + '    <input type="radio" id="vel_via_' + idx + '_wifi" name="vel_via_' + idx + '" value="wifi">'
+            + '    <label for="vel_via_' + idx + '_wifi">Wi-Fi</label>'
+            + '  </div>';
+          list.appendChild(item);
+          try { if (typeof setupSpeedMasks === 'function') setupSpeedMasks(item); } catch {}
+          try { item.querySelector('input')?.focus(); } catch {}
+        } catch {}
+      });
+      // Exclusão delegada
+      sec.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest && e.target.closest('button'); if (!btn) return;
+        if (btn.hasAttribute('data-remove-veltest')){
+          e.preventDefault();
+          const id = btn.getAttribute('data-remove-veltest');
+          const it = sec.querySelector('.lent-entry[data-veltest-item="1"][data-idx="' + id + '"]');
+          if (it) it.remove();
         }
-      } catch {}
-
-      // Ao alternar a seleção de prints, limpar e manter somente o primeiro bloco de testes
+      }, true);
+      // Mudança nos prints: limpar e manter apenas primeiro item
       try {
-        (sec||container).addEventListener('change', (e) => {
+        (container).addEventListener('change', (e) => {
           const t = e.target; if (!t) return;
           if ((t.name||'') !== 'veltest_prints') return;
           try {
-            const formId = (container && container.__formId) || '';
-            const all = Array.from((sec||container).querySelectorAll('.form-block[data-veltest-block="1"]'));
-            if (all.length > 1){
-              // remover blocos adicionais e limpar estado
-              all.slice(1).forEach(blk => {
-                try {
-                  if (formId && typeof getFormState === 'function'){
-                    const st = getFormState(formId) || {};
-                    blk.querySelectorAll('input').forEach(inp => {
-                      const name = inp.name || '';
-                      const id = inp.id || '';
-                      if (name) delete st[name];
-                      if (id && id !== name) delete st[id];
-                    });
-                  }
-                } catch {}
-                try { blk.remove(); } catch {}
-              });
-            }
-            // limpar valores do primeiro bloco
-            const first = (sec||container).querySelector('.form-block[data-veltest-block="1"]');
+            const items = Array.from(list.querySelectorAll('[data-veltest-item="1"]'));
+            if (items.length > 1) items.slice(1).forEach(n => n.remove());
+            const first = items[0] || list.querySelector('[data-veltest-item="1"]');
             if (first){
-              try {
-                first.querySelectorAll('input').forEach(inp => {
-                  const type = (inp.type||'').toLowerCase();
-                  if (type === 'radio' || type === 'checkbox') inp.checked = false; else inp.value = '';
-                });
-              } catch {}
-              // re-aplicar máscaras caso necessário
+              first.querySelectorAll('input').forEach(inp => { const type=(inp.type||'').toLowerCase(); if (type==='radio'||type==='checkbox') inp.checked=false; else inp.value=''; });
               try { if (typeof setupSpeedMasks === 'function') setupSpeedMasks(first); } catch {}
             }
-            // reavaliar condicionais
-            try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
           } catch {}
         }, true);
       } catch {}
-
-      function wireDelButton(blk, ctx){
-        try {
-          if (!blk) return;
-          if (blk.__velDelWired) return;
-          blk.__velDelWired = true;
-          // garante posicionamento relativo do bloco para posicionar a lixeira
-          try { if (!blk.style.position) blk.style.position = 'relative'; } catch {}
-          // evita adicionar lixeira no primeiro bloco
-          try {
-            const all = Array.from((sec||ctx||document).querySelectorAll('.form-block[data-veltest-block="1"]'));
-            const idx = all.indexOf(blk);
-            if (idx === 0) return; // primeiro bloco não tem lixeira
-          } catch {}
-          // cria botão
-          const del = document.createElement('button');
-          del.type = 'button';
-          del.className = 'btn-ghost vel-del';
-          del.setAttribute('aria-label', 'Excluir este teste');
-          del.innerHTML = '<i class="fa-solid fa-trash"></i>';
-          // posiciona no canto superior direito
-          del.style.position = 'absolute';
-          del.style.top = '6px';
-          del.style.right = '6px';
-          // handler de exclusão
-          del.addEventListener('click', () => {
-            try {
-              const formId = (ctx && ctx.__formId) || (container && container.__formId) || '';
-              // limpa valores do estado
-              try {
-                if (formId && typeof getFormState === 'function'){
-                  const st = getFormState(formId) || {};
-                  Array.from(blk.querySelectorAll('input')).forEach((inp) => {
-                    const name = inp.name || '';
-                    const id = inp.id || '';
-                    if (name) delete st[name];
-                    if (id && id !== name) delete st[id];
-                  });
-                }
-              } catch {}
-              // remove do DOM
-              blk.remove();
-              // reavalia condicionais
-              try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, ctx||container); } catch {}
-            } catch {}
-          });
-          blk.appendChild(del);
-        } catch {}
-      }
-      addBtn.addEventListener('click', () => {
-        try {
-          if (!sec) return;
-          const existing = Array.from(sec.querySelectorAll('.form-block[data-veltest-block="1"]'));
-          const nextIdx = existing.length + 1;
-          const blk = document.createElement('div');
-          blk.className = 'form-block';
-          blk.setAttribute('data-veltest-block','1');
-          blk.setAttribute('data-when-field','veltest_prints');
-          blk.setAttribute('data-when-in','sim,nao');
-          blk.setAttribute('data-clear-on-hide','1');
-          blk.style.position = 'relative';
-          blk.innerHTML = ''
-            + '    <label class="form-label">Resultado dos testes de velocidade:</label>'
-            + '    <div class="triple-inputs">'
-            + '      <input name="vel_down_' + nextIdx + '" type="text" class="form-input--underline vel-down" placeholder="DOWN" inputmode="decimal" />'
-            + '      <input name="vel_up_' + nextIdx + '" type="text" class="form-input--underline vel-up" placeholder="UP" inputmode="decimal" />'
-            + '      <input name="vel_ping_' + nextIdx + '" type="text" class="form-input--underline vel-ping" placeholder="PING" inputmode="numeric" />'
-            + '    </div>'
-            + '    <label class="form-label" for="vel_device_' + nextIdx + '">Informe em qual dispositivo você realizou esse teste:</label>'
-            + '    <input id="vel_device_' + nextIdx + '" name="vel_device_' + nextIdx + '" type="text" class="form-input--underline vel-device" placeholder="Ex.: Notebook do cliente, celular do técnico..." />'
-            + '    <label class="form-label">O teste foi realizado via:</label>'
-            + '    <div class="segmented vel-via" role="radiogroup" aria-label="Teste realizado via">'
-            + '      <input type="radio" id="vel_via_' + nextIdx + '_cabo" name="vel_via_' + nextIdx + '" value="cabo">'
-            + '      <label for="vel_via_' + nextIdx + '_cabo">Cabo de rede</label>'
-            + '      <input type="radio" id="vel_via_' + nextIdx + '_wifi" name="vel_via_' + nextIdx + '" value="wifi">'
-            + '      <label for="vel_via_' + nextIdx + '_wifi">Wi-Fi</label>'
-            + '    </div>';
-          // inserir antes do bloco do botão de adicionar
-          const addWrap = addBtn.closest('.form-block');
-          sec.insertBefore(blk, addWrap);
-          wireDelButton(blk, container);
-          try { if (typeof setupSpeedMasks === 'function') setupSpeedMasks(blk); } catch {}
-          try {
-            const formId = (container && container.__formId) || '';
-            if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
-          } catch {}
-          try { blk.querySelector('input')?.focus(); } catch {}
-        } catch {}
-      });
     } catch {}
   }
 
@@ -8920,44 +8855,47 @@ const copyBtn = document.getElementById('btnCopiarForm');
     try {
       const container = root || document;
       try { ensureWanStyles(); } catch {}
-      const addBtn = container.querySelector('.wan-add');
-      if (!addBtn) return;
+      try { ensureWanCardLayout(container); } catch {}
+      const mainBlk = (() => { try { const el = container.querySelector('#wan_gigabit'); return el ? el.closest('.form-block') : null; } catch { return null; } })();
+      if (!mainBlk) return;
+      const addBtn = mainBlk.querySelector('[data-wan-add="1"]');
+      const list = mainBlk.querySelector('[data-wan-list="1"]');
+      if (!addBtn || !list) return;
       if (addBtn.__wired) return; addBtn.__wired = true;
-      const sec = addBtn.closest('.form-section');
       addBtn.addEventListener('click', () => {
         try {
-          if (!sec) return;
-          const existing = Array.from(sec.querySelectorAll('.form-block[data-wan-block="1"]'));
-          const nextIdx = existing.length + 1;
-          const blk = document.createElement('div');
-          blk.className = 'form-block';
-          blk.setAttribute('data-wan-block','1');
-          blk.setAttribute('data-when-field','tipo_serv');
-          blk.setAttribute('data-when-in','avaliacao,avaliacao_cab,instalacao');
-          blk.setAttribute('data-clear-on-hide','1');
-          blk.style.position = 'relative';
-          blk.innerHTML = ''
-            + '    <label class="form-label">Verificação de cabo de rede adicional</label>'
-            + '    <label class="form-label" for="wan_ativo_' + nextIdx + '" style="margin-top:10px;">Aparelho ligado por esse cabo:</label>'
-            + '    <input id="wan_ativo_' + nextIdx + '" name="wan_ativo_' + nextIdx + '" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TV\'s, PC\'s e etc" />'
-            + '    <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
-            + '    <div class="choices" style="margin-top:10px;">'
-            + '      <label class="choice"><input type="checkbox" id="wan_gigabit_' + nextIdx + '" name="wan_gigabit_' + nextIdx + '"><span>Cabo de rede Gigabit</span></label>'
-            + '      <label class="choice"><input type="checkbox" id="wan_powermitter_' + nextIdx + '" name="wan_powermitter_' + nextIdx + '"><span>Teste no Powermitter</span></label>'
-            + '      <label class="choice"><input type="checkbox" id="wan_ping_' + nextIdx + '" name="wan_ping_' + nextIdx + '"><span>Teste de Ping no Cabo</span></label>'
-            + '    </div>'
-            + '    <label class="form-label" for="wan_obs_' + nextIdx + '" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>'
-            + '    <textarea id="wan_obs_' + nextIdx + '" name="wan_obs_' + nextIdx + '" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>'
-            + '    <button type="button" class="btn-ghost vel-del" aria-label="Excluir este teste" style="position: absolute; top: 6px; right: 6px;"><i class="fa-solid fa-trash"></i></button>';
-          const addWrap = addBtn.closest('.form-block');
-          sec.insertBefore(blk, addWrap);
-          try { if (typeof setupAutoExpand === 'function') setupAutoExpand(blk); } catch {}
-          try { const del = blk.querySelector('.vel-del'); if (del && !del.__wired) { del.__wired = true; del.addEventListener('click', () => { try { blk.remove(); } catch {} }); } } catch {}
-          try { if (typeof setupAutoExpand === 'function') setupAutoExpand(container); } catch {}
-          try { const formId = (container && container.__formId) || ''; if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
-          try { blk.querySelector('input')?.focus(); } catch {}
+          const idx = Array.from(list.querySelectorAll('[data-wan-item="1"]')).length + 1;
+          const item = document.createElement('div'); item.className='lent-entry'; item.setAttribute('data-wan-item','1'); item.setAttribute('data-idx', String(idx));
+          item.innerHTML = ''
+            + '  <div class="lent-entry__header">'
+            + '    <div class="lent-entry__badge"><i class="fa-solid fa-network-wired"></i> Verificação ' + idx + '</div>'
+            + '    <button type="button" class="btn-ghost lent-remove" data-remove-wan="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover verificação</button>'
+            + '  </div>'
+            + '  <label class="form-label" for="wan_ativo_' + idx + '">Aparelho ligado por esse cabo:</label>'
+            + '  <input id="wan_ativo_' + idx + '" name="wan_ativo_' + idx + '" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." />'
+            + '  <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
+            + '  <div class="choices" style="margin-top:10px;">'
+            + '    <label class="choice"><input type="checkbox" id="wan_gigabit_' + idx + '" name="wan_gigabit_' + idx + '"><span>Cabo de rede Gigabit</span></label>'
+            + '    <label class="choice"><input type="checkbox" id="wan_powermitter_' + idx + '" name="wan_powermitter_' + idx + '"><span>Teste no Powermitter</span></label>'
+            + '    <label class="choice"><input type="checkbox" id="wan_ping_' + idx + '" name="wan_ping_' + idx + '"><span>Teste de Ping no Cabo</span></label>'
+            + '  </div>'
+            + '  <label class="form-label" for="wan_obs_' + idx + '" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>'
+            + '  <textarea id="wan_obs_' + idx + '" name="wan_obs_' + idx + '" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>';
+          list.appendChild(item);
+          try { if (typeof setupAutoExpand === 'function') setupAutoExpand(item); } catch {}
+          try { item.querySelector('input')?.focus(); } catch {}
         } catch {}
       });
+      // remover verificação
+      mainBlk.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest && e.target.closest('button'); if (!btn) return;
+        if (btn.hasAttribute('data-remove-wan')){
+          e.preventDefault();
+          const id = btn.getAttribute('data-remove-wan');
+          const it = mainBlk.querySelector('.lent-entry[data-wan-item="1"][data-idx="' + id + '"]');
+          if (it) it.remove();
+        }
+      }, true);
     } catch {}
   }
 
@@ -8967,7 +8905,13 @@ function appendTrocaEquipamentosSection(container){
   try { const fid = (container && container.__formId) || ''; if (fid !== 'suporte-moto') return; } catch {}
   // Evita duplicação
   try { if (container.querySelector('[data-section="troca-equipamentos"]')) return; } catch {}
-  const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','troca-equipamentos');const makeSegmented = (name, items) => {
+  const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','troca-equipamentos');
+  try {
+    const head = document.createElement('div'); head.className='form-header';
+    const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> TROCA DE EQUIPAMENTOS';
+    head.appendChild(ttl); sec.appendChild(head);
+  } catch {}
+  const makeSegmented = (name, items) => {
     const wrap = document.createElement('div');
     const cls = (items && items.length === 2) ? 'segmented' : 'segmented segmented--stack';
     wrap.className = cls;
@@ -9177,12 +9121,14 @@ function appendTrocaEquipamentosSection(container){
           if (!groupEl) return;
           // Evita avisos duplicados simultâneos no mesmo grupo
           const existing = groupEl.nextElementSibling;
-          if (existing && existing.classList && existing.classList.contains('inline-alert')) {
+          if (existing && existing.classList && (existing.classList.contains('inline-alert') || existing.classList.contains('sinal-los-hint'))) {
             existing.remove();
           }
           const el = document.createElement('div');
-          el.className = 'inline-alert';
+          // Padronização visual do alerta: form-hint destacado
+          el.className = 'form-hint sinal-los-hint is-highlight';
           el.setAttribute('role','alert');
+          try { el.setAttribute('data-error','1'); } catch {}
           el.textContent = message;
           // Inserir logo abaixo do grupo
           groupEl.insertAdjacentElement('afterend', el);
@@ -9198,7 +9144,7 @@ function appendTrocaEquipamentosSection(container){
         try {
           if (!groupEl) return;
           const next = groupEl.nextElementSibling;
-          if (next && next.classList && next.classList.contains('inline-alert')) next.remove();
+          if (next && next.classList && (next.classList.contains('inline-alert') || next.classList.contains('sinal-los-hint'))) next.remove();
         } catch {}
       };
       // Detecta tentativas conflitantes para exibir aviso (antes de mudar estados)
@@ -9277,7 +9223,9 @@ function appendTrocaEquipamentosSection(container){
     try { const fid = (container && container.__formId) || ''; if (fid !== 'suporte-moto') return; } catch {}
     // Evita duplicação
     try { if (container.querySelector('[data-section="ajuda-interna"]')) return; } catch {}
-    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','ajuda-interna');const addBlock = (opts) => {
+    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','ajuda-interna');
+    try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-solid fa-hands-helping"></i> AJUDA INTERNA'; head.appendChild(ttl); sec.appendChild(head); } catch {}
+    const addBlock = (opts) => {
       const b=document.createElement('div'); b.className='form-block';
       const isConditional = !!opts.whenField;
       if (opts.whenField){ b.setAttribute('data-when-field', opts.whenField); }
@@ -9369,7 +9317,9 @@ function setupAutoExpand(root){
 }function appendDescricaoOSSection(container){
     if (!container) return;
     try { if (container.querySelector('#descricao_os')) return; } catch {}
-    const sec = document.createElement('section'); sec.className='form-section';const block = document.createElement('div'); block.className='form-block';
+    const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','descricao-os');
+    try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S'; head.appendChild(ttl); sec.appendChild(head); } catch {}
+    const block = document.createElement('div'); block.className='form-block';
     const lab = document.createElement('label'); lab.className='form-label'; lab.textContent='Relato da solução para a visita técnica:'; block.appendChild(lab);
     const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder='Digite aqui o relato da solução...'; ta.rows = 4; ta.dataset.minHeight = '120'; block.appendChild(ta);
     const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres'; block.appendChild(counter);
@@ -9377,12 +9327,137 @@ function setupAutoExpand(root){
     try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
   }
 
+  // Layout: garante cards para Testes de Velocidade e WAN dentro do mesmo form-block
+  function ensureSpeedCardLayout(root){
+    try {
+      const container = root || document;
+      const blk = container.querySelector('.form-block[data-veltest-block="1"]');
+      if (!blk) return;
+      // Localiza ou cria o card
+      let listWrap = blk.querySelector('.lentidao-card.veltest-card');
+      const addWrap = blk.parentNode && blk.parentNode.querySelector('.form-block[data-veltest-add="1"]');
+      if (!listWrap){
+        listWrap = document.createElement('div'); listWrap.className = 'lentidao-card veltest-card';
+        listWrap.innerHTML = ''
+          + '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-gauge-high"></i> Resultados</span></div>'
+          + '<div class="lentidao-list" data-veltest-list="1"></div>'
+          + '<button type="button" class="btn-ghost lent-add" data-veltest-add="1"><i class="fa-solid fa-plus"></i> Adicionar teste</button>';
+        // Se houver botão original, remove o botão padrão do card para evitar duplicidade
+        try {
+          if (addWrap && addWrap.querySelector && addWrap.querySelector('button')){
+            const defBtn = listWrap.querySelector('[data-veltest-add="1"]');
+            if (defBtn) defBtn.remove();
+          }
+        } catch {}
+        blk.appendChild(listWrap);
+      }
+      // Localiza ou cria a primeira entrada
+      const list = listWrap.querySelector('[data-veltest-list="1"]');
+      let entry = list ? list.querySelector('[data-veltest-item="1"]') : null;
+      if (!entry){
+        entry = document.createElement('div'); entry.className='lent-entry'; entry.setAttribute('data-veltest-item','1'); entry.setAttribute('data-idx','1');
+        const header = document.createElement('div'); header.className='lent-entry__header';
+        const badge = document.createElement('div'); badge.className='lent-entry__badge'; badge.innerHTML = '<i class="fa-solid fa-gauge-high"></i> Teste 1'; header.appendChild(badge);
+        const del = document.createElement('button'); del.type='button'; del.className='btn-ghost lent-remove'; del.setAttribute('data-remove-veltest','1'); del.innerHTML='<i class="fa-solid fa-trash-can"></i> Remover teste'; header.appendChild(del);
+        entry.appendChild(header);
+        if (list) list.appendChild(entry);
+      }
+      // Move elementos dentro da entrada, preservando ordem: triple -> label dispositivo -> input dispositivo -> label via -> radios
+      const triple = blk.querySelector('.triple-inputs'); if (triple) entry.appendChild(triple);
+      let lblDev = null; try { lblDev = Array.from(blk.querySelectorAll('label.form-label')).find(l => (String(l.htmlFor||'') === 'vel_device_1') || /Informe em qual dispositivo/i.test(String(l.textContent||''))); } catch {}
+      const inDev = blk.querySelector('input.vel-device') || blk.querySelector('#vel_device_1');
+      if (lblDev) entry.appendChild(lblDev);
+      if (inDev) entry.appendChild(inDev);
+      let lblVia = null; try { lblVia = Array.from(blk.querySelectorAll('label.form-label')).find(l => /O teste foi realizado via/i.test(String(l.textContent||''))); } catch {}
+      const seg = blk.querySelector('.segmented.vel-via');
+      if (lblVia) entry.appendChild(lblVia);
+      if (seg) entry.appendChild(seg);
+      // Fallback: se ainda existir algum input .vel-device fora do card, move para dentro do entry
+      try {
+        Array.from(blk.querySelectorAll('input.vel-device, #vel_device_1')).forEach((inp) => {
+          if (!listWrap.contains(inp)){
+            const lid = inp.id || 'vel_device_1';
+            const assoc = blk.querySelector('label.form-label[for="'+lid+'"]');
+            if (assoc && !listWrap.contains(assoc)) entry.appendChild(assoc);
+            entry.appendChild(inp);
+          }
+        });
+      } catch {}
+      // Botão de ação: incorporar o existente ao card e remover o bloco antigo
+      if (addWrap){
+        const btn = addWrap.querySelector('button'); if (btn){ try { btn.setAttribute('data-veltest-add','1'); btn.classList.add('lent-add'); btn.innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar teste'; } catch {} listWrap.appendChild(btn); }
+        try { addWrap.remove(); } catch {}
+      }
+    } catch {}
+  }
+
+  function ensureWanCardLayout(root){
+    try {
+      const container = root || document;
+      // localiza o bloco principal de WAN pela presença do checkbox wan_gigabit
+      const mainBlk = (() => { try { const el = container.querySelector('#wan_gigabit'); return el ? el.closest('.form-block') : null; } catch { return null; } })();
+      if (!mainBlk) return;
+      if (mainBlk.querySelector('[data-wan-card="1"]')) return;
+      const card = document.createElement('div'); card.className = 'lentidao-card wan-card'; card.setAttribute('data-wan-card','1');
+      card.innerHTML = ''
+        + '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-network-wired"></i> Verifica\u00E7\u00E3o de cabo de rede adicional</span></div>'
+        + '<div class="lentidao-list" data-wan-list="1"></div>'
+        + '<button type="button" class="btn-ghost lent-add wan-add" data-wan-add="1"><i class="fa-solid fa-plus"></i> Adicionar verificação</button>';
+      mainBlk.appendChild(card);
+      // botão de ação para adicionar verificação
+      try {
+        const extraBlk = container.querySelector('.form-block[data-wan-add="1"]');
+        if (extraBlk){
+          const btn = extraBlk.querySelector('button');
+          if (btn){ btn.classList.add('lent-add','wan-add'); btn.setAttribute('data-wan-add','1'); card.appendChild(btn); }
+          extraBlk.remove();
+        }
+      } catch {}
+    } catch {}
+  }
+
+  
+
+  function ensureWanCardLayout(root){
+    try {
+      const container = root || document;
+      // localiza o bloco principal de WAN pela presença do checkbox wan_gigabit
+      const mainBlk = (() => { try { const el = container.querySelector('#wan_gigabit'); return el ? el.closest('.form-block') : null; } catch { return null; } })();
+      if (!mainBlk) return;
+      if (mainBlk.querySelector('[data-wan-card="1"]')) return;
+      // Verifica se existe um bloco antigo (form-block) com o botão de adicionar verificação
+      const extraBlk = container.querySelector('.form-block[data-wan-add="1"]');
+      const card = document.createElement('div'); card.className = 'lentidao-card wan-card'; card.setAttribute('data-wan-card','1');
+      card.innerHTML = ''
+        + '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-network-wired"></i> Verifica\u00E7\u00E3o de cabo de rede adicional</span></div>'
+        + '<div class="lentidao-list" data-wan-list="1"></div>'
+        + '<button type="button" class="btn-ghost lent-add wan-add" data-wan-add="1"><i class="fa-solid fa-plus"></i> Adicionar verificação</button>';
+      // Se houver botão original, remove o botão padrão do card para evitar duplicidade
+      try {
+        if (extraBlk && extraBlk.querySelector && extraBlk.querySelector('button')){
+          const defBtn = card.querySelector('[data-wan-add="1"]');
+          if (defBtn) defBtn.remove();
+        }
+      } catch {}
+      mainBlk.appendChild(card);
+      // mover botão antigo, caso exista em outro form-block
+      try {
+        if (extraBlk){
+          const btn = extraBlk.querySelector('button');
+          if (btn){ btn.classList.add('lent-add','wan-add'); btn.setAttribute('data-wan-add','1'); btn.innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar verificação'; card.appendChild(btn); }
+          extraBlk.remove();
+        }
+      } catch {}
+    } catch {}
+  }
+
   // Override: torna a última pergunta do Suporte Moto condicional (Sim/Não)
   function appendDescricaoOSSection(container){
     if (!container) return;
     try { if (container.querySelector('#descricao_os')) return; } catch {}
     const formId = (container && container.__formId) || '';
-    const sec = document.createElement('section'); sec.className='form-section';
+    const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','descricao-os');
+    try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S'; head.appendChild(ttl); sec.appendChild(head); } catch {}
 
     if (formId === 'suporte-moto') {
       // Pergunta final: deseja acrescentar informações adicionais?
@@ -9781,8 +9856,12 @@ try {
       let indic = container.querySelector('[data-section="indicacao"]');
       if (!indic) { try { appendIndicacaoSection(container); } catch {} indic = container.querySelector('[data-section="indicacao"]'); }
       if (!indic) return;
-      const desc = container.querySelector('#descricao_os');
-      const descSec = desc ? (desc.closest && desc.closest('.form-section')) : null;
+      // Localiza a seção de descrição mesmo quando o textarea ainda não existe
+      let descSec = container.querySelector('[data-section="descricao-os"]');
+      if (!descSec) {
+        const desc = container.querySelector('#descricao_os');
+        descSec = desc ? (desc.closest && desc.closest('.form-section')) : null;
+      }
       if (descSec && descSec.parentNode === container){
         // posiciona INDICAÇÃO imediatamente antes da seção de DESCRIÇÃO DA O.S
         try { if (indic.nextElementSibling !== descSec) container.insertBefore(indic, descSec); } catch {}
@@ -9838,8 +9917,12 @@ try {
       const troca = container.querySelector('[data-section="troca-equipamentos"]');
       const ajuda = container.querySelector('[data-section="ajuda-interna"]');
       const indic = container.querySelector('[data-section="indicacao"]');
-      const desc = container.querySelector('#descricao_os');
-      const descSec = desc ? (desc.closest && desc.closest('.form-section')) : null;
+      // Enxerga a seção de descrição mesmo sem o textarea existir ainda
+      let descSec = container.querySelector('[data-section="descricao-os"]');
+      if (!descSec) {
+        const desc = container.querySelector('#descricao_os');
+        descSec = desc ? (desc.closest && desc.closest('.form-section')) : null;
+      }
       // Ajuda após Troca
       if (troca && ajuda) { try { ensureSectionAfter(troca, ajuda); } catch {} }
       // Indicação após Ajuda
@@ -9922,6 +10005,8 @@ try {
           if (formId === 'suporte-moto') { try { ensureIndicacaoPosition(container); } catch {} }
           if (formId !== 'comunicado-ausencia') { try { ensureIndicacaoBeforeDescricao(container); } catch {} }
           if (formId !== 'comunicado-ausencia') { try { ensureIndicacaoVisibilityForRetencao(container); } catch {} }
+          try { ensureSpeedCardLayout(container); } catch {}
+          try { ensureWanCardLayout(container); } catch {}
           try { setupMacLists(container); } catch {}
           try { setupOutroList(container); } catch {}
           try { ensureFotosJustificativa(container); } catch {}
@@ -9944,7 +10029,9 @@ try {
     if (!container) return;
     // Evita duplicação se já existir
     try { if (container.querySelector('[data-section="indicacao"]')) return; } catch {}
-    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','indicacao');const addBlock = (opts) => {
+    const sec = document.createElement('section'); sec.className = 'form-section'; sec.setAttribute('data-section','indicacao');
+    try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-solid fa-bullhorn"></i> INDICAÇÕES'; head.appendChild(ttl); sec.appendChild(head); } catch {}
+    const addBlock = (opts) => {
       const b=document.createElement('div'); b.className='form-block';
       if (opts.whenField){ b.setAttribute('data-when-field', opts.whenField); }
       if (opts.whenEquals!=null){ b.setAttribute('data-when-equals', String(opts.whenEquals)); }
