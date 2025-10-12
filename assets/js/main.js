@@ -8580,7 +8580,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try { ariaLabel = (list.closest('.form-block')?.querySelector('.form-label')?.textContent||'MAC').trim() || 'MAC'; } catch {}
       try { inp.setAttribute('aria-label', ariaLabel); } catch {}
       try { inp.dataset.scanTarget = id; } catch {}
-      row.appendChild(inp);
+      const wrap = document.createElement('div'); wrap.className = 'mac-input-wrap';
+      wrap.appendChild(inp);
+      row.appendChild(wrap);
       let scanBtn = null;
       if (!isPhone){
         scanBtn = document.createElement('button'); scanBtn.type='button'; scanBtn.className='btn-ghost mac-scan'; scanBtn.setAttribute('data-mac-scan','1'); scanBtn.setAttribute('data-scan-target', id); scanBtn.innerHTML='<i class="fa-solid fa-barcode"></i> Ler código de barras';
@@ -8597,7 +8599,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
           try { const key = inp.name || inp.id; if (formId && key && typeof getFormState==='function'){ const st=getFormState(formId); if (st) delete st[key]; } } catch {}
           row.remove();
         });
-        row.appendChild(del);
+        wrap.appendChild(del);
       }
       return row;
     }
@@ -8678,7 +8680,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
     try {
       const css = [
         '.mac-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}',
-        '.mac-row .form-input--underline{flex:1 1 auto}',
+        '.mac-input-wrap{position:relative;flex:1 1 auto;min-width:0}',
+        '.mac-input-wrap .form-input--underline{width:100%;padding-right:50px}',
         '.mac-row .btn-ghost.mac-scan{flex:0 0 auto;white-space:nowrap;font-weight:700;gap:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px;height:42px;border:1px solid var(--brand);color:var(--brand)}',
         '.mac-row .btn-ghost.mac-scan:hover{background:rgba(255,77,77,.08)}',
         '.mac-row .mac-del{flex:0 0 auto}',
@@ -8695,7 +8698,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.mac-scan-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}',
         '.mac-scan-actions .btn-primary{flex:1 1 160px}',
         '.mac-scan-actions .btn-ghost{flex:1 1 120px}',
-        '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-row .mac-del{align-self:flex-end}.mac-scan-box{padding:18px}.mac-scan-header h2{font-size:16px}}'
+        'body.dark-theme .mac-scan-box{background:var(--card);color:var(--text);border:1px solid var(--border);box-shadow:0 22px 48px rgba(0,0,0,.55)}',
+        'body.dark-theme .mac-scan-header h2{color:var(--text)}',
+        'body.dark-theme .mac-scan-status{color:var(--muted)}',
+        'body.dark-theme .mac-scan-fallback{color:var(--muted)}',
+        '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-scan-box{padding:18px}.mac-scan-header h2{font-size:16px}}'
       ].join('');
       let st = document.getElementById('macScanStyles');
       if (!st){ st = document.createElement('style'); st.id='macScanStyles'; document.head.appendChild(st); }

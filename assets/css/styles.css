@@ -440,7 +440,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 .mac-list { margin-top: 8px; }
 .mac-rows { display: grid; gap: 8px; }
 .mac-row { position: relative; display: flex; align-items: center; }
-.mac-row input { flex: 1; padding-right: 50px; }
+.mac-input-wrap { position: relative; flex: 1; min-width: 0; }
+.mac-input-wrap input { width: 100%; padding-right: 50px; }
 .mac-row .mac-del { appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--muted); width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; position: absolute; right: 8px; top: 50%; transform: translateY(-56%); }
 .mac-row .mac-del:hover { filter: brightness(1.05); color: var(--text); }
 .mac-list .mac-add { margin-top: 14px; border-color: var(--brand); color: var(--brand); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
