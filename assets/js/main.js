@@ -1664,25 +1664,28 @@ function setTopbarMode(internal){
                   if (inp && !inp.__wired){
                     inp.__wired = true;
                     const toTitle = (s) => (s||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
-                // Permitir espaços livremente; capitalizar em tempo real e no blur
-                inp.addEventListener('input', () => {
-                  try {
-                    const cur = inp.value;
-                    const fmt = cur.replace(/(^|\s)([A-Za-zÀ-ÖØ-öø-ÿ])(\S*)/g, (m, sp, f, rest) => sp + f.toUpperCase() + rest.toLowerCase());
-                    if (cur !== fmt) {
-                      const pos = inp.selectionStart || fmt.length;
-                      inp.value = fmt;
-                      try { inp.setSelectionRange(pos, pos); } catch {}
-                    }
-                  } catch {}
-                  try { if (typeof root.__updateAusenciaExample==='function') root.__updateAusenciaExample(); } catch {}
-                });
-                inp.addEventListener('blur', () => {
-                  const cur = inp.value;
-                  const fmt = cur.replace(/(^|\s)([A-Za-zÀ-ÖØ-öø-ÿ])(\S*)/g, (m, sp, f, rest) => sp + f.toUpperCase() + rest.toLowerCase());
-                  if (cur !== fmt) inp.value = fmt;
-                  try { if (typeof root.__updateAusenciaExample==='function') root.__updateAusenciaExample(); } catch {}
-                });
+                    // Permitir espaços livremente; capitalizar em tempo real e no blur
+                    const capitalizeWords = (value) => {
+                      return (value || '').replace(/(^|\s)(\p{L})(\S*)/gu, (match, separator, first, rest) => separator + first.toUpperCase() + rest.toLowerCase());
+                    };
+                    inp.addEventListener('input', () => {
+                      try {
+                        const cur = inp.value;
+                        const fmt = capitalizeWords(cur);
+                        if (cur !== fmt) {
+                          const pos = inp.selectionStart || fmt.length;
+                          inp.value = fmt;
+                          try { inp.setSelectionRange(pos, pos); } catch {}
+                        }
+                      } catch {}
+                      try { if (typeof root.__updateAusenciaExample==='function') root.__updateAusenciaExample(); } catch {}
+                    });
+                    inp.addEventListener('blur', () => {
+                      const cur = inp.value;
+                      const fmt = capitalizeWords(cur);
+                      if (cur !== fmt) inp.value = fmt;
+                      try { if (typeof root.__updateAusenciaExample==='function') root.__updateAusenciaExample(); } catch {}
+                    });
                   }
                 } catch {}
                 try { if (typeof updateConditionalVisibility==='function') updateConditionalVisibility('comunicado-ausencia', root); } catch {}
@@ -8675,6 +8678,13 @@ const copyBtn = document.getElementById('btnCopiarForm');
   let macScanStream = null;
   let macScanDetector = null;
   let macScanLoopId = null;
+  let macScanCanvas = null;
+  let macScanCtx = null;
+  let macScanLastDetect = 0;
+  let macScanGraceUntil = 0;
+  let macScanScrollY = 0;
+  const MAC_SCAN_ROI_W = 0.94;
+  const MAC_SCAN_ROI_H = 0.1067;
 
   function ensureMacScanStyles(){
     try {
@@ -8687,22 +8697,28 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.mac-row .mac-del{flex:0 0 auto}',
         '.mac-scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}',
         '.mac-scan-overlay.is-visible{display:flex}',
-        '.mac-scan-box{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:20px;box-shadow:0 22px 48px rgba(0,0,0,.28)}',
+        'body.mac-scan-open{overflow:hidden}',
+        '.mac-scan-box{background:#fff;border-radius:18px;width:min(92vw,560px);max-height:90vh;padding:clamp(14px,2vw,22px);box-shadow:0 22px 48px rgba(0,0,0,.28);overflow:auto;-ms-overflow-style:none;scrollbar-width:none}',
+        '.mac-scan-box::-webkit-scrollbar{width:0;height:0}',
+        '.mac-scan-video-wrap{position:relative}',
         '.mac-scan-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}',
         '.mac-scan-header h2{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:#222}',
         '.mac-scan-header .mac-scan-close{width:36px;height:36px;border-radius:50%}',
         '.mac-scan-video{width:100%;aspect-ratio:3/4;border-radius:14px;background:#000;object-fit:cover}',
+        '.mac-scan-roi{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px dashed var(--brand);border-radius:12px;width:94%;height:10.67%;box-shadow:0 0 0 9999px rgba(0,0,0,.25) inset;pointer-events:none}',
         '.mac-scan-status{margin-top:12px;font-size:14px;color:#333}',
         '.mac-scan-fallback{margin-top:10px;font-size:13px;color:#555}',
         '.mac-scan-manual{margin-top:14px}',
         '.mac-scan-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}',
         '.mac-scan-actions .btn-primary{flex:1 1 160px}',
-        '.mac-scan-actions .btn-ghost{flex:1 1 120px}',
+        '.mac-scan-actions .btn-ghost{flex:1 1 120px;justify-content:center;font-size:14px}',
         'body.dark-theme .mac-scan-box{background:var(--card);color:var(--text);border:1px solid var(--border);box-shadow:0 22px 48px rgba(0,0,0,.55)}',
         'body.dark-theme .mac-scan-header h2{color:var(--text)}',
         'body.dark-theme .mac-scan-status{color:var(--muted)}',
         'body.dark-theme .mac-scan-fallback{color:var(--muted)}',
-        '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-scan-box{padding:18px}.mac-scan-header h2{font-size:16px}}'
+        '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-scan-box{width:96vw}.mac-scan-header h2{font-size:16px}}',
+        '@media (min-width:600px){.mac-scan-box{width:min(88vw,640px)}}',
+        '@media (min-width:1024px){.mac-scan-box{width:min(70vw,720px)}}'
       ].join('');
       let st = document.getElementById('macScanStyles');
       if (!st){ st = document.createElement('style'); st.id='macScanStyles'; document.head.appendChild(st); }
@@ -8719,7 +8735,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
       + '    <h2><i class="fa-solid fa-barcode"></i> Leitor de código de barras</h2>'
       + '    <button type="button" class="btn-ghost mac-scan-close" data-scan-close="1" aria-label="Fechar leitor"><i class="fa-solid fa-xmark"></i></button>'
       + '  </div>'
-      + '  <video class="mac-scan-video" data-scan-video="1" autoplay playsinline muted></video>'
+      + '  <div class="mac-scan-video-wrap">'
+      + '    <video class="mac-scan-video" data-scan-video="1" autoplay playsinline muted></video>'
+      + '    <div class="mac-scan-roi" aria-hidden="true"></div>'
+      + '    <canvas class="mac-scan-canvas" data-scan-canvas="1" hidden></canvas>'
+      + '  </div>'
       + '  <div class="mac-scan-status" data-scan-status="1">Aponte a câmera para o código de barras.</div>'
       + '  <div class="mac-scan-fallback" data-scan-fallback="1" hidden></div>'
       + '  <input type="text" class="form-input mac-scan-manual" data-scan-manual="1" placeholder="Caso necessário, digite o código manualmente" inputmode="text" autocomplete="off" />'
@@ -8734,6 +8754,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
     macScanStatus = overlay.querySelector('[data-scan-status]');
     macScanFallback = overlay.querySelector('[data-scan-fallback]');
     macScanManual = overlay.querySelector('[data-scan-manual]');
+    try { macScanCanvas = overlay.querySelector('[data-scan-canvas]'); macScanCtx = macScanCanvas ? macScanCanvas.getContext('2d', { willReadFrequently: true }) : null; } catch {}
     const closeButtons = overlay.querySelectorAll('[data-scan-close]');
     closeButtons.forEach(btn => btn.addEventListener('click', () => closeMacScanOverlay()));
     overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeMacScanOverlay(); });
@@ -8750,6 +8771,30 @@ const copyBtn = document.getElementById('btnCopiarForm');
         }
       });
     }
+  }
+
+  function getMacScanRoi(video){
+    if (!video) return null;
+    const vw = video.videoWidth || 0;
+    const vh = video.videoHeight || 0;
+    if (!vw || !vh) return null;
+    const ew = video.clientWidth || 0;
+    const eh = video.clientHeight || 0;
+    if (!ew || !eh) return null;
+    const scale = Math.max(ew / vw, eh / vh);
+    const dispW = vw * scale;
+    const dispH = vh * scale;
+    const offX = (dispW - ew) / 2;
+    const offY = (dispH - eh) / 2;
+    const rW = ew * MAC_SCAN_ROI_W;
+    const rH = eh * MAC_SCAN_ROI_H;
+    const rX = (ew - rW) / 2;
+    const rY = (eh - rH) / 2;
+    const srcX = Math.max(0, (rX + offX) / scale);
+    const srcY = Math.max(0, (rY + offY) / scale);
+    const srcW = Math.max(1, rW / scale);
+    const srcH = Math.max(1, rH / scale);
+    return { x: srcX, y: srcY, w: srcW, h: srcH };
   }
 
   function setMacScanFallback(message){
@@ -8782,11 +8827,20 @@ const copyBtn = document.getElementById('btnCopiarForm');
       macScanOverlay.classList.remove('is-visible');
       macScanOverlay.removeAttribute('data-active-id');
     }
+    try {
+      document.body.classList.remove('mac-scan-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, macScanScrollY || 0);
+    } catch {}
     if (macScanManual){
       macScanManual.value = '';
     }
     setMacScanFallback('');
     macScanActiveInput = null;
+    macScanGraceUntil = 0;
+    macScanLastDetect = 0;
   }
 
   function applyMacScanValue(code){
@@ -8827,7 +8881,33 @@ const copyBtn = document.getElementById('btnCopiarForm');
         return;
       }
       try {
-        const barcodes = await detector.detect(macScanVideo);
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (now < macScanGraceUntil){
+          macScanLoopId = requestAnimationFrame(detectLoop);
+          return;
+        }
+        if (now - macScanLastDetect < 120){
+          macScanLoopId = requestAnimationFrame(detectLoop);
+          return;
+        }
+        macScanLastDetect = now;
+        let source = macScanVideo;
+        if (macScanCanvas && macScanCtx){
+          const rect = getMacScanRoi(macScanVideo);
+          if (rect){
+            try {
+              const cw = Math.max(160, Math.floor(rect.w));
+              const ch = Math.max(120, Math.floor(rect.h));
+              if (macScanCanvas.width !== cw || macScanCanvas.height !== ch){
+                macScanCanvas.width = cw;
+                macScanCanvas.height = ch;
+              }
+              macScanCtx.drawImage(macScanVideo, rect.x, rect.y, rect.w, rect.h, 0, 0, cw, ch);
+              source = macScanCanvas;
+            } catch {}
+          }
+        }
+        const barcodes = await detector.detect(source);
         if (barcodes && barcodes.length){
           const val = String(barcodes[0].rawValue || '').trim();
           if (val){
@@ -8852,10 +8932,18 @@ const copyBtn = document.getElementById('btnCopiarForm');
     ensureMacScanOverlay();
     stopMacScanStream();
     macScanActiveInput = input;
+    macScanLastDetect = 0;
     if (macScanOverlay){
       macScanOverlay.classList.add('is-visible');
       macScanOverlay.setAttribute('data-active-id', input.id || input.name || '');
     }
+    try {
+      macScanScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.classList.add('mac-scan-open');
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + macScanScrollY + 'px';
+      document.body.style.width = '100%';
+    } catch {}
     if (macScanStatus) macScanStatus.textContent = 'Aponte a câmera para o código de barras.';
     setMacScanFallback('');
     if (macScanManual){
@@ -8872,6 +8960,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
         macScanVideo.srcObject = macScanStream;
         try { await macScanVideo.play(); } catch {}
       }
+      try {
+        macScanGraceUntil = ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) + 600;
+      } catch { macScanGraceUntil = Date.now() + 600; }
       scheduleBarcodeDetection();
     } catch (err) {
       setMacScanFallback('Não foi possível iniciar a câmera. Verifique as permissões e tente novamente.');
