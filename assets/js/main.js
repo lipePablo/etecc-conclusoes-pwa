@@ -8796,7 +8796,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
         });
       }
       if (macScanConfirmRetry){
-        macScanConfirmRetry.addEventListener('click', () => { try { hideMacScanConfirm(); } catch {} macScanPendingCode = ''; macScanAwaitingConfirm = false; macScanLastDetect = 0; try { macScanGraceUntil = ((typeof performance!=='undefined' && performance.now) ? performance.now() : Date.now()) + 1000; } catch { macScanGraceUntil = Date.now() + 1000; } try { if (!macScanLoopId) scheduleBarcodeDetection(); } catch {} });
+        macScanConfirmRetry.addEventListener('click', () => { try { hideMacScanConfirm(); } catch {} macScanPendingCode = ''; macScanAwaitingConfirm = false; try { macScanGraceUntil = 0; } catch { macScanGraceUntil = 0; } try { openMacScanForInput(macScanActiveInput); } catch {} });
       }
     } catch {}
     const closeButtons = overlay.querySelectorAll('[data-scan-close]');
@@ -8986,7 +8986,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
           const val = String(barcodes[0].rawValue || '').trim();
           if (val){
             if (macScanStatus) macScanStatus.textContent = 'Código identificado! Confirme a leitura.';
-            try { macScanGraceUntil = ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) + 1000; } catch { macScanGraceUntil = Date.now() + 1000; }
+            macScanGraceUntil = 0;
             showMacScanConfirm(val);
             return;
           }
