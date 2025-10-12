@@ -1,4 +1,4 @@
-﻿// Tema
+// Tema
 function applyTheme(theme) {
   const isDark = theme === 'dark';
   document.body.classList.toggle('dark-theme', isDark);
@@ -8683,6 +8683,12 @@ const copyBtn = document.getElementById('btnCopiarForm');
   let macScanLastDetect = 0;
   let macScanGraceUntil = 0;
   let macScanScrollY = 0;
+  let macScanConfirmModal = null;
+  let macScanConfirmCode = null;
+  let macScanConfirmAccept = null;
+  let macScanConfirmRetry = null;
+  let macScanAwaitingConfirm = false;
+  let macScanPendingCode = '';
   const MAC_SCAN_ROI_W = 0.94;
   const MAC_SCAN_ROI_H = 0.1067;
 
@@ -8692,8 +8698,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.mac-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}',
         '.mac-input-wrap{position:relative;flex:1 1 auto;min-width:0}',
         '.mac-input-wrap .form-input--underline{width:100%;padding-right:50px}',
-        '.mac-row .btn-ghost.mac-scan{flex:0 0 auto;white-space:nowrap;font-weight:700;gap:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px;height:42px;border:1px solid var(--brand);color:var(--brand)}',
-        '.mac-row .btn-ghost.mac-scan:hover{background:rgba(255,77,77,.08)}',
+        '.mac-row .btn-ghost.mac-scan{flex:0 0 auto;white-space:nowrap;font-weight:700;gap:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px;height:42px;border:1px solid #e11d1d;color:#fff;background:linear-gradient(90deg,#d31f1f 0%,#ff4d4d 50%,#d31f1f 100%);box-shadow:0 6px 18px rgba(255,59,59,.25), inset 0 1px 0 rgba(255,255,255,.10)}',
+        '.mac-row .btn-ghost.mac-scan i{color:#fff !important}',
+        '.mac-row .btn-ghost.mac-scan:hover{filter:brightness(1.05)}',
         '.mac-row .mac-del{flex:0 0 auto}',
         '.mac-scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}',
         '.mac-scan-overlay.is-visible{display:flex}',
@@ -8703,7 +8710,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.mac-scan-video-wrap{position:relative}',
         '.mac-scan-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}',
         '.mac-scan-header h2{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:#222}',
-        '.mac-scan-header .mac-scan-close{width:36px;height:36px;border-radius:50%}',
+        '.mac-scan-header .mac-scan-close{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}',
         '.mac-scan-video{width:100%;aspect-ratio:3/4;border-radius:14px;background:#000;object-fit:cover}',
         '.mac-scan-roi{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px dashed var(--brand);border-radius:12px;width:94%;height:10.67%;box-shadow:0 0 0 9999px rgba(0,0,0,.25) inset;pointer-events:none}',
         '.mac-scan-status{margin-top:12px;font-size:14px;color:#333}',
@@ -8716,6 +8723,14 @@ const copyBtn = document.getElementById('btnCopiarForm');
         'body.dark-theme .mac-scan-header h2{color:var(--text)}',
         'body.dark-theme .mac-scan-status{color:var(--muted)}',
         'body.dark-theme .mac-scan-fallback{color:var(--muted)}',
+        '.mac-scan-box{position:relative}',
+        '.mac-scan-confirm{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);border-radius:inherit}',
+        '.mac-scan-confirm.is-visible{display:flex}',
+        '.mac-scan-confirm-dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:92%;width:100%;box-shadow:0 20px 40px rgba(0,0,0,.35)}',
+        'body:not(.dark-theme) .mac-scan-confirm-dialog{background:#fff;color:#111;border-color:var(--border)}',
+        '.mac-scan-confirm-title{font-weight:700;margin-bottom:8px;display:flex;gap:8px;align-items:center}',
+        '.mac-scan-confirm-code{font-family:monospace;background:rgba(0,0,0,.08);padding:8px 10px;border-radius:8px;margin:8px 0;word-break:break-all;color:inherit}',
+        '.mac-scan-confirm-actions{display:flex;gap:10px;margin-top:10px}',
         '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-scan-box{width:96vw}.mac-scan-header h2{font-size:16px}}',
         '@media (min-width:600px){.mac-scan-box{width:min(88vw,640px)}}',
         '@media (min-width:1024px){.mac-scan-box{width:min(70vw,720px)}}'
@@ -8747,6 +8762,16 @@ const copyBtn = document.getElementById('btnCopiarForm');
       + '    <button type="button" class="btn-primary mac-scan-confirm" data-scan-confirm="1"><i class="fa-solid fa-check"></i> Usar código digitado</button>'
       + '    <button type="button" class="btn-ghost mac-scan-close" data-scan-close="1"><i class="fa-solid fa-xmark"></i> Cancelar</button>'
       + '  </div>'
+      + '  <div class="mac-scan-confirm" data-scan-confirm-modal="1" hidden>'
+      + '    <div class="mac-scan-confirm-dialog">'
+      + '      <div class="mac-scan-confirm-title"><i class="fa-solid fa-check-double"></i> Confirmar leitura</div>'
+      + '      <div class="mac-scan-confirm-code" data-scan-confirm-code="1"></div>'
+      + '      <div class="mac-scan-confirm-actions">'
+      + '        <button type="button" class="btn-primary" data-scan-confirm-accept="1"><i class="fa-solid fa-check"></i> Confirmar</button>'
+      + '        <button type="button" class="btn-ghost" data-scan-confirm-retry="1"><i class="fa-solid fa-rotate-right"></i> Ler novamente</button>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
       + '</div>';
     document.body.appendChild(overlay);
     macScanOverlay = overlay;
@@ -8755,6 +8780,28 @@ const copyBtn = document.getElementById('btnCopiarForm');
     macScanFallback = overlay.querySelector('[data-scan-fallback]');
     macScanManual = overlay.querySelector('[data-scan-manual]');
     try { macScanCanvas = overlay.querySelector('[data-scan-canvas]'); macScanCtx = macScanCanvas ? macScanCanvas.getContext('2d', { willReadFrequently: true }) : null; } catch {}
+    try {
+      macScanConfirmModal = overlay.querySelector('[data-scan-confirm-modal]');
+      macScanConfirmCode = overlay.querySelector('[data-scan-confirm-code]');
+      macScanConfirmAccept = overlay.querySelector('[data-scan-confirm-accept]');
+      macScanConfirmRetry = overlay.querySelector('[data-scan-confirm-retry]');
+      if (macScanConfirmAccept){
+        macScanConfirmAccept.addEventListener('click', () => {
+          try { hideMacScanConfirm(); } catch {}
+          try { if (macScanPendingCode) applyMacScanValue(macScanPendingCode); } catch {}
+          macScanPendingCode = '';
+          macScanAwaitingConfirm = false;
+        });
+      }
+      if (macScanConfirmRetry){
+        macScanConfirmRetry.addEventListener('click', () => {
+          try { hideMacScanConfirm(); } catch {}
+          macScanPendingCode = '';
+          macScanAwaitingConfirm = false;
+          try { macScanGraceUntil = ((typeof performance!=='undefined' && performance.now) ? performance.now() : Date.now()) + 1000; } catch { macScanGraceUntil = Date.now() + 1000; }
+        });
+      }
+    } catch {}
     const closeButtons = overlay.querySelectorAll('[data-scan-close]');
     closeButtons.forEach(btn => btn.addEventListener('click', () => closeMacScanOverlay()));
     overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeMacScanOverlay(); });
@@ -8808,6 +8855,29 @@ const copyBtn = document.getElementById('btnCopiarForm');
     }
   }
 
+  function showMacScanConfirm(code){
+    try {
+      macScanPendingCode = String(code || '');
+      macScanAwaitingConfirm = true;
+      if (!macScanConfirmModal){ try { macScanConfirmModal = document.querySelector('[data-scan-confirm-modal]'); } catch {} }
+      if (!macScanConfirmCode){ try { macScanConfirmCode = document.querySelector('[data-scan-confirm-code]'); } catch {} }
+      if (macScanConfirmCode){ macScanConfirmCode.textContent = macScanPendingCode; }
+      if (macScanConfirmModal){
+        macScanConfirmModal.hidden = false;
+        macScanConfirmModal.classList.add('is-visible');
+      }
+    } catch {}
+  }
+
+  function hideMacScanConfirm(){
+    try {
+      if (macScanConfirmModal){
+        macScanConfirmModal.classList.remove('is-visible');
+        macScanConfirmModal.hidden = true;
+      }
+    } catch {}
+  }
+
   function stopMacScanStream(){
     try { if (macScanLoopId) cancelAnimationFrame(macScanLoopId); } catch {}
     macScanLoopId = null;
@@ -8841,6 +8911,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
     macScanActiveInput = null;
     macScanGraceUntil = 0;
     macScanLastDetect = 0;
+    macScanPendingCode = '';
+    macScanAwaitingConfirm = false;
+    try { hideMacScanConfirm(); } catch {}
   }
 
   function applyMacScanValue(code){
@@ -8882,6 +8955,10 @@ const copyBtn = document.getElementById('btnCopiarForm');
       }
       try {
         const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (macScanAwaitingConfirm){
+          macScanLoopId = requestAnimationFrame(detectLoop);
+          return;
+        }
         if (now < macScanGraceUntil){
           macScanLoopId = requestAnimationFrame(detectLoop);
           return;
@@ -8911,8 +8988,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
         if (barcodes && barcodes.length){
           const val = String(barcodes[0].rawValue || '').trim();
           if (val){
-            if (macScanStatus) macScanStatus.textContent = 'Código identificado!';
-            applyMacScanValue(val);
+            if (macScanStatus) macScanStatus.textContent = 'Código identificado! Confirme a leitura.';
+            try { macScanGraceUntil = ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) + 1000; } catch { macScanGraceUntil = Date.now() + 1000; }
+            showMacScanConfirm(val);
             return;
           }
         }
@@ -8933,6 +9011,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
     stopMacScanStream();
     macScanActiveInput = input;
     macScanLastDetect = 0;
+    macScanAwaitingConfirm = false;
+    macScanPendingCode = '';
+    try { hideMacScanConfirm(); } catch {}
     if (macScanOverlay){
       macScanOverlay.classList.add('is-visible');
       macScanOverlay.setAttribute('data-active-id', input.id || input.name || '');
