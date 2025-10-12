@@ -8731,6 +8731,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.mac-scan-confirm-title{font-weight:700;margin-bottom:8px;display:flex;gap:8px;align-items:center}',
         '.mac-scan-confirm-code{font-family:monospace;background:rgba(0,0,0,.08);padding:8px 10px;border-radius:8px;margin:8px 0;word-break:break-all;color:inherit}',
         '.mac-scan-confirm-actions{display:flex;gap:10px;margin-top:10px}',
+        '.mac-scan-confirm-actions .btn-primary{flex:1 1 160px;justify-content:center;font-size:14px}',
+        '.mac-scan-confirm-actions .btn-ghost{flex:1 1 160px;justify-content:center;font-size:14px}',
         '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-scan-box{width:96vw}.mac-scan-header h2{font-size:16px}}',
         '@media (min-width:600px){.mac-scan-box{width:min(88vw,640px)}}',
         '@media (min-width:1024px){.mac-scan-box{width:min(70vw,720px)}}'
@@ -8794,12 +8796,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
         });
       }
       if (macScanConfirmRetry){
-        macScanConfirmRetry.addEventListener('click', () => {
-          try { hideMacScanConfirm(); } catch {}
-          macScanPendingCode = '';
-          macScanAwaitingConfirm = false;
-          try { macScanGraceUntil = ((typeof performance!=='undefined' && performance.now) ? performance.now() : Date.now()) + 1000; } catch { macScanGraceUntil = Date.now() + 1000; }
-        });
+        macScanConfirmRetry.addEventListener('click', () => { try { hideMacScanConfirm(); } catch {} macScanPendingCode = ''; macScanAwaitingConfirm = false; macScanLastDetect = 0; try { macScanGraceUntil = ((typeof performance!=='undefined' && performance.now) ? performance.now() : Date.now()) + 1000; } catch { macScanGraceUntil = Date.now() + 1000; } try { if (!macScanLoopId) scheduleBarcodeDetection(); } catch {} });
       }
     } catch {}
     const closeButtons = overlay.querySelectorAll('[data-scan-close]');
