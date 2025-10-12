@@ -8568,14 +8568,29 @@ const copyBtn = document.getElementById('btnCopiarForm');
   function setupMacLists(root){
     const ctx = root || document;
     const formId = (ctx && ctx.__formId) || '';
+    try { ensureMacScanStyles(); } catch {}
     function addMacRow(list, prefix, idx, canDelete){
       const row = document.createElement('div'); row.className = 'mac-row';
       let listUid = list.getAttribute('data-uid');
       if (!listUid){ listUid = Math.random().toString(36).slice(2, 8); list.setAttribute('data-uid', listUid); }
       const id = prefix + listUid + '_' + idx;
-      const inp = document.createElement('input'); inp.type='text'; inp.id=id; inp.name=prefix+idx; inp.className='form-input--underline'; inp.placeholder= (/^fone_/i.test(prefix) ? 'Ex.: (13) 00000-0000' : 'Digite...');
-      try { const lbl = (list.closest('.form-block')?.querySelector('.form-label')?.textContent||'MAC').trim(); inp.setAttribute('aria-label', lbl || 'MAC'); } catch {}
+      const isPhone = /^fone_/i.test(prefix);
+      const inp = document.createElement('input'); inp.type='text'; inp.id=id; inp.name=prefix+idx; inp.className='form-input--underline'; inp.placeholder= (isPhone ? 'Ex.: (13) 00000-0000' : 'Digite...');
+      let ariaLabel = 'MAC';
+      try { ariaLabel = (list.closest('.form-block')?.querySelector('.form-label')?.textContent||'MAC').trim() || 'MAC'; } catch {}
+      try { inp.setAttribute('aria-label', ariaLabel); } catch {}
+      try { inp.dataset.scanTarget = id; } catch {}
       row.appendChild(inp);
+      let scanBtn = null;
+      if (!isPhone){
+        scanBtn = document.createElement('button'); scanBtn.type='button'; scanBtn.className='btn-ghost mac-scan'; scanBtn.setAttribute('data-mac-scan','1'); scanBtn.setAttribute('data-scan-target', id); scanBtn.innerHTML='<i class="fa-solid fa-barcode"></i> Ler código de barras';
+        try { scanBtn.setAttribute('aria-label', 'Ler código de barras para ' + ariaLabel); } catch {}
+        scanBtn.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          try { openMacScanForInput(inp); } catch {}
+        });
+        row.appendChild(scanBtn);
+      }
       if (canDelete){
         const del = document.createElement('button'); del.type='button'; del.className='btn-ghost lent-remove mac-del'; del.innerHTML='<i class="fa-solid fa-trash-can"></i>';
         del.addEventListener('click', () => {
@@ -8593,7 +8608,25 @@ const copyBtn = document.getElementById('btnCopiarForm');
         // move any existing first input into a row
         const oldInp = list.querySelector('input');
         const prefix = list.getAttribute('data-mac-prefix') || '';
-        if (oldInp){ const first = addMacRow(list, prefix, 1, false); first.querySelector('input').name = oldInp.name|| (prefix+'1'); rows.appendChild(first); oldInp.remove(); }
+        if (oldInp){
+          const first = addMacRow(list, prefix, 1, false);
+          const newInp = first.querySelector('input');
+          const scanBtn = first.querySelector('.mac-scan');
+          if (newInp){
+            const targetId = oldInp.id || newInp.id;
+            try { newInp.name = oldInp.name || (prefix + '1'); } catch {}
+            try { newInp.value = oldInp.value || ''; } catch {}
+            if (oldInp.id){
+              try { newInp.id = oldInp.id; } catch {}
+              try { newInp.dataset.scanTarget = newInp.id; } catch {}
+              if (scanBtn){
+                try { scanBtn.setAttribute('data-scan-target', newInp.id); } catch {}
+              }
+            }
+          }
+          rows.appendChild(first);
+          oldInp.remove();
+        }
         list.insertBefore(rows, list.firstChild);
         // aplica máscara de telefone ao(s) novo(s) input(s) se forem prefixo de telefone
         try { if (typeof setupPhoneMasks === 'function') setupPhoneMasks(list); } catch {}
@@ -8629,6 +8662,216 @@ const copyBtn = document.getElementById('btnCopiarForm');
     });
   }
 
+
+
+  let macScanOverlay = null;
+  let macScanVideo = null;
+  let macScanStatus = null;
+  let macScanFallback = null;
+  let macScanManual = null;
+  let macScanActiveInput = null;
+  let macScanStream = null;
+  let macScanDetector = null;
+  let macScanLoopId = null;
+
+  function ensureMacScanStyles(){
+    try {
+      const css = [
+        '.mac-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}',
+        '.mac-row .form-input--underline{flex:1 1 auto}',
+        '.mac-row .btn-ghost.mac-scan{flex:0 0 auto;white-space:nowrap;font-weight:700;gap:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px;height:42px;border:1px solid var(--brand);color:var(--brand)}',
+        '.mac-row .btn-ghost.mac-scan:hover{background:rgba(255,77,77,.08)}',
+        '.mac-row .mac-del{flex:0 0 auto}',
+        '.mac-scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}',
+        '.mac-scan-overlay.is-visible{display:flex}',
+        '.mac-scan-box{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:20px;box-shadow:0 22px 48px rgba(0,0,0,.28)}',
+        '.mac-scan-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}',
+        '.mac-scan-header h2{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:#222}',
+        '.mac-scan-header .mac-scan-close{width:36px;height:36px;border-radius:50%}',
+        '.mac-scan-video{width:100%;aspect-ratio:3/4;border-radius:14px;background:#000;object-fit:cover}',
+        '.mac-scan-status{margin-top:12px;font-size:14px;color:#333}',
+        '.mac-scan-fallback{margin-top:10px;font-size:13px;color:#555}',
+        '.mac-scan-manual{margin-top:14px}',
+        '.mac-scan-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}',
+        '.mac-scan-actions .btn-primary{flex:1 1 160px}',
+        '.mac-scan-actions .btn-ghost{flex:1 1 120px}',
+        '@media (max-width:540px){.mac-row{flex-direction:column;align-items:stretch}.mac-row .btn-ghost.mac-scan{width:100%}.mac-row .mac-del{align-self:flex-end}.mac-scan-box{padding:18px}.mac-scan-header h2{font-size:16px}}'
+      ].join('');
+      let st = document.getElementById('macScanStyles');
+      if (!st){ st = document.createElement('style'); st.id='macScanStyles'; document.head.appendChild(st); }
+      st.textContent = css;
+    } catch {}
+  }
+
+  function ensureMacScanOverlay(){
+    if (macScanOverlay) return;
+    const overlay = document.createElement('div'); overlay.id='macScanOverlay'; overlay.className='mac-scan-overlay'; overlay.setAttribute('role','dialog'); overlay.setAttribute('aria-modal','true');
+    overlay.innerHTML = ''
+      + '<div class="mac-scan-box" role="document">'
+      + '  <div class="mac-scan-header">'
+      + '    <h2><i class="fa-solid fa-barcode"></i> Leitor de código de barras</h2>'
+      + '    <button type="button" class="btn-ghost mac-scan-close" data-scan-close="1" aria-label="Fechar leitor"><i class="fa-solid fa-xmark"></i></button>'
+      + '  </div>'
+      + '  <video class="mac-scan-video" data-scan-video="1" autoplay playsinline muted></video>'
+      + '  <div class="mac-scan-status" data-scan-status="1">Aponte a câmera para o código de barras.</div>'
+      + '  <div class="mac-scan-fallback" data-scan-fallback="1" hidden></div>'
+      + '  <input type="text" class="form-input mac-scan-manual" data-scan-manual="1" placeholder="Caso necessário, digite o código manualmente" inputmode="text" autocomplete="off" />'
+      + '  <div class="mac-scan-actions">'
+      + '    <button type="button" class="btn-primary mac-scan-confirm" data-scan-confirm="1"><i class="fa-solid fa-check"></i> Usar código digitado</button>'
+      + '    <button type="button" class="btn-ghost mac-scan-close" data-scan-close="1"><i class="fa-solid fa-xmark"></i> Cancelar</button>'
+      + '  </div>'
+      + '</div>';
+    document.body.appendChild(overlay);
+    macScanOverlay = overlay;
+    macScanVideo = overlay.querySelector('[data-scan-video]');
+    macScanStatus = overlay.querySelector('[data-scan-status]');
+    macScanFallback = overlay.querySelector('[data-scan-fallback]');
+    macScanManual = overlay.querySelector('[data-scan-manual]');
+    const closeButtons = overlay.querySelectorAll('[data-scan-close]');
+    closeButtons.forEach(btn => btn.addEventListener('click', () => closeMacScanOverlay()));
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeMacScanOverlay(); });
+    const confirmBtn = overlay.querySelector('[data-scan-confirm]');
+    if (confirmBtn){
+      confirmBtn.addEventListener('click', () => {
+        if (!macScanManual) return;
+        const code = (macScanManual.value || '').trim();
+        if (code){
+          applyMacScanValue(code);
+        } else {
+          if (macScanStatus) macScanStatus.textContent = 'Digite ou aponte a câmera para captar o código.';
+          try { macScanManual.focus(); } catch {}
+        }
+      });
+    }
+  }
+
+  function setMacScanFallback(message){
+    if (!macScanFallback) return;
+    if (message){
+      macScanFallback.textContent = message;
+      macScanFallback.removeAttribute('hidden');
+    } else {
+      macScanFallback.textContent = '';
+      macScanFallback.setAttribute('hidden','');
+    }
+  }
+
+  function stopMacScanStream(){
+    try { if (macScanLoopId) cancelAnimationFrame(macScanLoopId); } catch {}
+    macScanLoopId = null;
+    if (macScanVideo){
+      try { macScanVideo.pause(); } catch {}
+      try { macScanVideo.srcObject = null; } catch {}
+    }
+    if (macScanStream){
+      try { macScanStream.getTracks().forEach(track => { try { track.stop(); } catch {} }); } catch {}
+    }
+    macScanStream = null;
+  }
+
+  function closeMacScanOverlay(){
+    stopMacScanStream();
+    if (macScanOverlay){
+      macScanOverlay.classList.remove('is-visible');
+      macScanOverlay.removeAttribute('data-active-id');
+    }
+    if (macScanManual){
+      macScanManual.value = '';
+    }
+    setMacScanFallback('');
+    macScanActiveInput = null;
+  }
+
+  function applyMacScanValue(code){
+    if (!macScanActiveInput) return;
+    macScanActiveInput.value = code;
+    try { macScanActiveInput.dispatchEvent(new Event('input', { bubbles: true })); } catch {}
+    try { macScanActiveInput.dispatchEvent(new Event('change', { bubbles: true })); } catch {}
+    const target = macScanActiveInput;
+    closeMacScanOverlay();
+    try { setTimeout(() => { try { target.focus(); if (target.select) target.select(); } catch {} }, 80); } catch {}
+  }
+
+  function ensureBarcodeDetector(){
+    if (macScanDetector !== null) return macScanDetector;
+    if ('BarcodeDetector' in window){
+      try {
+        macScanDetector = new window.BarcodeDetector({
+          formats: ['code_128','code_39','code_93','ean_13','ean_8','codabar','upc_a','upc_e','itf','qr_code']
+        });
+      } catch {
+        macScanDetector = null;
+      }
+    } else {
+      macScanDetector = null;
+    }
+    return macScanDetector;
+  }
+
+  function scheduleBarcodeDetection(){
+    const detector = ensureBarcodeDetector();
+    if (!detector){
+      setMacScanFallback('Este navegador não suporta leitura automática. Utilize o campo para digitar o código.');
+      return;
+    }
+    const detectLoop = async () => {
+      if (!macScanOverlay || !macScanVideo || macScanVideo.readyState < 2){
+        macScanLoopId = requestAnimationFrame(detectLoop);
+        return;
+      }
+      try {
+        const barcodes = await detector.detect(macScanVideo);
+        if (barcodes && barcodes.length){
+          const val = String(barcodes[0].rawValue || '').trim();
+          if (val){
+            if (macScanStatus) macScanStatus.textContent = 'Código identificado!';
+            applyMacScanValue(val);
+            return;
+          }
+        }
+      } catch (err) {
+        setMacScanFallback('Não foi possível interpretar o vídeo. Digite o código manualmente se necessário.');
+        macScanLoopId = null;
+        return;
+      }
+      macScanLoopId = requestAnimationFrame(detectLoop);
+    };
+    macScanLoopId = requestAnimationFrame(detectLoop);
+  }
+
+  async function openMacScanForInput(input){
+    if (!input) return;
+    ensureMacScanStyles();
+    ensureMacScanOverlay();
+    stopMacScanStream();
+    macScanActiveInput = input;
+    if (macScanOverlay){
+      macScanOverlay.classList.add('is-visible');
+      macScanOverlay.setAttribute('data-active-id', input.id || input.name || '');
+    }
+    if (macScanStatus) macScanStatus.textContent = 'Aponte a câmera para o código de barras.';
+    setMacScanFallback('');
+    if (macScanManual){
+      macScanManual.value = '';
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      setMacScanFallback('Não foi possível acessar a câmera neste dispositivo. Digite o código manualmente.');
+      if (macScanManual){ try { macScanManual.focus(); } catch {} }
+      return;
+    }
+    try {
+      macScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      if (macScanVideo){
+        macScanVideo.srcObject = macScanStream;
+        try { await macScanVideo.play(); } catch {}
+      }
+      scheduleBarcodeDetection();
+    } catch (err) {
+      setMacScanFallback('Não foi possível iniciar a câmera. Verifique as permissões e tente novamente.');
+      stopMacScanStream();
+      if (macScanManual){ try { macScanManual.focus(); } catch {} }
+    }
+  }
   // Lista dinâmica de "OUTRO EQUIPAMENTO": cada linha contém Nome + MAC
   function setupOutroList(root){
     const ctx = root || document;
@@ -8736,9 +8979,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
           + '  color:var(--brand);'
           + '  background:transparent;'
           + '  border-radius:10px;'
-          + '  padding:0;'
-          + '  width:30px; height:30px;'
-          + '  display:inline-flex; align-items:center; justify-content:center;'
+          + '  padding:0 18px;'
+          + '  height:38px;'
+          + '  display:inline-flex; align-items:center; justify-content:center; gap:8px;'
           + '}'
           + '.form-block[data-veltest-block="1"] .vel-del i{ font-size:16px; }'
           + '.form-block[data-veltest-block="1"] .vel-del:hover{background:rgba(255,77,77,.08)}';
@@ -8770,7 +9013,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.form-block[data-wan-add="1"] .wan-add{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-color:var(--brand);color:var(--brand);font-weight:700}',
         '.form-block[data-wan-add="1"] .wan-add:hover{background:rgba(255,77,77,.08)}',
         // Lixeira: manter mesmo estilo visual dos testes de velocidade
-        '.form-block[data-wan-block="1"] .vel-del{border:1px solid var(--brand);color:var(--brand);background:transparent;border-radius:10px;padding:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}',
+        '.form-block[data-wan-block="1"] .vel-del{border:1px solid var(--brand);color:var(--brand);background:transparent;border-radius:10px;padding:0 18px;height:38px;display:inline-flex;gap:8px;align-items:center;justify-content:center}',
         '.form-block[data-wan-block="1"] .vel-del i{font-size:16px}',
         '.form-block[data-wan-block="1"] .vel-del:hover{background:rgba(255,77,77,.08)}'
       ].join('');
@@ -8784,6 +9027,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
   function setupVelTestDynamic(root){
     try {
       const container = root || document;
+      const formId = (container && container.__formId) || '';
       try { ensureVelTestStyles(); } catch {}
       try { ensureSpeedCardLayout(container); } catch {}
       const sec = container.querySelector('.form-block[data-veltest-block="1"]');
@@ -8799,7 +9043,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
           item.innerHTML = ''
             + '  <div class="lent-entry__header">'
             + '    <div class="lent-entry__badge"><i class="fa-solid fa-gauge-high"></i> Teste ' + idx + '</div>'
-            + '    <button type="button" class="btn-ghost lent-remove" data-remove-veltest="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover teste</button>'
+            + (idx > 1 ? '    <button type="button" class="btn-ghost lent-remove vel-del" data-remove-veltest="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover teste</button>' : '')
             + '  </div>'
             + '  <label class="form-label">Resultados obtidos</label>'
             + '  <div class="triple-inputs">'
@@ -8827,8 +9071,28 @@ const copyBtn = document.getElementById('btnCopiarForm');
         if (btn.hasAttribute('data-remove-veltest')){
           e.preventDefault();
           const id = btn.getAttribute('data-remove-veltest');
+          if (String(id) === '1') return;
           const it = sec.querySelector('.lent-entry[data-veltest-item="1"][data-idx="' + id + '"]');
-          if (it) it.remove();
+          if (it){
+            try {
+              const fields = Array.from(it.querySelectorAll('input[name], textarea[name], select[name]'));
+              const cleared = {};
+              let st = null;
+              if (formId && typeof getFormState === 'function'){
+                st = getFormState(formId) || null;
+              }
+              fields.forEach(field => {
+                const key = field.name || field.id;
+                if (!key) return;
+                cleared[key] = '';
+                if (st && Object.prototype.hasOwnProperty.call(st, key)) delete st[key];
+              });
+              if (formId && typeof window !== 'undefined' && typeof window.__upsertDraftHistory === 'function' && Object.keys(cleared).length){
+                try { window.__upsertDraftHistory(formId, cleared); } catch {}
+              }
+            } catch {}
+            it.remove();
+          }
         }
       }, true);
       // Mudança nos prints: limpar e manter apenas primeiro item
@@ -9358,9 +9622,14 @@ function setupAutoExpand(root){
         entry = document.createElement('div'); entry.className='lent-entry'; entry.setAttribute('data-veltest-item','1'); entry.setAttribute('data-idx','1');
         const header = document.createElement('div'); header.className='lent-entry__header';
         const badge = document.createElement('div'); badge.className='lent-entry__badge'; badge.innerHTML = '<i class="fa-solid fa-gauge-high"></i> Teste 1'; header.appendChild(badge);
-        const del = document.createElement('button'); del.type='button'; del.className='btn-ghost lent-remove'; del.setAttribute('data-remove-veltest','1'); del.innerHTML='<i class="fa-solid fa-trash-can"></i> Remover teste'; header.appendChild(del);
         entry.appendChild(header);
         if (list) list.appendChild(entry);
+      }
+      if (entry){
+        try {
+          const lockBtn = entry.querySelector('button[data-remove-veltest="1"]');
+          if (lockBtn) lockBtn.remove();
+        } catch {}
       }
       // Move elementos dentro da entrada, preservando ordem: triple -> label dispositivo -> input dispositivo -> label via -> radios
       const triple = blk.querySelector('.triple-inputs'); if (triple) entry.appendChild(triple);
@@ -10266,3 +10535,4 @@ function appendLentidaoTests(container){
     }, true);
   } catch {}
 }
+
