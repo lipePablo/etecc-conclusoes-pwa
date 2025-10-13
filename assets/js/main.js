@@ -6110,6 +6110,31 @@ function setTopbarMode(internal){
     try { /* debug removed */ } catch {}
     // Garanta que as condicionais leem o estado restaurado
     try { FORM_TMP_STATE[formId] = { ...(state||{}) }; } catch {}
+    const ensureLentidaoEntriesForState = () => {
+      try {
+        const block = container.querySelector('.form-block[data-lentidao="1"]');
+        if (!block) return;
+        const ensurePing = block.__ensurePingCount;
+        const ensureTracert = block.__ensureTracertCount;
+        let maxPing = 0;
+        let maxTracert = 0;
+        Object.keys(state || {}).forEach((key) => {
+          const mp = key.match(/^ping_(?:titulo|minima|media|maxima|enviados|recebidos|perdidos)_(\d+)/i);
+          if (mp) {
+            const idx = parseInt(mp[1], 10) || 0;
+            if (idx > maxPing) maxPing = idx;
+          }
+          const mt = key.match(/^tracert_(?:local|url)_(\d+)/i);
+          if (mt) {
+            const idx = parseInt(mt[1], 10) || 0;
+            if (idx > maxTracert) maxTracert = idx;
+          }
+        });
+        if (maxPing > 0 && typeof ensurePing === 'function') ensurePing(maxPing);
+        if (maxTracert > 0 && typeof ensureTracert === 'function') ensureTracert(maxTracert);
+      } catch {}
+    };
+    ensureLentidaoEntriesForState();
     // 0) Aplicar primeiro apenas campos de controle que afetam visibilidade
     try {
       const __prevPrefill = !!container.__inPrefill;
@@ -8556,6 +8581,15 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
       try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
       try { el.style.pointerEvents = 'auto'; } catch {}
+      try { el.style.userSelect = 'text'; } catch {}
+      try { el.tabIndex = 0; } catch {}
+      try {
+        el.addEventListener('focus', () => {
+          try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
+          try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
+          try { el.style.pointerEvents = 'auto'; el.style.userSelect = 'text'; } catch {}
+        }, { capture: false });
+      } catch {}
       const handler = () => {
         let v = String(el.value || '').replace(/[^0-9.]/g,'');
         const parts = v.split('.');
@@ -8575,6 +8609,15 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
       try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
       try { el.style.pointerEvents = 'auto'; } catch {}
+      try { el.style.userSelect = 'text'; } catch {}
+      try { el.tabIndex = 0; } catch {}
+      try {
+        el.addEventListener('focus', () => {
+          try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
+          try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
+          try { el.style.pointerEvents = 'auto'; el.style.userSelect = 'text'; } catch {}
+        }, { capture: false });
+      } catch {}
       const handler = () => { el.value = String(el.value || '').replace(/\D/g,'').slice(0, maxLen||3); };
       el.addEventListener('input', handler);
       el.addEventListener('blur', handler);
@@ -9193,6 +9236,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.form-block[data-veltest-block="1"] .triple-inputs{position:relative}',
         '.form-block[data-veltest-block="1"] .triple-inputs input{position:relative;z-index:2;pointer-events:auto}',
         '.form-block[data-veltest-block="1"] .lent-entry__header{position:relative;z-index:0}',
+        '.form-block[data-veltest-block="1"] input.vel-device{position:relative;z-index:2;pointer-events:auto}',
+        '.form-block[data-veltest-block="1"] .segmented.vel-via{position:relative;z-index:2}',
+        '.form-block[data-veltest-block="1"] .segmented.vel-via label{pointer-events:auto}',
         // Botão de adicionar outro teste: ocupar toda a largura mantendo o estilo btn-ghost e cores da mac-add
         '.form-block[data-veltest-add="1"] .vel-add{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-color:var(--brand);color:var(--brand);font-weight:700}',
         '.form-block[data-veltest-add="1"] .vel-add:hover{background:rgba(255,77,77,.08)}'
@@ -10802,19 +10848,50 @@ function appendLentidaoTests(container){
         + '  <input type="text" class="form-input--underline" name="ping_titulo_' + idx + '" placeholder="Ex.: Ativo do cliente ou da empresa" />'
         + '  <label class="form-label">Resultados obtidos</label>'
         + '  <div class="lent-grid">'
-        + '    <input type="text" class="form-input--underline" name="ping_minima_' + idx + '" placeholder="Mínima" inputmode="numeric" />'
-        + '    <input type="text" class="form-input--underline" name="ping_media_' + idx + '" placeholder="Média" inputmode="numeric" />'
-        + '    <input type="text" class="form-input--underline" name="ping_maxima_' + idx + '" placeholder="Máxima" inputmode="numeric" />'
-        + '    <input type="text" class="form-input--underline" name="ping_enviados_' + idx + '" placeholder="Enviados" inputmode="numeric" />'
-        + '    <input type="text" class="form-input--underline" name="ping_recebidos_' + idx + '" placeholder="Recebidos" inputmode="numeric" />'
-        + '    <input type="text" class="form-input--underline" name="ping_perdidos_' + idx + '" placeholder="Perdidos" inputmode="numeric" />'
+        + '    <input type="text" class="form-input--underline" name="ping_minima_' + idx + '" placeholder="Mínima" inputmode="decimal" />'
+        + '    <input type="text" class="form-input--underline" name="ping_media_' + idx + '" placeholder="Média" inputmode="decimal" />'
+        + '    <input type="text" class="form-input--underline" name="ping_maxima_' + idx + '" placeholder="Máxima" inputmode="decimal" />'
+        + '    <input type="text" class="form-input--underline" name="ping_enviados_' + idx + '" placeholder="Enviados" inputmode="decimal" />'
+        + '    <input type="text" class="form-input--underline" name="ping_recebidos_' + idx + '" placeholder="Recebidos" inputmode="decimal" />'
+        + '    <input type="text" class="form-input--underline" name="ping_perdidos_' + idx + '" placeholder="Perdidos" inputmode="decimal" />'
         + '  </div>';
       list.appendChild(item);
       // Ajusta inputmode dos campos de 'Resultados obtidos' para decimal
       try {
+        const wireDecimal = (el) => {
+          if (!el) return;
+          const handler = () => {
+            try {
+              let v = String(el.value || '').replace(/,/g, '.').replace(/[^0-9.]/g, '');
+              const parts = v.split('.');
+              if (parts.length > 2) v = parts.shift() + '.' + parts.join('');
+              el.value = v;
+            } catch {}
+          };
+          el.addEventListener('input', handler);
+          el.addEventListener('blur', handler);
+          el.setAttribute('inputmode','decimal');
+        };
         ['minima','media','maxima','enviados','recebidos','perdidos'].forEach(function(suf){
-          var el = item.querySelector('[name="ping_' + suf + '_' + idx + '"]');
-          if (el) el.setAttribute('inputmode','decimal');
+          wireDecimal(item.querySelector('[name="ping_' + suf + '_' + idx + '"]'));
+        });
+      } catch {}
+      // Persistência imediata ao editar ping
+      try {
+        const fid = (container && container.__formId) || '';
+        Array.from(item.querySelectorAll('input[name]')).forEach((inp) => {
+          const onAny = () => {
+            try {
+              if (fid && typeof setFormState === 'function') setFormState(fid, { [inp.name || inp.id]: inp.value });
+              if (fid) {
+                const snapshot = collectCurrentFormState(container);
+                try { FORM_TMP_STATE[fid] = { ...(snapshot||{}) }; } catch {}
+                try { localStorage.setItem(formStateKey(fid), JSON.stringify(snapshot)); } catch {}
+              }
+            } catch {}
+          };
+          inp.addEventListener('input', onAny);
+          inp.addEventListener('change', onAny);
         });
       } catch {}
     };
@@ -10835,22 +10912,141 @@ function appendLentidaoTests(container){
         + '  <label class="form-label">URL utilizada</label>'
         + '  <input type="text" class="form-input--underline" name="tracert_url_' + idx + '" placeholder="Ex.: https://exemplo.com" />';
       list.appendChild(item);
+      // Persistência imediata ao editar tracert
+      try {
+        const fid = (container && container.__formId) || '';
+        Array.from(item.querySelectorAll('input[name]')).forEach((inp) => {
+          const onAny = () => {
+            try {
+              if (fid && typeof setFormState === 'function') setFormState(fid, { [inp.name || inp.id]: inp.value });
+              if (fid) {
+                const snapshot = collectCurrentFormState(container);
+                try { FORM_TMP_STATE[fid] = { ...(snapshot||{}) }; } catch {}
+                try { localStorage.setItem(formStateKey(fid), JSON.stringify(snapshot)); } catch {}
+              }
+            } catch {}
+          };
+          inp.addEventListener('input', onAny);
+          inp.addEventListener('change', onAny);
+        });
+      } catch {}
     };
+    const ensurePingCount = (count) => {
+      try {
+        const list = block.querySelector('[data-lent-ping-list="1"]');
+        if (!list) return;
+        const target = Math.max(0, Number(count) || 0);
+        while (Array.from(list.querySelectorAll('[data-ping-item]')).length < target) {
+          addPing();
+        }
+      } catch {}
+    };
+    const ensureTracertCount = (count) => {
+      try {
+        const list = block.querySelector('[data-lent-tracert-list="1"]');
+        if (!list) return;
+        const target = Math.max(0, Number(count) || 0);
+        while (Array.from(list.querySelectorAll('[data-tracert-item]')).length < target) {
+          addTracert();
+        }
+      } catch {}
+    };
+    try {
+      block.__addPing = addPing;
+      block.__addTracert = addTracert;
+      block.__ensurePingCount = ensurePingCount;
+      block.__ensureTracertCount = ensureTracertCount;
+    } catch {}
+    try {
+      const formId = (container && container.__formId) || '';
+      let initialState = {};
+      if (container.__prefillState) initialState = container.__prefillState;
+      else if (typeof getFormState === 'function' && formId) initialState = getFormState(formId) || {};
+      const pingIdx = new Set();
+      const tracertIdx = new Set();
+      Object.keys(initialState || {}).forEach((key) => {
+        const mp = key.match(/^ping_(?:titulo|minima|media|maxima|enviados|recebidos|perdidos)_(\d+)/i);
+        if (mp) pingIdx.add(parseInt(mp[1], 10) || 0);
+        const mt = key.match(/^tracert_(?:local|url)_(\d+)/i);
+        if (mt) tracertIdx.add(parseInt(mt[1], 10) || 0);
+      });
+      const pingNeeded = pingIdx.size ? Math.max(...pingIdx) : 0;
+      const tracertNeeded = tracertIdx.size ? Math.max(...tracertIdx) : 0;
+      if (pingNeeded > 0) ensurePingCount(pingNeeded);
+      if (tracertNeeded > 0) ensureTracertCount(tracertNeeded);
+    } catch {}
     block.addEventListener('click', (ev) => {
       const btn = ev.target && ev.target.closest && ev.target.closest('button'); if (!btn) return;
+      const fid = (container && container.__formId) || '';
       if (btn.hasAttribute('data-lent-ping-add')) { ev.preventDefault(); addPing(); }
       else if (btn.hasAttribute('data-lent-tracert-add')) { ev.preventDefault(); addTracert(); }
       else if (btn.hasAttribute('data-remove-ping')) {
         ev.preventDefault();
         const id = btn.getAttribute('data-remove-ping');
         const it = block.querySelector('.lent-entry[data-ping-item="1"][data-idx="' + id + '"]');
-        if (it) it.remove();
+        if (it) {
+          try {
+            Array.from(it.querySelectorAll('input[name]')).forEach((input) => {
+              const key = input.name || '';
+              if (!key) return;
+              try { if (fid && FORM_TMP_STATE && FORM_TMP_STATE[fid]) delete FORM_TMP_STATE[fid][key]; } catch {}
+            });
+          } catch {}
+          it.remove();
+          try {
+            if (fid) {
+              const snapshot = collectCurrentFormState(container);
+              if (typeof FORM_TMP_STATE === 'object' && FORM_TMP_STATE !== null) {
+                FORM_TMP_STATE[fid] = { ...(snapshot || {}) };
+              }
+              if (typeof window.__upsertDraftHistory === 'function') {
+                window.__upsertDraftHistory(fid, snapshot);
+              }
+            }
+          } catch {}
+          try {
+            const ensurePing = block.__ensurePingCount;
+            if (typeof ensurePing === 'function') {
+              const list = block.querySelector('[data-lent-ping-list="1"]');
+              const remaining = list ? Array.from(list.querySelectorAll('[data-ping-item]')).length : 0;
+              ensurePing(Math.max(remaining, 0));
+            }
+          } catch {}
+        }
       }
       else if (btn.hasAttribute('data-remove-tracert')) {
         ev.preventDefault();
         const id = btn.getAttribute('data-remove-tracert');
         const it = block.querySelector('.lent-entry[data-tracert-item="1"][data-idx="' + id + '"]');
-        if (it) it.remove();
+        if (it) {
+          try {
+            Array.from(it.querySelectorAll('input[name]')).forEach((input) => {
+              const key = input.name || '';
+              if (!key) return;
+              try { if (fid && FORM_TMP_STATE && FORM_TMP_STATE[fid]) delete FORM_TMP_STATE[fid][key]; } catch {}
+            });
+          } catch {}
+          it.remove();
+          try {
+            if (fid) {
+              const snapshot = collectCurrentFormState(container);
+              if (typeof FORM_TMP_STATE === 'object' && FORM_TMP_STATE !== null) {
+                FORM_TMP_STATE[fid] = { ...(snapshot || {}) };
+              }
+              if (typeof window.__upsertDraftHistory === 'function') {
+                window.__upsertDraftHistory(fid, snapshot);
+              }
+            }
+          } catch {}
+          try {
+            const ensureTracert = block.__ensureTracertCount;
+            if (typeof ensureTracert === 'function') {
+              const list = block.querySelector('[data-lent-tracert-list="1"]');
+              const remaining = list ? Array.from(list.querySelectorAll('[data-tracert-item]')).length : 0;
+              ensureTracert(Math.max(remaining, 0));
+            }
+          } catch {}
+        }
       }
     }, true);
   } catch {}
