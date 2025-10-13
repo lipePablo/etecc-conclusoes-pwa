@@ -1,4 +1,4 @@
-// Tema
+﻿// Tema
 function applyTheme(theme) {
   const isDark = theme === 'dark';
   document.body.classList.toggle('dark-theme', isDark);
@@ -2126,7 +2126,7 @@ function setTopbarMode(internal){
         + '    <div class="form-subtitle">Checklist de verificações técnicas</div>\n'
         + '  </div>\n'
         + '  <div class="form-block form-cond" data-when-field="tipo_serv" data-when-in="avaliacao,avaliacao_cab,instalacao" data-clear-on-hide="1">\\n'
-        + '    <label class="form-label">Verificação dos cabos de rede do roteador</label>\\n'
+        + '    <label class="form-label">Verificações de cabos de rede</label>\\n'
         + '    <div class="form-hint" style="margin-top:6px;">O que foi verificado referente aos cabos de rede do local:</div>\\n'
         + '    <label class="form-label" style="margin-top:10px;">Cabo de Rede da WAN:</label>\\n'
         + '    <div class="choices">\\n' 
@@ -8719,6 +8719,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
         '.mac-scan-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}',
         '.mac-scan-actions .btn-primary{flex:1 1 160px}',
         '.mac-scan-actions .btn-ghost{flex:1 1 120px;justify-content:center;font-size:14px}',
+        '.mac-scan-actions .btn-ghost.mac-scan-close{height:46px;border-color:#e11d1d;color:#e11d1d;background:transparent}',
+        '.mac-scan-actions .btn-ghost.mac-scan-close:hover{background:rgba(225,29,29,.08)}',
         'body.dark-theme .mac-scan-box{background:var(--card);color:var(--text);border:1px solid var(--border);box-shadow:0 22px 48px rgba(0,0,0,.55)}',
         'body.dark-theme .mac-scan-header h2{color:var(--text)}',
         'body.dark-theme .mac-scan-status{color:var(--muted)}',
@@ -9314,7 +9316,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
             + '  <label class="form-label" for="wan_ativo_' + idx + '">Aparelho ligado por esse cabo:</label>'
             + '  <input id="wan_ativo_' + idx + '" name="wan_ativo_' + idx + '" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." />'
             + '  <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
-            + '  <div class="choices" style="margin-top:10px;">'
+            + '  <div class="choices" style="margin-top:0;">'
             + '    <label class="choice"><input type="checkbox" id="wan_gigabit_' + idx + '" name="wan_gigabit_' + idx + '"><span>Cabo de rede Gigabit</span></label>'
             + '    <label class="choice"><input type="checkbox" id="wan_powermitter_' + idx + '" name="wan_powermitter_' + idx + '"><span>Teste no Powermitter</span></label>'
             + '    <label class="choice"><input type="checkbox" id="wan_ping_' + idx + '" name="wan_ping_' + idx + '"><span>Teste de Ping no Cabo</span></label>'
@@ -9326,6 +9328,76 @@ const copyBtn = document.getElementById('btnCopiarForm');
           try { item.querySelector('input')?.focus(); } catch {}
         } catch {}
       });
+      // Criar Verificação 1 fixa movendo conteúdo original para dentro do card
+      try {
+        const hasAny = Array.from(list.querySelectorAll('[data-wan-item="1"]')).length > 0;
+        if (!hasAny){
+          const item = document.createElement('div'); item.className='lent-entry'; item.setAttribute('data-wan-item','1'); item.setAttribute('data-idx','1');
+          item.innerHTML = ''
+            + '  <div class="lent-entry__header">'
+            + '    <div class="lent-entry__badge"><i class="fa-solid fa-network-wired"></i> Verificação 1</div>'
+            + '  </div>'
+            + '  <label class="form-label" for="wan_ativo_1">Aparelho ligado por esse cabo:</label>'
+            + '  <div class="segmented wan-ativo-type" role="radiogroup" aria-label="Aparelho ligado por esse cabo">'
+            + '    <input type="radio" id="wan_ativo_tipo_1_onu" name="wan_ativo_tipo_1" value="onu" checked>'
+            + '    <label for="wan_ativo_tipo_1_onu">Cabo da ONU pro Roteador</label>'
+            + '    <input type="radio" id="wan_ativo_tipo_1_outro" name="wan_ativo_tipo_1" value="outro">'
+            + '    <label for="wan_ativo_tipo_1_outro">Outro</label>'
+            + '  </div>'
+            + '  <input id="wan_ativo_1" name="wan_ativo_1" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." style="display:none" disabled />'
+            + '  <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
+            + '  <div class="choices" data-wan-first-choices="1" style="margin-top:0;"></div>'
+            + '  <label class="form-label" for="wan_obs_1" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>';
+          list.appendChild(item);
+          try { if (typeof setupAutoExpand === 'function') setupAutoExpand(item); } catch {}
+          // Toggle do campo "Outro" para Aparelho ligado por esse cabo (Verificação 1)
+          try {
+            const rOnu = item.querySelector('#wan_ativo_tipo_1_onu');
+            const rOutro = item.querySelector('#wan_ativo_tipo_1_outro');
+            const inOutro = item.querySelector('#wan_ativo_1');
+            const applyToggle = () => {
+              const isOutro = !!(rOutro && rOutro.checked);
+              if (inOutro){
+                inOutro.disabled = !isOutro;
+                inOutro.style.display = isOutro ? '' : 'none';
+                if (!isOutro) { try { inOutro.value = ''; } catch {} }
+              }
+            };
+            if (rOnu) rOnu.addEventListener('change', applyToggle);
+            if (rOutro) rOutro.addEventListener('change', applyToggle);
+            applyToggle();
+          } catch {}
+          // mover choices e observação originais
+          try {
+            const origChoices = mainBlk.querySelector('.choices');
+            const targetChoices = item.querySelector('[data-wan-first-choices="1"]');
+            if (origChoices && targetChoices){
+              const map = [ ['wan_gigabit','wan_gigabit_1'], ['wan_powermitter','wan_powermitter_1'], ['wan_ping','wan_ping_1'] ];
+              map.forEach(([oldId,newId]) => { const el = origChoices.querySelector('#'+oldId); if (el){ try { el.id=newId; el.name=newId; } catch {} } });
+              Array.from(origChoices.children).forEach(ch => targetChoices.appendChild(ch));
+              try { origChoices.remove(); } catch {}
+            }
+          } catch {}
+          try {
+            const oldObsLbl = mainBlk.querySelector('label[for="wan_obs"]'); if (oldObsLbl) oldObsLbl.remove();
+            const oldObs = mainBlk.querySelector('#wan_obs');
+            if (oldObs){
+              try { oldObs.id='wan_obs_1'; oldObs.name='wan_obs_1'; } catch {}
+              item.appendChild(oldObs);
+            } else {
+              try {
+                const ta = document.createElement('textarea');
+                ta.id = 'wan_obs_1'; ta.name = 'wan_obs_1';
+                ta.className = 'form-input--underline auto-expand';
+                ta.placeholder = 'Digite...'; ta.rows = 1; ta.setAttribute('data-min-height','32');
+                item.appendChild(ta);
+                if (typeof setupAutoExpand === 'function') setupAutoExpand(item);
+              } catch {}
+            }
+          } catch {}
+          try { const oldWanLabel = Array.from(mainBlk.querySelectorAll('.form-label')).find(l => /Cabo de Rede da WAN/i.test(String(l.textContent||''))); if (oldWanLabel) oldWanLabel.remove(); } catch {}
+        }
+      } catch {}
       // remover verificação
       mainBlk.addEventListener('click', (e) => {
         const btn = e.target && e.target.closest && e.target.closest('button'); if (!btn) return;
@@ -9845,7 +9917,7 @@ function setupAutoExpand(root){
       if (mainBlk.querySelector('[data-wan-card="1"]')) return;
       const card = document.createElement('div'); card.className = 'lentidao-card wan-card'; card.setAttribute('data-wan-card','1');
       card.innerHTML = ''
-        + '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-network-wired"></i> Verifica\u00E7\u00E3o de cabo de rede adicional</span></div>'
+        + ''
         + '<div class="lentidao-list" data-wan-list="1"></div>'
         + '<button type="button" class="btn-ghost lent-add wan-add" data-wan-add="1"><i class="fa-solid fa-plus"></i> Adicionar verificação</button>';
       mainBlk.appendChild(card);
@@ -9874,7 +9946,7 @@ function setupAutoExpand(root){
       const extraBlk = container.querySelector('.form-block[data-wan-add="1"]');
       const card = document.createElement('div'); card.className = 'lentidao-card wan-card'; card.setAttribute('data-wan-card','1');
       card.innerHTML = ''
-        + '<div class="lentidao-card__header"><span class="lentidao-card__title"><i class="fa-solid fa-network-wired"></i> Verifica\u00E7\u00E3o de cabo de rede adicional</span></div>'
+        + ''
         + '<div class="lentidao-list" data-wan-list="1"></div>'
         + '<button type="button" class="btn-ghost lent-add wan-add" data-wan-add="1"><i class="fa-solid fa-plus"></i> Adicionar verificação</button>';
       // Se houver botão original, remove o botão padrão do card para evitar duplicidade
@@ -10711,4 +10783,7 @@ function appendLentidaoTests(container){
     }, true);
   } catch {}
 }
+
+
+
 
