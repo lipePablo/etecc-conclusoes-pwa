@@ -8553,6 +8553,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
     const pList = Array.from(ctx.querySelectorAll('.vel-ping, #vel_ping'));
     function onDecimalInput(el){
       if (!el) return;
+      try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
+      try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
+      try { el.style.pointerEvents = 'auto'; } catch {}
       const handler = () => {
         let v = String(el.value || '').replace(/[^0-9.]/g,'');
         const parts = v.split('.');
@@ -8569,6 +8572,9 @@ const copyBtn = document.getElementById('btnCopiarForm');
     }
     function onIntInput(el, maxLen){
       if (!el) return;
+      try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
+      try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
+      try { el.style.pointerEvents = 'auto'; } catch {}
       const handler = () => { el.value = String(el.value || '').replace(/\D/g,'').slice(0, maxLen||3); };
       el.addEventListener('input', handler);
       el.addEventListener('blur', handler);
@@ -9183,6 +9189,10 @@ const copyBtn = document.getElementById('btnCopiarForm');
       const css = [
         '.form-block[data-veltest-block="1"] .triple-inputs + label.form-label{margin-top:14px;display:block}',
         '.form-block[data-veltest-block="1"] .vel-device + label.form-label{margin-top:14px;display:block}',
+        // Garantir que campos de velocidade sejam clicáveis e não fiquem sob elementos vizinhos
+        '.form-block[data-veltest-block="1"] .triple-inputs{position:relative}',
+        '.form-block[data-veltest-block="1"] .triple-inputs input{position:relative;z-index:2;pointer-events:auto}',
+        '.form-block[data-veltest-block="1"] .lent-entry__header{position:relative;z-index:0}',
         // Botão de adicionar outro teste: ocupar toda a largura mantendo o estilo btn-ghost e cores da mac-add
         '.form-block[data-veltest-add="1"] .vel-add{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-color:var(--brand);color:var(--brand);font-weight:700}',
         '.form-block[data-veltest-add="1"] .vel-add:hover{background:rgba(255,77,77,.08)}'
@@ -9382,7 +9392,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
             + '  </div>'
             + '  <label class="form-label" for="wan_ativo_1">Aparelho ligado por esse cabo:</label>'
             + '  <div class="segmented wan-ativo-type" role="radiogroup" aria-label="Aparelho ligado por esse cabo">'
-            + '    <input type="radio" id="wan_ativo_tipo_1_onu" name="wan_ativo_tipo_1" value="onu" checked>'
+            + '    <input type="radio" id="wan_ativo_tipo_1_onu" name="wan_ativo_tipo_1" value="onu">'
             + '    <label for="wan_ativo_tipo_1_onu">Cabo da ONU pro Roteador</label>'
             + '    <input type="radio" id="wan_ativo_tipo_1_outro" name="wan_ativo_tipo_1" value="outro">'
             + '    <label for="wan_ativo_tipo_1_outro">Outro</label>'
