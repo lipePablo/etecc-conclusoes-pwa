@@ -2757,7 +2757,7 @@ function setTopbarMode(internal){
         + '</section>\n'
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Relato geral da ordem de serviço:</label>\n'
@@ -3015,7 +3015,7 @@ function setTopbarMode(internal){
         // Sessao final: Descricao da OS
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva detalhes adicionais sobre o atendimento:</label>\n'
@@ -3374,7 +3374,7 @@ function setTopbarMode(internal){
          // Seção final: Descrição da O.S
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva detalhes adicionais sobre o atendimento:</label>\n'
@@ -3875,7 +3875,7 @@ function setTopbarMode(internal){
         // Seção 5: DESCRIÇÃO DA O.S (customizada com observação)
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva detalhes adicionais sobre o atendimento:</label>\n'
@@ -4900,7 +4900,7 @@ function setTopbarMode(internal){
         // Seção 5: DESCRIÇÃO DA O.S
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva detalhes adicionais sobre o atendimento:</label>\n'
@@ -5283,7 +5283,7 @@ function setTopbarMode(internal){
         // Seção 5: DESCRIÇÃO DA O.S
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva detalhes adicionais sobre o atendimento:</label>\n'
@@ -5667,7 +5667,7 @@ function setTopbarMode(internal){
         // Seção 5: DESCRIÇÃO DA O.S (customizada)
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva qual foi o motivo da inviabilidade:</label>\n'
@@ -6047,7 +6047,7 @@ function setTopbarMode(internal){
         + '</section>\n'
         + '<section class="form-section">\n'
         + '  <div class="form-header">\n'
-        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S</div>\n'
+        + '    <div class="form-title"><i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO</div>\n'
         + '  </div>\n'
         + '  <div class="form-block">\n'
         + '    <label class="form-label" for="descricao_os">Descreva detalhes adicionais sobre o atendimento:</label>\n'
@@ -7329,6 +7329,29 @@ const copyBtn = document.getElementById('btnCopiarForm');
             secOut.push('');
             return;
           }
+          // Quando houver itens marcados, listar cada item marcado em sequência
+          try {
+            const isEquipChoices = cbs.some(cb => {
+              const meta = ((cb.name||cb.id||'')+'').toLowerCase();
+              return meta.startsWith('tq_') || meta.startsWith('eq_sel_') || meta.startsWith('ins_sel_') || meta.startsWith('ret_') || meta.startsWith('ficou_') || meta.startsWith('estao_');
+            });
+            if (!isEquipChoices){
+              const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
+              const q = cleanQ(qlbl).toUpperCase();
+              if (q) printQuestionOnce(q);
+              const selected = cbs.filter(cb => cb && cb.checked);
+              selected.forEach(cb => {
+                let text = '';
+                try {
+                  const lab = cb.closest('label');
+                  text = (lab?.querySelector('span')?.textContent || lab?.textContent || '').trim();
+                } catch {}
+                if (text) secOut.push(`- ${text}`);
+              });
+              secOut.push('');
+              return;
+            }
+          } catch {}
         }
       } catch {}
       const d = block.querySelector('.vel-down') || block.querySelector('#vel_down');
@@ -7396,7 +7419,16 @@ const copyBtn = document.getElementById('btnCopiarForm');
               secOut.push('');
               return;
             }
-            // Sem resposta: não imprime nada aqui
+            // Sem resposta: para formulários visíveis, anexar mensagem automática (suporte-moto)
+            try {
+              const fid = (container && container.__formId) || '';
+              if (fid === 'suporte-moto'){
+                const qText = cleanQ(bLabel).toUpperCase();
+                printQuestionOnce(qText);
+                secOut.push('O técnico não preencheu este campo.');
+                secOut.push('');
+              }
+            } catch {}
             return;
           }
           // Novo: quando a pergunta é de RETIRADO e a resposta é NÃO, precisamos imprimir a pergunta/resposta
@@ -7411,7 +7443,18 @@ const copyBtn = document.getElementById('btnCopiarForm');
                 const aText = toSentence(sel);
                 if (aText) secOut.push(aText);
                 secOut.push('');
+                return;
               }
+              // Sem resposta: para suporte-moto, garantir mensagem automática
+              try {
+                const fid = (container && container.__formId) || '';
+                if (!vLower && fid === 'suporte-moto'){
+                  const qText = cleanQ(bLabel).toUpperCase();
+                  printQuestionOnce(qText);
+                  secOut.push('O técnico não preencheu este campo.');
+                  secOut.push('');
+                }
+              } catch {}
               return;
             }
           } catch {}
@@ -9974,81 +10017,100 @@ function setupAutoExpand(root){
     try { if (container.querySelector('#descricao_os')) return; } catch {}
     const formId = (container && container.__formId) || '';
     const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','descricao-os');
-    try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S'; head.appendChild(ttl); sec.appendChild(head); } catch {}
+    try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO'; head.appendChild(ttl); sec.appendChild(head); } catch {}
+    
+    // Bloco: Informações passadas ao Cliente
+    const infoBlock = document.createElement('div'); infoBlock.className='form-block';
+    const infoLab = document.createElement('label'); infoLab.className='form-label'; infoLab.textContent='Informações passadas ao Cliente'; infoBlock.appendChild(infoLab);
+    const infoHint = document.createElement('div'); infoHint.className='form-hint'; infoHint.textContent = 'Deve-se reforçar com o cliente, após repassar qualquer informação, se ele possui alguma dúvida. É importante esclarecer que a assinatura realizada na baixa da OS confirma que o cliente compreendeu plenamente todas as informações e orientações fornecidas.'; infoHint.style.marginBottom = '10px'; infoBlock.appendChild(infoHint);
+    const infoChoices = document.createElement('div'); infoChoices.className='choices'; infoChoices.style.display='flex'; infoChoices.style.flexDirection='column'; infoChoices.style.gap='6px'; infoChoices.style.alignItems='flex-start';
+    function addInfoCheck(id, text){ const lbl=document.createElement('label'); lbl.className='choice'; const inp=document.createElement('input'); inp.type='checkbox'; inp.id=id; inp.name=id; const span=document.createElement('span'); span.textContent=text; lbl.appendChild(inp); lbl.appendChild(span); infoChoices.appendChild(lbl); }
+    addInfoCheck('cli_info_reiniciar','Necessidade de Reiniciar o Roteador (a cada três dias/ 1 semana)');
+    addInfoCheck('cli_info_redes','Diferença entre as Redes 2.4 GHz e 5 GHz do WiFi');
+    addInfoCheck('cli_info_distribuicao','Distribuição de Banda Larga entre os ativos');
+    addInfoCheck('cli_info_tvbox','Problemas com TVBox e IPTV não Homologados pela Anatel');
+    addInfoCheck('cli_info_limpeza','Manutenção da Limpeza dos Aparelhos');
+    addInfoCheck('cli_info_interferencias','Como Evitar Interferências (Micro-ondas, Outros aparelhos eletrônicos, paredes e etc...)');
+    addInfoCheck('cli_info_velocidade','Como Realizar testes de velocidade');
+    addInfoCheck('cli_info_lentidao','Como Realizar Testes de Lentidão');
+    addInfoCheck('cli_info_cabear','Necessidade de Cabear Ativos e o porque');
+    addInfoCheck('cli_info_repetidores','Problema no uso de Repetidores');
+    addInfoCheck('cli_info_sem_rede','Wifi sem Rede');
+    addInfoCheck('cli_info_oscilacoes','Oscilações em Períodos Específicos');
+    addInfoCheck('cli_info_qtd_ativos','Quantidade de Ativos conectados ao Roteador');
+    addInfoCheck('cli_info_segundo_ponto','Segundo ponto');
+    addInfoCheck('cli_info_ativos_antigos','Ativos Antigos');
+    addInfoCheck('cli_info_manut_cabos','Manutenção de Cabos de Rede (Necessidade e como fazer o básico)');
+    addInfoCheck('cli_info_router_externo','Problemas do Router em área externa (Avarias e cobranças por mau uso)');
+    addInfoCheck('cli_info_interf_24','Intreferência da rede 2.4 em apartamentos');
+    addInfoCheck('cli_info_treinamento','Treinamento Básico de Análise de Rede');
+    addInfoCheck('cli_info_wifiman','WiFiman: Análise de canal e distribuição do Wi-Fi');
+    addInfoCheck('cli_info_speedtest','SpeedTest: Teste de velocidade em conexões cabeadas e Wi-Fi');
+    addInfoCheck('cli_info_downdetector','Downdetector');
+    infoBlock.appendChild(infoChoices);
+    sec.appendChild(infoBlock);
 
-    if (formId === 'suporte-moto') {
-      // Pergunta final: deseja acrescentar informações adicionais?
-      const qBlock = document.createElement('div'); qBlock.className='form-block';
-      const qLab = document.createElement('label'); qLab.className='form-label'; qLab.textContent='Deseja acrescentar informações adicionais sobre a visita técnica?';
-      qBlock.appendChild(qLab);
-      const seg = document.createElement('div'); seg.className = 'segmented'; seg.setAttribute('role','radiogroup'); seg.setAttribute('aria-label','Adicionar informações adicionais');
-      const mkRadio = (val, text, icon) => {
-        const inp = document.createElement('input'); inp.type='radio'; inp.id='moto_desc_extra_'+val; inp.name='moto_desc_extra'; inp.value=val;
-        const lab = document.createElement('label'); lab.setAttribute('for', inp.id);
-        lab.innerHTML = (icon ? ('<i class="fa-solid '+icon+'"></i> ') : '') + text;
-        seg.appendChild(inp); seg.appendChild(lab);
-        return inp;
-      };
-      const rSim = mkRadio('sim','Sim','fa-check');
-      mkRadio('nao','Não','fa-xmark');
-      qBlock.appendChild(seg);
-      sec.appendChild(qBlock);
+    // Campo de Texto adicional
+    const infoTextBlock = document.createElement('div'); infoTextBlock.className='form-block';
+    const infoTextLab = document.createElement('label'); infoTextLab.className='form-label'; infoTextLab.textContent='Descreva neste campo quaisquer informações adicionais que não se enquadrem na lista acima.'; infoTextBlock.appendChild(infoTextLab);
+    const infoText = document.createElement('textarea'); infoText.id='cli_info_texto'; infoText.name='cli_info_texto'; infoText.className='form-input--underline auto-expand'; infoText.placeholder='Digite aqui as informações adicionais...'; infoText.rows = 3; infoText.dataset.minHeight = '96'; infoTextBlock.appendChild(infoText);
+    const infoCounter = document.createElement('div'); infoCounter.className='textarea-counter'; infoCounter.textContent = '0 caracteres'; infoTextBlock.appendChild(infoCounter);
+    sec.appendChild(infoTextBlock);
 
-      // Bloco condicional (conteúdo criado somente quando SIM)
-      const cond = document.createElement('div'); cond.className='form-block';
-      cond.setAttribute('data-when-field','moto_desc_extra');
-      cond.setAttribute('data-when-equals','sim');
-      cond.setAttribute('data-clear-on-hide','1');
-      try { cond.setAttribute('hidden','hidden'); } catch {}
-      cond.setAttribute('data-moto-desc-extra','1');
-      sec.appendChild(cond);
+    // Pergunta final: deseja acrescentar informações adicionais sobre a visita técnica?
+    const qBlock = document.createElement('div'); qBlock.className='form-block';
+    const qLab = document.createElement('label'); qLab.className='form-label'; qLab.textContent='Deseja acrescentar informações adicionais sobre a visita técnica?'; qBlock.appendChild(qLab);
+    const seg = document.createElement('div'); seg.className = 'segmented'; seg.setAttribute('role','radiogroup'); seg.setAttribute('aria-label','Adicionar informações adicionais');
+    const mkRadio = (namePrefix, val, text, icon) => { const inp = document.createElement('input'); inp.type='radio'; inp.id=namePrefix+'_'+val; inp.name=namePrefix; inp.value=val; const lab = document.createElement('label'); lab.setAttribute('for', inp.id); lab.innerHTML = (icon ? ('<i class="fa-solid '+icon+'"></i> ') : '') + text; seg.appendChild(inp); seg.appendChild(lab); return inp; };
+    const groupName = (formId === 'suporte-moto') ? 'moto_desc_extra' : 'desc_extra';
+    const rSim = mkRadio(groupName,'sim','Sim','fa-check');
+    mkRadio(groupName,'nao','Não','fa-xmark');
+    qBlock.appendChild(seg);
+    sec.appendChild(qBlock);
 
-      const ensureTextarea = () => {
-        if (container.querySelector('#descricao_os')) return;
-        const lab = document.createElement('label'); lab.className='form-label'; lab.textContent='Relatos adicionais para a visita técnica:';
-        const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder='Digite aqui os relatos adicionais...'; ta.rows = 4; ta.dataset.minHeight = '120';
-        const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres';
-        cond.appendChild(lab); cond.appendChild(ta); cond.appendChild(counter);
-        try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
-        try { if (typeof setupAutoExpand === 'function') setupAutoExpand(container); } catch {}
-      };
-      const removeTextarea = () => {
-        const ta = container.querySelector('#descricao_os');
-        const secTa = ta ? (ta.closest && ta.closest('.form-section')) : null;
-        if (ta && secTa === sec) {
-          try {
-            const lab = ta.previousElementSibling; const counter = ta.nextElementSibling;
-            if (lab && lab.classList && lab.classList.contains('form-label')) lab.remove();
-            if (counter && counter.classList && counter.classList.contains('textarea-counter')) counter.remove();
-            ta.remove();
-          } catch {}
-          try { if (typeof setFormState === 'function') setFormState(formId, { descricao_os: '' }); } catch {}
-        }
-        try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
-      };
-      const update = () => {
-        try {
-          const sel = container.querySelector('input[name="moto_desc_extra"]:checked');
-          const v = (sel && sel.value || '').toLowerCase();
-          if (v === 'sim') ensureTextarea(); else removeTextarea();
-        } catch {}
-      };
-      try { container.addEventListener('change', (e)=>{ const t=e.target; if (!t) return; if ((t.name||'')==='moto_desc_extra') update(); }, true); } catch {}
-      // Prefill: se houver valor salvo, marcar SIM para restaurar corretamente
-      try { const st = container.__prefillState || {}; if (st && typeof st['descricao_os'] === 'string' && st['descricao_os'].trim() !== '') { rSim.checked = true; } } catch {}
+    const cond = document.createElement('div'); cond.className='form-block';
+    cond.setAttribute('data-when-field', groupName);
+    cond.setAttribute('data-when-equals','sim');
+    cond.setAttribute('data-clear-on-hide','1');
+    try { cond.setAttribute('hidden','hidden'); } catch {}
+    sec.appendChild(cond);
 
-      try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
+    const ensureTextarea = () => {
+      if (container.querySelector('#descricao_os')) return;
+      const lab = document.createElement('label'); lab.className='form-label'; lab.textContent = (formId === 'suporte-moto') ? 'Relatos adicionais para a visita técnica:' : 'Relato da solução para a visita técnica:';
+      const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder = (formId === 'suporte-moto') ? 'Digite aqui os relatos adicionais...' : 'Digite aqui o relato da solução...'; ta.rows = 4; ta.dataset.minHeight = '120';
+      const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres';
+      cond.appendChild(lab); cond.appendChild(ta); cond.appendChild(counter);
       try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
-      update();
-    } else {
-      // Padrão para outros formulários
-      const block = document.createElement('div'); block.className='form-block';
-      const lab = document.createElement('label'); lab.className='form-label'; lab.textContent='Relato da solução para a visita técnica:'; block.appendChild(lab);
-      const ta = document.createElement('textarea'); ta.id='descricao_os'; ta.name='descricao_os'; ta.className='form-input--underline auto-expand'; ta.placeholder='Digite aqui o relato da solução...'; ta.rows = 4; ta.dataset.minHeight = '120'; block.appendChild(ta);
-      const counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent = '0 caracteres'; block.appendChild(counter);
-      sec.appendChild(block);
-      try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
-    }
+      try { if (typeof setupAutoExpand === 'function') setupAutoExpand(container); } catch {}
+    };
+    const removeTextarea = () => {
+      const ta = container.querySelector('#descricao_os');
+      const secTa = ta ? (ta.closest && ta.closest('.form-section')) : null;
+      if (ta && secTa === sec) {
+        try {
+          const lab = ta.previousElementSibling; const counter = ta.nextElementSibling;
+          if (lab && lab.classList && lab.classList.contains('form-label')) lab.remove();
+          if (counter && counter.classList && counter.classList.contains('textarea-counter')) counter.remove();
+          ta.remove();
+        } catch {}
+        try { if (typeof setFormState === 'function') setFormState(formId, { descricao_os: '' }); } catch {}
+      }
+      try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+    };
+    const update = () => {
+      try {
+        const sel = container.querySelector(`input[name="${groupName}"]:checked`);
+        const v = (sel && sel.value || '').toLowerCase();
+        if (v === 'sim') ensureTextarea(); else removeTextarea();
+      } catch {}
+    };
+    try { container.addEventListener('change', (e)=>{ const t=e.target; if (!t) return; if ((t.name||'')===groupName) update(); }, true); } catch {}
+    try { const st = container.__prefillState || {}; if (st && typeof st['descricao_os'] === 'string' && st['descricao_os'].trim() !== '') { rSim.checked = true; } } catch {}
+
+    try { const actions = container.querySelector('.form-actions'); if (actions) container.insertBefore(sec, actions); else container.appendChild(sec); } catch { container.appendChild(sec); }
+    try { if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container); } catch {}
+    update();
   }
 
   // Formatação para cópia: normaliza 'Sinal da fibra' conforme regras solicitadas
