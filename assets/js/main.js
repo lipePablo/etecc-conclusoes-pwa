@@ -7325,10 +7325,45 @@ const copyBtn = document.getElementById('btnCopiarForm');
       __mapsLink = 'https://www.google.com/maps?q=' + geoVal;
     }
   } catch {}
+  // Rebuilder de fallback: VERIFICAÇÕES DE CABOS DE REDE (evita duplicidade e leituras erradas)
+  try {
+    const st = (typeof collectCurrentFormState === 'function') ? collectCurrentFormState(container) : {};
+    const wanIdx = new Set();
+    try { Object.keys(st||{}).forEach(k=>{ const m=String(k||'').match(/^wan_item_(\d+)_(device|gigabit|powermitter|ping|obs)$/i); if (m) wanIdx.add(parseInt(m[1],10)||0); }); } catch {}
+    let max = 0; try { wanIdx.forEach(n=>{ if(n>max) max=n; }); } catch {}
+    try { const list = container.querySelector('[data-wan-list="1"]'); if (list){ const n=list.querySelectorAll('[data-wan-item="1"]').length; if (n>max) max=n; } } catch {}
+    if (max>0){
+      const getB = (i,k)=>{ const v=(st||{})[`wan_item_${i}_${k}`]; return (typeof v==='boolean')?v:false; };
+      const getV = (i,k)=>{ const v=(st||{})[`wan_item_${i}_${k}`]; return (typeof v==='string')?v.trim():(v?String(v):''); };
+      const out=[]; out.push('VERIFICAÇÕES DE CABOS DE REDE');
+      for(let i=1;i<=max;i++){
+        let ativo='';
+        try { if(i===1){ const r=container.querySelector('#wan_ativo_tipo_1_onu'); if(r&&r.checked) ativo='Cabo da ONU pro Roteador'; else ativo=getV(1,'device')||(container.querySelector('#wan_item_1_device')?.value||'').trim(); } else { ativo=getV(i,'device'); } } catch {}
+        out.push(`CABO ${i}: ${ativo || 'O técnico não preencheu este campo.'}`);
+        const items=[]; try { if (getB(i,'gigabit')) items.push('Cabo de rede Gigabit'); } catch {} try { if (getB(i,'powermitter')) items.push('Teste no Powermitter'); } catch {} try { if (getB(i,'ping')) items.push('Teste de Ping no Cabo'); } catch {}
+        if (items.length){ items.forEach(t=>out.push(`- ${t}`)); } else { out.push('O técnico não preencheu este campo.'); }
+        const obs = getV(i,'obs'); if (obs) out.push(`- OBSERVAÇÃO: ${obs}`);
+        if (i<max) out.push('');
+      }
+      out.push('');
+      const wanStr = out.join('\n');
+      const lines = text.split('\n');
+      let s=-1,e=-1;
+      for(let i=0;i<lines.length;i++){
+        const L=(lines[i]||'').trim();
+        if(s<0 && L.startsWith('VERIFICA') && L.includes('CABOS DE REDE')){ s=i; continue; }
+        if(s>=0){
+          if (L==='PINGS' || L==='TRACERTS' || L.startsWith('RESULTADO DO ') || L.startsWith('-- ')) { e=i; break; }
+        }
+      }
+      if (s>=0){ if (e<0) e=lines.length; const pre=lines.slice(0,s).join('\n'); const post=lines.slice(e).join('\n'); text = pre + (pre.endsWith('\n')?'':'\n') + wanStr + (post.startsWith('\n')?'':(post?'\n':'')) + post; }
+    }
+  } catch {}
   function getRadioGroupValue(block){ const sel = block.querySelector('input[type="radio"]:checked'); if (!sel) return ''; const lab = block.querySelector(`label[for="${sel.id}"]`); return (lab?.textContent || sel.value || '').trim(); }
   function cleanQ(s){ try { return String(s||'').replace(/\([^)]*escolh[^)]*\)/ig,'').trim(); } catch (e) { return s||''; } }
   function collectMacRows(list){ const rows = Array.from(list.querySelectorAll('.mac-row input')); return rows.map(i => (i.value||'').trim()).filter(Boolean); }
   function formatSinalFibraCopy(v){ try { if (typeof formatSinalFibraForCopy === 'function') return formatSinalFibraForCopy(v); } catch {} return v; }
+  const copyState = (typeof collectCurrentFormState === 'function') ? collectCurrentFormState(container) : {};
   const sections = Array.from(container.querySelectorAll('.form-section'));
   const parts = [];
   sections.forEach((sec) => {
@@ -7505,6 +7540,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
       try {
         const choices = block.querySelector('.choices');
         if (choices){
+          const isNestedConfRot = !!(block.closest('[data-conf-rot="1"]') && !block.matches('[data-conf-rot="1"]'));
+          if (isNestedConfRot) return;
           // Evitar duplicidade: se este .choices pertence a um sub-bloco interno, não processe aqui
           try { const ownerBlk = choices.closest && choices.closest('.form-block'); if (ownerBlk && ownerBlk !== block) { return; } } catch {}
           const cbs = Array.from(choices.querySelectorAll('input[type="checkbox"]'));
@@ -7614,50 +7651,87 @@ const copyBtn = document.getElementById('btnCopiarForm');
       // Conferências nos roteadores: copiar seleções
       try {
         if (block.matches('[data-conf-rot="1"]')){
+          const rawHeader = (block.querySelector('.form-label')?.textContent || 'Conferências nos roteadores').trim();
+          const header = cleanQ(rawHeader).toUpperCase() || 'CONFERÊNCIAS NOS ROTEADORES';
+          if (!__printedQ.has(header)) { __printedQ.add(header); secOut.push(header); }
+
           const lines = [];
-          // DNS configurado: inline (ex.: "DNS configurado: Etecc")
+          const pushLine = (label, value) => {
+            const text = (value != null && String(value).trim() !== '') ? String(value).trim() : 'O técnico não preencheu este campo.';
+            lines.push(`${label}: ${text}`);
+          };
+          const confState = copyState || {};
+          const getBool = (key, domSel) => {
+            if (Object.prototype.hasOwnProperty.call(confState, key)) return !!confState[key];
+            try { const el = domSel ? block.querySelector(domSel) : null; return !!(el && el.checked); } catch { return false; }
+          };
+          const getVal = (key, domSel) => {
+            if (Object.prototype.hasOwnProperty.call(confState, key)) return confState[key];
+            try { const el = domSel ? block.querySelector(domSel) : null; return (el && 'value' in el) ? el.value : ''; } catch { return ''; }
+          };
+
           try {
-            const dnsChk = block.querySelector('#conf_dns');
-            if (dnsChk && dnsChk.checked){
+            const valOutro = String(getVal('dns_outro_val', '#dns_outro_val') || '').trim();
+            const dnsActive = getBool('conf_dns', '#conf_dns') || getBool('dns_etecc', '#dns_etecc') || getBool('dns_google', '#dns_google') || getBool('dns_outro', '#dns_outro') || !!valOutro;
+            if (dnsActive){
               const opts = [];
-              try { if (block.querySelector('#dns_etecc')?.checked) opts.push('Etecc'); } catch {}
-              try { if (block.querySelector('#dns_google')?.checked) opts.push('Google'); } catch {}
-              try {
-                if (block.querySelector('#dns_outro')?.checked){
-                  const v = (block.querySelector('#dns_outro_val')?.value || '').trim();
-                  opts.push(v || 'Outro');
-                }
-              } catch {}
-              lines.push(`DNS configurado: ${opts.length ? opts.join(' / ') : 'O técnico não preencheu este campo.'}`);
+              if (getBool('dns_etecc', '#dns_etecc')) opts.push('Etecc');
+              if (getBool('dns_google', '#dns_google')) opts.push('Google');
+              if (getBool('dns_outro', '#dns_outro') || valOutro) opts.push(valOutro || 'Outro');
+              pushLine('DNS configurado', opts.join(' / '));
             }
           } catch {}
-          // Largura de banda 2.4: inline
+
           try {
-            const lbParent = block.querySelector('#lb24_parent');
-            if (lbParent && lbParent.checked){
+            const lbActive = getBool('lb24_parent', '#lb24_parent') || getBool('lb24_20', '#lb24_20') || getBool('lb24_40', '#lb24_40') || getBool('lb24_20_40', '#lb24_20_40');
+            if (lbActive){
               const parts = [];
-              try { if (block.querySelector('#lb24_20')?.checked) parts.push('20MHz'); } catch {}
-              try { if (block.querySelector('#lb24_40')?.checked) parts.push('40MHz'); } catch {}
-              try { if (block.querySelector('#lb24_20_40')?.checked) parts.push('20/40MHz'); } catch {}
-              lines.push(`Largura de banda da rede 2.4: ${parts.length ? parts.join(' / ') : 'O técnico não preencheu este campo.'}`);
+              if (getBool('lb24_20', '#lb24_20')) parts.push('20MHz');
+              if (getBool('lb24_40', '#lb24_40')) parts.push('40MHz');
+              if (getBool('lb24_20_40', '#lb24_20_40')) parts.push('20/40MHz');
+              pushLine('Largura de banda da rede 2.4', parts.join(' / '));
             }
           } catch {}
-          // UPnP / IPv6 SLAAC / Acesso remoto (quando marcados)
-          try { if (block.querySelector('#upnp_ok')?.checked) lines.push('UPnP: Verifiquei/Habilitei'); } catch {}
-          try { if (block.querySelector('#ipv6_slaac')?.checked) lines.push('IPv6: Ativado no protocolo SLAAC'); } catch {}
+
+          try { if (getBool('upnp_ok', '#upnp_ok')) lines.push('UPnP: Verifiquei/Habilitei'); } catch {}
+          try { if (getBool('ipv6_slaac', '#ipv6_slaac')) lines.push('IPv6: Ativado no protocolo SLAAC'); } catch {}
           try {
-            const remoto = block.querySelector('#acesso_remoto');
-            if (remoto && remoto.checked) {
+            const remotoChecked = getBool('acesso_remoto', '#acesso_remoto');
+            if (remotoChecked) {
               const lab = block.querySelector('label[for="acesso_remoto"] span');
               const text = (lab?.textContent || 'Acesso remoto: ajustado').trim();
               lines.push(text);
             }
           } catch {}
-          if (lines.length){
-            lines.forEach(line => secOut.push(line));
-            secOut.push('');
-            return;
-          }
+
+          // Campos adicionais simples (quando ativados)
+          try {
+            const qtdSim = (() => {
+              if (Object.prototype.hasOwnProperty.call(confState, 'qtd_acima')) return String(confState['qtd_acima']||'').toLowerCase() === 'sim';
+              try { return (block.querySelector('input[name="qtd_acima"]:checked')?.value || '') === 'sim'; } catch { return false; }
+            })();
+            if (qtdSim) {
+              const qtdVal = getVal('qtd_acima_val', '#qtd_acima_val') || '';
+              pushLine('Quantidade de ativos acima do normal', qtdVal);
+            }
+          } catch {}
+          try {
+            const tSim = (() => {
+              if (Object.prototype.hasOwnProperty.call(confState, 'tempo_acima')) return String(confState['tempo_acima']||'').toLowerCase() === 'sim';
+              try { return (block.querySelector('input[name="tempo_acima"]:checked')?.value || '') === 'sim'; } catch { return false; }
+            })();
+            if (tSim) {
+              const tVal = getVal('tempo_acima_val', '#tempo_acima_val') || '';
+              pushLine('Tempo de atividade acima do normal', tVal);
+            }
+          } catch {}
+          if (!lines.length) { lines.push('O técnico não preencheu este campo.'); }
+
+          lines.forEach(line => {
+            secOut.push(line.startsWith('- ') ? line : `- ${line}`);
+          });
+          secOut.push('');
+          return;
         }
       } catch {}
 
@@ -8191,6 +8265,57 @@ const copyBtn = document.getElementById('btnCopiarForm');
     parts.unshift('LOCALIZAÇÃO OBTIDA AUTOMATICAMENTE:');
   }
   let text = '\n' + parts.join('\n');
+  // Rebuilde de fallback da seção "CONFERÊNCIAS NOS ROTEADORES" (garante saída completa)
+  try {
+    const blk = container.querySelector('[data-conf-rot="1"]');
+    if (blk) {
+      const st = (typeof collectCurrentFormState === 'function') ? collectCurrentFormState(container) : {};
+      const getB = (k, sel) => (Object.prototype.hasOwnProperty.call(st, k) ? !!st[k] : !!(sel && blk.querySelector(sel)?.checked));
+      const getV = (k, sel) => (Object.prototype.hasOwnProperty.call(st, k) ? (st[k]||'') : ((sel && blk.querySelector(sel)?.value) || ''));
+      const out = [];
+      out.push('CONFERÊNCIAS NOS ROTEADORES');
+      // DNS
+      const outro = String(getV('dns_outro_val', '#dns_outro_val')||'').trim();
+      const anyDns = getB('conf_dns', '#conf_dns') || getB('dns_etecc', '#dns_etecc') || getB('dns_google', '#dns_google') || getB('dns_outro', '#dns_outro') || !!outro;
+      if (anyDns) {
+        const opts = [];
+        if (getB('dns_etecc', '#dns_etecc')) opts.push('Etecc');
+        if (getB('dns_google', '#dns_google')) opts.push('Google');
+        if (getB('dns_outro', '#dns_outro') || outro) opts.push(outro || 'Outro');
+        out.push(`- DNS configurado: ${opts.length ? opts.join(' / ') : 'O técnico não preencheu este campo.'}`);
+      }
+      // Largura 2.4
+      const anyLb = getB('lb24_parent', '#lb24_parent') || getB('lb24_20', '#lb24_20') || getB('lb24_40', '#lb24_40') || getB('lb24_20_40', '#lb24_20_40');
+      if (anyLb) {
+        const ps = [];
+        if (getB('lb24_20', '#lb24_20')) ps.push('20MHz');
+        if (getB('lb24_40', '#lb24_40')) ps.push('40MHz');
+        if (getB('lb24_20_40', '#lb24_20_40')) ps.push('20/40MHz');
+        out.push(`- Largura de banda da rede 2.4: ${ps.length ? ps.join(' / ') : 'O técnico não preencheu este campo.'}`);
+      }
+      // Demais
+      if (getB('upnp_ok', '#upnp_ok')) out.push('- UPnP: Verifiquei/Habilitei');
+      if (getB('ipv6_slaac', '#ipv6_slaac')) out.push('- IPv6: Ativado no protocolo SLAAC');
+      if (getB('acesso_remoto', '#acesso_remoto')) {
+        const lab = blk.querySelector('label[for="acesso_remoto"] span');
+        out.push(`- ${(lab?.textContent || 'Acesso remoto: ajustado').trim()}`);
+      }
+      const qa = Object.prototype.hasOwnProperty.call(st, 'qtd_acima') ? String(st['qtd_acima']||'').toLowerCase() : ((blk.querySelector('input[name="qtd_acima"]:checked')?.value)||'').toLowerCase();
+      if (qa === 'sim') out.push(`- Quantidade de ativos acima do normal: ${String(getV('qtd_acima_val', '#qtd_acima_val')||'').trim() || 'O técnico não preencheu este campo.'}`);
+      const ta = Object.prototype.hasOwnProperty.call(st, 'tempo_acima') ? String(st['tempo_acima']||'').toLowerCase() : ((blk.querySelector('input[name="tempo_acima"]:checked')?.value)||'').toLowerCase();
+      if (ta === 'sim') out.push(`- Tempo de atividade acima do normal: ${String(getV('tempo_acima_val', '#tempo_acima_val')||'').trim() || 'O técnico não preencheu este campo.'}`);
+      out.push('');
+      const confStr = out.join('\n');
+      if (/^CONFER[ÊE]NCIAS NOS ROTEADORES/m.test(text)) {
+        text = text.replace(/(^CONFER[^\n]*\n)([\s\S]*?)(?=\n\n|$)/m, confStr);
+      } else {
+        // injeta antes de PINGS/TRACERTS quando possível
+        if (/^PINGS$/m.test(text)) text = text.replace(/^PINGS$/m, confStr + '\nPINGS');
+        else if (/^TRACERTS$/m.test(text)) text = text.replace(/^TRACERTS$/m, confStr + '\nTRACERTS');
+        else text += '\n' + confStr;
+      }
+    }
+  } catch {}
   // Normaliza quebras em excesso
   text = text.replace(/\n{3,}/g,'\n\n');
   // Remover linha em branco logo abaixo do título "-- AJUDA INTERNA --"
