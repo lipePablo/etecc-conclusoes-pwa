@@ -9881,12 +9881,17 @@ function appendTrocaEquipamentosSection(container){
   // Textareas auto-expand
 function setupAutoExpand(root){
   const ctx = root || document;
+  // Remover contadores existentes para leveza
+  try { ctx.querySelectorAll('.textarea-counter').forEach(el => { try { el.remove(); } catch {} }); } catch {}
   ctx.querySelectorAll("textarea.auto-expand").forEach(t => {
     const min = parseInt(t.dataset.minHeight || '100', 10);
     t.style.minHeight = min + 'px';
     t.style.overflow = 'hidden';
-    let counter = (t.nextElementSibling && t.nextElementSibling.classList && t.nextElementSibling.classList.contains("textarea-counter")) ? t.nextElementSibling : null;
-    if (!counter) { try { counter = document.createElement('div'); counter.className='textarea-counter'; counter.textContent='0 caracteres'; t.insertAdjacentElement('afterend', counter); } catch {} }
+    // Flag de digitação para controlar auto-scroll somente enquanto digita
+    let typing = false; let to = null;
+    const setTyping = () => { typing = true; try { clearTimeout(to); } catch {}; to = setTimeout(() => { typing = false; }, 600); };
+    t.addEventListener('keydown', setTyping, { passive: true });
+    t.addEventListener('input', setTyping, { passive: true });
     const getScrollParent = (el) => {
       let p = el.parentElement;
       const docEl = document.scrollingElement || document.documentElement;
@@ -9904,25 +9909,24 @@ function setupAutoExpand(root){
       t.style.height = 'auto';
       const h = Math.max(min, t.scrollHeight + 2);
       t.style.height = h + 'px';
-      // acompanha o FINAL do textarea durante a digitação
+      // acompanha o FINAL do textarea somente enquanto digita
       try {
+        if (!typing) return;
         const pad = 16;
         const tr = t.getBoundingClientRect();
         const isDoc = (sp === document.scrollingElement || sp === document.documentElement);
-        const bottomBar = document.querySelector('.bottombar'); const bottomPad = bottomBar ? Math.max(0, bottomBar.getBoundingClientRect().height) : 0; const visibleBottom = isDoc ? (window.innerHeight - bottomPad) : sp.getBoundingClientRect().bottom;
+        const bottomBar = document.querySelector('.bottombar');
+        const bottomPad = bottomBar ? Math.max(0, bottomBar.getBoundingClientRect().height) : 0;
+        const visibleBottom = isDoc ? (window.innerHeight - bottomPad) : sp.getBoundingClientRect().bottom;
         const overflow = tr.bottom - (visibleBottom - pad);
         if (document.activeElement === t && overflow > 0) {
           if (isDoc) window.scrollBy({ top: overflow, left: 0, behavior: 'auto' });
           else sp.scrollTop += overflow;
         }
       } catch {}
-      if (counter) {
-        const n = (t.value || '').length;
-        counter.textContent = n + ' caractere' + (n === 1 ? '' : 's');
-      }
     };
     t.addEventListener('input', handler);
-    // initial pass
+    // initial pass (ajusta altura, sem seguir scroll)
     handler();
   });
 }function appendDescricaoOSSection(container){
@@ -10008,6 +10012,38 @@ function setupAutoExpand(root){
       }
       // Marca como estruturado para não reexecutar e perder foco
       try { blk.setAttribute('data-veltest-structured','1'); } catch {}
+    } catch {}
+  }
+
+  // Garante foco e clique confiáveis nos campos do bloco de Testes de Velocidade
+  function ensureVelTestFocusHandlers(root){
+    try {
+      const container = root || document;
+      const blk = container.querySelector('.form-block[data-veltest-block="1"]');
+      if (!blk || blk.__velFocusWired) return; blk.__velFocusWired = true;
+      const focusableSel = 'input.vel-down, input#vel_down, input.vel-up, input#vel_up, input.vel-ping, input#vel_ping, input.vel-device, #vel_device_1, .segmented.vel-via input[type="radio"], .segmented.vel-via label';
+      blk.addEventListener('pointerdown', (ev) => {
+        try {
+          const t = ev.target;
+          if (!t) return;
+          const el = t.closest && t.closest(focusableSel);
+          if (!el) return;
+          // Se for label, encaminha foco ao input associado
+          if (el.tagName === 'LABEL'){
+            const forId = el.getAttribute('for');
+            const inp = forId ? blk.querySelector('#'+forId) : null;
+            if (inp) { setTimeout(() => { try { inp.focus(); } catch {} }, 0); }
+            return;
+          }
+          if (el.tagName === 'INPUT'){
+            // Força interatividade
+            try { el.readOnly = false; el.removeAttribute('readonly'); } catch {}
+            try { el.disabled = false; el.removeAttribute('disabled'); } catch {}
+            try { el.style.pointerEvents = 'auto'; el.style.userSelect = 'text'; } catch {}
+            setTimeout(() => { try { el.focus(); } catch {} }, 0);
+          }
+        } catch {}
+      }, true);
     } catch {}
   }
 
@@ -10645,10 +10681,13 @@ try {
           if (formId !== 'comunicado-ausencia') { try { ensureIndicacaoBeforeDescricao(container); } catch {} }
           if (formId !== 'comunicado-ausencia') { try { ensureIndicacaoVisibilityForRetencao(container); } catch {} }
           try { ensureSpeedCardLayout(container); } catch {}
+          try { ensureVelTestFocusHandlers(container); } catch {}
           try { ensureWanCardLayout(container); } catch {}
           try { setupMacLists(container); } catch {}
           try { setupOutroList(container); } catch {}
           try { ensureFotosJustificativa(container); } catch {}
+          // Remover contadores de caracteres para leveza
+          try { container.querySelectorAll('.textarea-counter').forEach(el => { try { el.remove(); } catch {} }); } catch {}
           try { setupCabometrosMaskAndCost(container); } catch {}
           try { setupQtdCabosDispLabel(container); } catch {}
           try { ensureMotoTipoServDefault(container); } catch {}
@@ -11055,6 +11094,7 @@ function appendLentidaoTests(container){
     }, true);
   } catch {}
 }
+
 
 
 
