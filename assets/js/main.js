@@ -9931,6 +9931,7 @@ function setupAutoExpand(root){
   });
 }function appendDescricaoOSSection(container){
     if (!container) return;
+    try { const fid = (container && container.__formId) || ''; if (fid === 'comunicado-ausencia') return; } catch {}
     try { if (container.querySelector('#descricao_os')) return; } catch {}
     const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','descricao-os');
     try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> DESCRIÇÃO DA O.S'; head.appendChild(ttl); sec.appendChild(head); } catch {}
@@ -10112,6 +10113,7 @@ function setupAutoExpand(root){
     if (!container) return;
     try { if (container.querySelector('#descricao_os')) return; } catch {}
     const formId = (container && container.__formId) || '';
+    if (formId === 'comunicado-ausencia') return;
     const sec = document.createElement('section'); sec.className='form-section'; sec.setAttribute('data-section','descricao-os');
     try { const head = document.createElement('div'); head.className='form-header'; const ttl = document.createElement('div'); ttl.className='form-title'; ttl.innerHTML = '<i class="fa-regular fa-file-lines"></i> FINALIZAÇÃO'; head.appendChild(ttl); sec.appendChild(head); } catch {}
     
