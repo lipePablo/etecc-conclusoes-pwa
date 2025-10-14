@@ -9944,6 +9944,8 @@ function setupAutoExpand(root){
       const container = root || document;
       const blk = container.querySelector('.form-block[data-veltest-block="1"]');
       if (!blk) return;
+      // Evita reestruturações repetidas que podem causar perda de foco
+      try { if (blk.getAttribute('data-veltest-structured') === '1') return; } catch {}
       // Localiza ou cria o card
       let listWrap = blk.querySelector('.lentidao-card.veltest-card');
       const addWrap = blk.parentNode && blk.parentNode.querySelector('.form-block[data-veltest-add="1"]');
@@ -10004,6 +10006,8 @@ function setupAutoExpand(root){
         const btn = addWrap.querySelector('button'); if (btn){ try { btn.setAttribute('data-veltest-add','1'); btn.classList.add('lent-add'); btn.innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar teste'; } catch {} listWrap.appendChild(btn); }
         try { addWrap.remove(); } catch {}
       }
+      // Marca como estruturado para não reexecutar e perder foco
+      try { blk.setAttribute('data-veltest-structured','1'); } catch {}
     } catch {}
   }
 
