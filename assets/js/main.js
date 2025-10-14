@@ -6068,8 +6068,64 @@ function setTopbarMode(internal){
   // Estado temporário do formulário (não persiste até clicar em Copiar)
   const FORM_TMP_STATE = {};
   const formStateKey = (id) => `unificado.formstate.${id}`; // usado apenas quando clicar em Copiar
+
+  const mapWanFieldName = (field) => {
+    switch (String(field || '').toLowerCase()) {
+      case 'ativo': return 'device';
+      case 'gigabit': return 'gigabit';
+      case 'powermitter': return 'powermitter';
+      case 'ping': return 'ping';
+      case 'obs': return 'obs';
+      case 'device':
+      case 'gigabit':
+      case 'powermitter':
+      case 'ping':
+      case 'obs':
+        return String(field).toLowerCase();
+      default:
+        return null;
+    }
+  };
+
+  function normalizeWanState(source){
+    const out = {};
+    try {
+      Object.keys(source || {}).forEach((key) => {
+        const value = source[key];
+        const oldMatch = key && key.match(/^wan(?:2)?_(ativo|gigabit|powermitter|ping|obs)_(\d+)/i);
+        if (oldMatch){
+          const field = mapWanFieldName(oldMatch[1]);
+          const idx = oldMatch[2];
+          if (field){
+            const nk = `wan_item_${idx}_${field}`;
+            if (!(nk in out)) out[nk] = value;
+          }
+          return;
+        }
+        const newMatch = key && key.match(/^wan_item_(\d+)_(device|gigabit|powermitter|ping|obs)$/i);
+        if (newMatch){
+          const idx = newMatch[1];
+          const field = mapWanFieldName(newMatch[2]);
+          if (field){
+            const nk = `wan_item_${idx}_${field}`;
+            if (!(nk in out)) out[nk] = value;
+          }
+          return;
+        }
+        out[key] = value;
+      });
+    } catch {
+      return { ...(source || {}) };
+    }
+    return out;
+  }
+
   function getFormState(id){ return FORM_TMP_STATE[id] || {}; }
-  function setFormState(id, patch){ const cur = FORM_TMP_STATE[id] || {}; FORM_TMP_STATE[id] = { ...cur, ...patch }; }
+  function setFormState(id, patch){
+    const cur = FORM_TMP_STATE[id] || {};
+    const merged = { ...cur, ...(patch || {}) };
+    FORM_TMP_STATE[id] = normalizeWanState(merged);
+  }
   // Captura um snapshot completo do formulário a partir do DOM (não depende de eventos anteriores)
   function collectCurrentFormState(container){
     const snap = {};
@@ -6089,7 +6145,7 @@ function setTopbarMode(internal){
         }
       });
     } catch {}
-    return snap;
+    return normalizeWanState(snap);
   }
   // Retorna true se houver dados preenchidos (exceto localizacao automatica)
   function hasDirtyFormState(formId){
@@ -6106,9 +6162,8 @@ function setTopbarMode(internal){
     } catch { return false; }
   }
   function restoreFormState(formId, container){
-    const state = getFormState(formId);
-    try { /* debug removed */ } catch {}
-    // Garanta que as condicionais leem o estado restaurado
+    const rawState = getFormState(formId) || {};
+    const state = normalizeWanState(rawState);
     try { FORM_TMP_STATE[formId] = { ...(state||{}) }; } catch {}
     const ensureLentidaoEntriesForState = () => {
       try {
@@ -6135,6 +6190,32 @@ function setTopbarMode(internal){
       } catch {}
     };
     ensureLentidaoEntriesForState();
+
+    // Garante quantidade de verificações WAN (CABO 2, 3, ...) conforme estado salvo
+    const ensureWanEntriesForState = () => {
+      try {
+        // localizar bloco principal de WAN a partir de #wan_gigabit
+        const mainBlk = (() => { try { const el = container.querySelector('#wan_gigabit'); return el ? el.closest('.form-block') : null; } catch { return null; } })();
+        if (!mainBlk) return;
+        const list = mainBlk.querySelector('[data-wan-list="1"]');
+        if (!list) return;
+        const addBtn = mainBlk.querySelector('[data-wan-add="1"]');
+        if (!addBtn) return;
+        // identificar maior índice wan_*_N no estado
+        let maxWan = 0;
+        Object.keys(state || {}).forEach((key) => {
+          const mw = key.match(/^wan_item_(\d+)_(?:device|gigabit|powermitter|ping|obs)$/i);
+          if (mw) {
+            const idx = parseInt(mw[1], 10) || 0;
+            if (idx > maxWan) maxWan = idx;
+          }
+        });
+        // já existe Verificação 1 por padrão; criar adicionais até maxWan
+        const current = Array.from(list.querySelectorAll('[data-wan-item="1"]')).length;
+        for (let i = current + 1; i <= maxWan; i++) { try { addBtn.click(); } catch {} }
+      } catch {}
+    };
+    ensureWanEntriesForState();
     // 0) Aplicar primeiro apenas campos de controle que afetam visibilidade
     try {
       const __prevPrefill = !!container.__inPrefill;
@@ -6468,14 +6549,19 @@ function updateConditionalVisibility(formId, container){
     try {
       if (window.__pendingFormPrefill && window.__pendingFormPrefill.formId === formId) {
         const st = window.__pendingFormPrefill.state || {};
-        try { container.__prefillState = st; } catch {}
+        try { container.__prefillState = normalizeWanState(st); } catch {}
       }
     } catch {}
     // Suporte Moto: carrega rascunho salvo localmente como prefill (se existir)
     try {
       if (formId === 'suporte-moto' && !container.__prefillState) {
         const raw = localStorage.getItem(formStateKey(formId));
-        if (raw) { try { container.__prefillState = JSON.parse(raw); } catch {} }
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            container.__prefillState = normalizeWanState(parsed || {});
+          } catch {}
+        }
       }
     } catch {}
     // Passo 3: migração controlada de prefixos legados no Moto (ficou_* -> estao_*)
@@ -6486,7 +6572,8 @@ function updateConditionalVisibility(formId, container){
           'ficou_onu_mac_': 'estao_onu_mac_',
           'ficou_rot_mac_': 'estao_rot_mac_'
         };
-        const st = container.__prefillState || {};
+        const st = normalizeWanState(container.__prefillState || {});
+        try { container.__prefillState = { ...st }; } catch {}
         Object.keys(st).forEach((k) => {
           const m = Object.entries(mapPrefix).find(([oldP]) => k.startsWith(oldP));
           if (!m) return;
@@ -6495,7 +6582,7 @@ function updateConditionalVisibility(formId, container){
           if (!(newKey in st)) st[newKey] = st[k];
         });
         // também reflete no estado temporário para condicionais
-        try { FORM_TMP_STATE[formId] = { ...(FORM_TMP_STATE[formId]||{}), ...st }; } catch {}
+        try { FORM_TMP_STATE[formId] = normalizeWanState({ ...(FORM_TMP_STATE[formId]||{}), ...st }); } catch {}
       }
     } catch {}
     // Acrescenta TROCA DE EQUIPAMENTOS somente onde é desejado (Suporte Moto)
@@ -6584,7 +6671,9 @@ function updateConditionalVisibility(formId, container){
     // Aplica restauração após montar todas as seções dinâmicas
     try {
       if (container.__prefillState) {
-  try { FORM_TMP_STATE[formId] = { ...(container.__prefillState||{}) }; } catch {}
+  const __prefillNormalized = normalizeWanState(container.__prefillState || {});
+  try { container.__prefillState = { ...__prefillNormalized }; } catch {}
+  try { FORM_TMP_STATE[formId] = { ...__prefillNormalized }; } catch {}
   try { container.__inPrefill = true; } catch {}
   try { restoreFormState(formId, container); } catch {}
   if (typeof updateConditionalVisibility === 'function') updateConditionalVisibility(formId, container);
@@ -6858,6 +6947,10 @@ function postProcessInstalacoesMudancas(text) {
       // Espaço acima do título da seção INDICAÇÕES
       out = out.replace(/([^\n])\n(-- INDICAÇÕES --)/g, '$1\n\n$2');
       out = out.replace(/(-- AJUDA INTERNA --)\n\s*\n/g, '$1\n');
+      // Remover traço antes dos títulos "CABO N:" no texto copiado
+      out = out.replace(/(^|\n)-\s+CABO\s+(\d+)/g, '$1CABO $2');
+      // Garantir uma linha em branco entre "CABO N" e "CABO N+1"
+      out = out.replace(/(CABO\s+\d+:[\s\S]*?)\n{2,}(CABO\s+\d+:)/g, '$1\n\n$2');
       // Caso solicitado: garantir linha em branco após "FOI NECESSÁRIO A TROCA DE EQUIPAMENTO?" quando resposta = Sim
       out = out.replace(/(FOI NECESS[ÁA]RIO A TROCA DE EQUIPAMENTO[S]?\?\s*\n\s*Sim)\s*\n(\s*MAC DOS EQUIPAMENTOS RETIRADOS:)/i, '$1\n\n$2');
     } catch {}
@@ -7242,9 +7335,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
     if (!isVisible(sec)) return;
     const secOut = [];
     const rawTitle = (sec.querySelector('.form-title')?.textContent || '').trim();
-    if (rawTitle) secOut.push(`-- ${rawTitle.toUpperCase()} --`);
+    let headerTitle = rawTitle || '';
+    try { if (/finaliza/i.test(headerTitle)) headerTitle = 'DESCRIÇÃO DA O.S'; } catch {}
+    if (headerTitle) secOut.push(`-- ${headerTitle.toUpperCase()} --`);
     try {
-      const up = rawTitle.toUpperCase();
+      const up = headerTitle.toUpperCase();
       if (up.includes('ENDERE') && up.includes('O.S')){
         const geoInp = document.getElementById('geo_coords');
         const coords = (geoInp?.value||'').trim();
@@ -7259,8 +7354,17 @@ const copyBtn = document.getElementById('btnCopiarForm');
         }
       }
     } catch {}
+    // Requisito: repetir o link de localização no topo da seção DESCRIÇÃO DA O.S (quando houver)
+    try {
+      const isDesc = /DESCRIÇÃO DA O\.S/i.test(headerTitle || '');
+      if (isDesc && __mapsLink){
+        secOut.push('Localização do atendimento: ' + __mapsLink);
+        secOut.push('');
+      }
+    } catch {}
     const blocks = Array.from(sec.querySelectorAll('.form-block'));
     const __printedQ = new Set();
+    let __lentStructuredPrinted = false; // Controle para evitar impressão duplicada de PINGS/TRACERTS
     // Helpers para agrupar campos (RETIRADO/INSERIDO/FICOU) e controlar quebras em branco
     const __getCampoFromPrevSelector = (idx) => {
       try {
@@ -7338,6 +7442,65 @@ const copyBtn = document.getElementById('btnCopiarForm');
     };
     blocks.forEach((block) => {
       if (!isVisible(block)) return;
+      // WAN: Verificações de cabos de rede (lista dinâmica de itens)
+      try {
+        const wanList = block.querySelector('[data-wan-list="1"]');
+        if (wanList){
+          const items = Array.from(wanList.querySelectorAll('[data-wan-item="1"]'));
+          if (items.length){
+            // Cabeçalho do grupo (sem formatação de título com --)
+            try {
+              const qlbl = (block.querySelector('.form-label')?.textContent || 'Verificações de cabos de rede').trim();
+              const q = cleanQ(qlbl).toUpperCase();
+              const k = q || 'VERIFICAÇÕES DE CABOS DE REDE';
+              if (!__printedQ.has(k)) { __printedQ.add(k); secOut.push(k); }
+            } catch {}
+            items.forEach((it, itemIdx) => {
+              try {
+                const idx = String(it.getAttribute('data-idx')||'').trim() || '?';
+                // Aparelho ligado
+                let ativo = '';
+                try {
+                  const deviceInput = it.querySelector('[data-wan-field="device"]');
+                  if (idx === '1'){
+                    const rOnu = it.querySelector('#wan_ativo_tipo_1_onu');
+                    const rOut = it.querySelector('#wan_ativo_tipo_1_outro');
+                    if (rOnu && rOnu.checked) ativo = 'Cabo da ONU pro Roteador';
+                    else if (rOut && rOut.checked) ativo = (deviceInput?.value || '').trim();
+                    else ativo = (deviceInput?.value || '').trim();
+                  } else {
+                    ativo = (deviceInput?.value || '').trim();
+                  }
+                } catch {}
+                secOut.push(`CABO ${idx}: ${ativo ? ativo : 'O técnico não preencheu este campo.'}`);
+                // Verificações marcadas
+                const checks = [
+                  { selector: '[data-wan-field="gigabit"]', label: 'Cabo de rede Gigabit' },
+                  { selector: '[data-wan-field="powermitter"]', label: 'Teste no Powermitter' },
+                  { selector: '[data-wan-field="ping"]', label: 'Teste de Ping no Cabo' }
+                ];
+                let any = false;
+                checks.forEach(c => {
+                  try {
+                    const el = it.querySelector(c.selector);
+                    if (el && el.checked) { secOut.push(`- ${c.label}`); any = true; }
+                  } catch {}
+                });
+                if (!any) { secOut.push('O técnico não preencheu este campo.'); }
+                // Observação adicional
+                try {
+                  const obsEl = it.querySelector('[data-wan-field="obs"]');
+                  const obs = (obsEl?.value || '').trim();
+                  if (obs) secOut.push(`- OBSERVAÇÃO: ${obs}`);
+                } catch {}
+                if (itemIdx < items.length - 1) secOut.push('');
+              } catch {}
+            });
+            __lentStructuredPrinted = true;
+            secOut.push('');
+          }
+        }
+      } catch {}
       // Caso especial: grupo de checkboxes (choices)
       try {
         const choices = block.querySelector('.choices');
@@ -7377,6 +7540,156 @@ const copyBtn = document.getElementById('btnCopiarForm');
               return;
             }
           } catch {}
+        }
+      } catch {}
+      // Testes de Velocidade: suporte a múltiplos itens no mesmo bloco
+      try {
+        const velList = block.querySelector('[data-veltest-list="1"]');
+        if (velList){
+          const items = Array.from(velList.querySelectorAll('[data-veltest-item="1"]'));
+          if (items.length){
+            items.forEach((it) => {
+              __velTestIndex++;
+              const dEl = it.querySelector('.vel-down') || it.querySelector('#vel_down');
+              const uEl = it.querySelector('.vel-up') || it.querySelector('#vel_up');
+              const pEl = it.querySelector('.vel-ping') || it.querySelector('#vel_ping');
+              const dVal = (dEl?.value || '').trim();
+              const uVal = (uEl?.value || '').trim();
+              const pVal = (pEl?.value || '').trim();
+              secOut.push('RESULTADO DO ' + (typeof ordinalExtenso==='function' ? ordinalExtenso(__velTestIndex) : ordinalPt(__velTestIndex)) + ' TESTE:');
+              secOut.push(`- DOWNLOAD: ${dVal ? dVal + 'MB' : 'O técnico não preencheu este campo.'}`);
+              secOut.push(`- UPLOAD: ${uVal ? uVal + 'MB' : 'O técnico não preencheu este campo.'}`);
+              secOut.push(`- PING: ${pVal ? pVal + 'MS' : 'O técnico não preencheu este campo.'}`);
+              // Dispositivo
+              let devVal = '';
+              try { const dev = it.querySelector('.vel-device') || it.querySelector('#vel_device_1'); devVal = (dev?.value || '').trim(); } catch {}
+              secOut.push(`- DISPOSITIVO: ${devVal ? devVal : 'O técnico não preencheu este campo.'}`);
+              // VIA (cabo/wi-fi) por entrada
+              let viaVal = '';
+              try { const viaSel = it.querySelector('input[name^="vel_via_"]:checked'); viaVal = (viaSel?.value || '').trim(); } catch {}
+              secOut.push(`- VIA: ${viaVal ? (viaVal === 'cabo' ? 'Cabo de rede' : 'Wi-Fi') : 'O técnico não preencheu este campo.'}`);
+              secOut.push('');
+            });
+            // não retornar aqui; permite processar outros sub-blocos (ex.: TRACERTS) no mesmo bloco
+          }
+        }
+      } catch {}
+
+      // Pings (Testes relacionados a lentidão): múltiplos itens
+      try {
+        const pingList = block.querySelector('[data-lent-ping-list="1"]');
+        // Processa apenas no bloco proprietário do pingList (evita duplicar em ancestrais)
+        if (pingList && pingList.closest('.form-block') === block){
+          const items = Array.from(pingList.querySelectorAll('[data-ping-item]'));
+          if (items.length){
+            // Subtítulo simples dentro de Conferências Técnicas (sem --)
+            secOut.push('PINGS');
+            items.forEach((it) => {
+              try {
+                const idx = String(it.getAttribute('data-idx')||'').trim() || '?';
+                const get = (name) => (it.querySelector(`[name="${name}_${idx}"]`)?.value || '').trim();
+                const titulo = get('ping_titulo');
+                const minima = get('ping_minima');
+                const media = get('ping_media');
+                const maxima = get('ping_maxima');
+                const enviados = get('ping_enviados');
+                const recebidos = get('ping_recebidos');
+                const perdidos = get('ping_perdidos');
+                secOut.push(`- Ping ${idx}: ${titulo ? titulo : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - MÍNIMA: ${minima ? minima : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - MÉDIA: ${media ? media : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - MÁXIMA: ${maxima ? maxima : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - ENVIADOS: ${enviados ? enviados : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - RECEBIDOS: ${recebidos ? recebidos : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - PERDIDOS: ${perdidos ? perdidos : 'O técnico não preencheu este campo.'}`);
+                secOut.push('');
+              } catch {}
+            });
+            // não retornar; permite processar TRACERTS no mesmo bloco
+            __lentStructuredPrinted = true;
+          }
+        }
+      } catch {}
+
+      // Conferências nos roteadores: copiar seleções
+      try {
+        if (block.matches('[data-conf-rot="1"]')){
+          const lines = [];
+          // DNS configurado: inline (ex.: "DNS configurado: Etecc")
+          try {
+            const dnsChk = block.querySelector('#conf_dns');
+            if (dnsChk && dnsChk.checked){
+              const opts = [];
+              try { if (block.querySelector('#dns_etecc')?.checked) opts.push('Etecc'); } catch {}
+              try { if (block.querySelector('#dns_google')?.checked) opts.push('Google'); } catch {}
+              try {
+                if (block.querySelector('#dns_outro')?.checked){
+                  const v = (block.querySelector('#dns_outro_val')?.value || '').trim();
+                  opts.push(v || 'Outro');
+                }
+              } catch {}
+              lines.push(`DNS configurado: ${opts.length ? opts.join(' / ') : 'O técnico não preencheu este campo.'}`);
+            }
+          } catch {}
+          // Largura de banda 2.4: inline
+          try {
+            const lbParent = block.querySelector('#lb24_parent');
+            if (lbParent && lbParent.checked){
+              const parts = [];
+              try { if (block.querySelector('#lb24_20')?.checked) parts.push('20MHz'); } catch {}
+              try { if (block.querySelector('#lb24_40')?.checked) parts.push('40MHz'); } catch {}
+              try { if (block.querySelector('#lb24_20_40')?.checked) parts.push('20/40MHz'); } catch {}
+              lines.push(`Largura de banda da rede 2.4: ${parts.length ? parts.join(' / ') : 'O técnico não preencheu este campo.'}`);
+            }
+          } catch {}
+          // UPnP / IPv6 SLAAC / Acesso remoto (quando marcados)
+          try { if (block.querySelector('#upnp_ok')?.checked) lines.push('UPnP: Verifiquei/Habilitei'); } catch {}
+          try { if (block.querySelector('#ipv6_slaac')?.checked) lines.push('IPv6: Ativado no protocolo SLAAC'); } catch {}
+          try {
+            const remoto = block.querySelector('#acesso_remoto');
+            if (remoto && remoto.checked) {
+              const lab = block.querySelector('label[for="acesso_remoto"] span');
+              const text = (lab?.textContent || 'Acesso remoto: ajustado').trim();
+              lines.push(text);
+            }
+          } catch {}
+          if (lines.length){
+            lines.forEach(line => secOut.push(line));
+            secOut.push('');
+            return;
+          }
+        }
+      } catch {}
+
+      // Tracerts (Testes relacionados a lentidão): múltiplos itens
+      try {
+        const tracList = block.querySelector('[data-lent-tracert-list="1"]');
+        if (tracList){
+          const items = Array.from(tracList.querySelectorAll('[data-tracert-item]'));
+          if (items.length){
+            secOut.push('TRACERTS');
+            items.forEach((it) => {
+              try {
+                const idx = String(it.getAttribute('data-idx')||'').trim() || '?';
+                const get = (name) => (it.querySelector(`[name="${name}_${idx}"]`)?.value || '').trim();
+                const local = get('tracert_local');
+                const url = get('tracert_url');
+                secOut.push(`- Tracert ${idx}:`);
+                secOut.push(`  - LOCAL: ${local ? local : 'O técnico não preencheu este campo.'}`);
+                secOut.push(`  - URL: ${url ? url : 'O técnico não preencheu este campo.'}`);
+                secOut.push('');
+              } catch {}
+            });
+            // não retornar; continuar fluxo normal
+            __lentStructuredPrinted = true;
+          }
+        }
+      } catch {}
+      // Se PINGS/TRACERTS já foram impressos neste bloco, evitar impressão genérica duplicada
+      try {
+        if (__lentStructuredPrinted) {
+          const hasVel = !!(block.querySelector('.vel-down') || block.querySelector('#vel_down') || block.querySelector('.vel-up') || block.querySelector('#vel_up') || block.querySelector('.vel-ping') || block.querySelector('#vel_ping'));
+          if (!hasVel) { return; }
         }
       } catch {}
       const d = block.querySelector('.vel-down') || block.querySelector('#vel_down');
@@ -9407,21 +9720,26 @@ const copyBtn = document.getElementById('btnCopiarForm');
         try {
           const idx = Array.from(list.querySelectorAll('[data-wan-item="1"]')).length + 1;
           const item = document.createElement('div'); item.className='lent-entry'; item.setAttribute('data-wan-item','1'); item.setAttribute('data-idx', String(idx));
+          const deviceId = `wan_item_${idx}_device`;
+          const gigabitId = `wan_item_${idx}_gigabit`;
+          const powermitterId = `wan_item_${idx}_powermitter`;
+          const pingId = `wan_item_${idx}_ping`;
+          const obsId = `wan_item_${idx}_obs`;
           item.innerHTML = ''
             + '  <div class="lent-entry__header">'
             + '    <div class="lent-entry__badge"><i class="fa-solid fa-network-wired"></i> Verificação ' + idx + '</div>'
             + '    <button type="button" class="btn-ghost lent-remove" data-remove-wan="' + idx + '"><i class="fa-solid fa-trash-can"></i> Remover verificação</button>'
             + '  </div>'
-            + '  <label class="form-label" for="wan_ativo_' + idx + '">Aparelho ligado por esse cabo:</label>'
-            + '  <input id="wan_ativo_' + idx + '" name="wan_ativo_' + idx + '" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." />'
+            + '  <label class="form-label" for="' + deviceId + '">Aparelho ligado por esse cabo:</label>'
+            + '  <input id="' + deviceId + '" name="' + deviceId + '" data-wan-field="device" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." />'
             + '  <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
             + '  <div class="choices" style="margin-top:0;">'
-            + '    <label class="choice"><input type="checkbox" id="wan_gigabit_' + idx + '" name="wan_gigabit_' + idx + '"><span>Cabo de rede Gigabit</span></label>'
-            + '    <label class="choice"><input type="checkbox" id="wan_powermitter_' + idx + '" name="wan_powermitter_' + idx + '"><span>Teste no Powermitter</span></label>'
-            + '    <label class="choice"><input type="checkbox" id="wan_ping_' + idx + '" name="wan_ping_' + idx + '"><span>Teste de Ping no Cabo</span></label>'
+            + '    <label class="choice"><input type="checkbox" id="' + gigabitId + '" name="' + gigabitId + '" data-wan-field="gigabit"><span>Cabo de rede Gigabit</span></label>'
+            + '    <label class="choice"><input type="checkbox" id="' + powermitterId + '" name="' + powermitterId + '" data-wan-field="powermitter"><span>Teste no Powermitter</span></label>'
+            + '    <label class="choice"><input type="checkbox" id="' + pingId + '" name="' + pingId + '" data-wan-field="ping"><span>Teste de Ping no Cabo</span></label>'
             + '  </div>'
-            + '  <label class="form-label" for="wan_obs_' + idx + '" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>'
-            + '  <textarea id="wan_obs_' + idx + '" name="wan_obs_' + idx + '" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>';
+            + '  <label class="form-label" for="' + obsId + '" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>'
+            + '  <textarea id="' + obsId + '" name="' + obsId + '" data-wan-field="obs" class="form-input--underline auto-expand" placeholder="Digite..." rows="1" data-min-height="32"></textarea>';
           list.appendChild(item);
           try { if (typeof setupAutoExpand === 'function') setupAutoExpand(item); } catch {}
           try { item.querySelector('input')?.focus(); } catch {}
@@ -9436,24 +9754,24 @@ const copyBtn = document.getElementById('btnCopiarForm');
             + '  <div class="lent-entry__header">'
             + '    <div class="lent-entry__badge"><i class="fa-solid fa-network-wired"></i> Verificação 1</div>'
             + '  </div>'
-            + '  <label class="form-label" for="wan_ativo_1">Aparelho ligado por esse cabo:</label>'
+            + '  <label class="form-label" for="wan_ativo_tipo_1_onu">Aparelho ligado por esse cabo:</label>'
             + '  <div class="segmented wan-ativo-type" role="radiogroup" aria-label="Aparelho ligado por esse cabo">'
             + '    <input type="radio" id="wan_ativo_tipo_1_onu" name="wan_ativo_tipo_1" value="onu">'
             + '    <label for="wan_ativo_tipo_1_onu">Cabo da ONU pro Roteador</label>'
             + '    <input type="radio" id="wan_ativo_tipo_1_outro" name="wan_ativo_tipo_1" value="outro">'
             + '    <label for="wan_ativo_tipo_1_outro">Outro</label>'
             + '  </div>'
-            + '  <input id="wan_ativo_1" name="wan_ativo_1" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." style="display:none" disabled />'
+            + '  <input id="wan_item_1_device" name="wan_item_1_device" data-wan-field="device" type="text" class="form-input--underline" placeholder="Ex.: Segundo ponto, TVs, PCs etc." style="display:none" disabled />'
             + '  <label class="form-label" style="margin-top:10px;">Verificações realizadas neste cabeamento</label>'
             + '  <div class="choices" data-wan-first-choices="1" style="margin-top:0;"></div>'
-            + '  <label class="form-label" for="wan_obs_1" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>';
+            + '  <label class="form-label" for="wan_item_1_obs" style="margin-top:10px;">Observação adicional sobre o cabo de rede:</label>';
           list.appendChild(item);
           try { if (typeof setupAutoExpand === 'function') setupAutoExpand(item); } catch {}
           // Toggle do campo "Outro" para Aparelho ligado por esse cabo (Verificação 1)
           try {
             const rOnu = item.querySelector('#wan_ativo_tipo_1_onu');
             const rOutro = item.querySelector('#wan_ativo_tipo_1_outro');
-            const inOutro = item.querySelector('#wan_ativo_1');
+            const inOutro = item.querySelector('#wan_item_1_device');
             const applyToggle = () => {
               const isOutro = !!(rOutro && rOutro.checked);
               if (inOutro){
@@ -9471,8 +9789,20 @@ const copyBtn = document.getElementById('btnCopiarForm');
             const origChoices = mainBlk.querySelector('.choices');
             const targetChoices = item.querySelector('[data-wan-first-choices="1"]');
             if (origChoices && targetChoices){
-              const map = [ ['wan_gigabit','wan_gigabit_1'], ['wan_powermitter','wan_powermitter_1'], ['wan_ping','wan_ping_1'] ];
-              map.forEach(([oldId,newId]) => { const el = origChoices.querySelector('#'+oldId); if (el){ try { el.id=newId; el.name=newId; } catch {} } });
+              const mapChoices = [
+                { selector: '#wan_gigabit', name: 'wan_item_1_gigabit', field: 'gigabit' },
+                { selector: '#wan_powermitter', name: 'wan_item_1_powermitter', field: 'powermitter' },
+                { selector: '#wan_ping', name: 'wan_item_1_ping', field: 'ping' }
+              ];
+              mapChoices.forEach(({ selector, name, field }) => {
+                const el = origChoices.querySelector(selector);
+                if (el){
+                  try {
+                    el.name = name;
+                    el.setAttribute('data-wan-field', field);
+                  } catch {}
+                }
+              });
               Array.from(origChoices.children).forEach(ch => targetChoices.appendChild(ch));
               try { origChoices.remove(); } catch {}
             }
@@ -9481,12 +9811,17 @@ const copyBtn = document.getElementById('btnCopiarForm');
             const oldObsLbl = mainBlk.querySelector('label[for="wan_obs"]'); if (oldObsLbl) oldObsLbl.remove();
             const oldObs = mainBlk.querySelector('#wan_obs');
             if (oldObs){
-              try { oldObs.id='wan_obs_1'; oldObs.name='wan_obs_1'; } catch {}
+              try {
+                oldObs.id='wan_item_1_obs';
+                oldObs.name='wan_item_1_obs';
+                oldObs.setAttribute('data-wan-field','obs');
+              } catch {}
               item.appendChild(oldObs);
             } else {
               try {
                 const ta = document.createElement('textarea');
-                ta.id = 'wan_obs_1'; ta.name = 'wan_obs_1';
+                ta.id = 'wan_item_1_obs'; ta.name = 'wan_item_1_obs';
+                ta.setAttribute('data-wan-field','obs');
                 ta.className = 'form-input--underline auto-expand';
                 ta.placeholder = 'Digite...'; ta.rows = 1; ta.setAttribute('data-min-height','32');
                 item.appendChild(ta);
@@ -10434,6 +10769,8 @@ function wireMotoDraft(formId, container){
           const st = (typeof collectCurrentFormState === 'function') ? collectCurrentFormState(container) : {};
           try { FORM_TMP_STATE[formId] = { ...(st||{}) }; } catch {}
           try { localStorage.setItem(formStateKey(formId), JSON.stringify(st)); } catch {}
+          // Também reflete no histórico de rascunhos para aparecer completo na listagem
+          try { if (typeof window.__upsertDraftHistory === 'function') window.__upsertDraftHistory(formId, st); } catch {}
         } catch {}
       };
       return () => { try { clearTimeout(to); } catch {}; to = setTimeout(save, 350); };
