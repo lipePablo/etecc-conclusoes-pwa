@@ -6624,8 +6624,8 @@ function updateConditionalVisibility(formId, container){
       }
     } catch {}
     try { setupAutoExpand(container); } catch {}
-    // Não capturar localização para Comunicado de Ausência
-    if (formId !== 'comunicado-ausencia') { try { setupGeolocationCapture(container); } catch {} }
+    // Captura de localização para todos os formulários
+    try { setupGeolocationCapture(container); } catch {}
     try { fixFormA11y(container); } catch {}
     // Comunicado de Ausência: remover seções não aplicáveis (INDICAÇÕES e DESCRIÇÃO DA O.S.)
     try {
@@ -7316,6 +7316,27 @@ const copyBtn = document.getElementById('btnCopiarForm');
     } catch {}
   }
   function isVisible(el){ if (!el) return false; if (el.hasAttribute('hidden')) return false; const st = window.getComputedStyle(el); if (st.display==='none'||st.visibility==='hidden') return false; return !!el.offsetParent || st.position==='fixed' || st.position==='sticky'; }
+  // Geolocalização imediata no clique de copiar (garante coordenadas recentes)
+  try {
+    await new Promise((resolve) => {
+      try {
+        let geo = document.getElementById('geo_coords');
+        if (!geo) {
+          const container = document.getElementById('formContainer') || document.body;
+          geo = document.createElement('input'); geo.type='text'; geo.id='geo_coords'; geo.name='geo_coords'; geo.style.display='none';
+          container.appendChild(geo);
+        }
+        if (navigator.geolocation && typeof navigator.geolocation.getCurrentPosition === 'function') {
+          const done = () => { try { resolve(); } catch {} };
+          navigator.geolocation.getCurrentPosition(
+            (pos)=>{ try { const {latitude, longitude} = pos?.coords||{}; if (typeof latitude==='number' && typeof longitude==='number'){ geo.value = latitude.toFixed(6)+','+longitude.toFixed(6); } } catch {} done(); },
+            ()=>{ done(); },
+            { enableHighAccuracy:true, timeout:8000, maximumAge:0 }
+          );
+        } else { resolve(); }
+      } catch { try { resolve(); } catch {} }
+    });
+  } catch {}
   // Fallback global: prepara link do Maps a partir do campo geo_coords (se existir)
   let __mapsLink = '';
   let __printedMapsLink = false;
