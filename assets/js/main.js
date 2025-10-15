@@ -7361,6 +7361,45 @@ const copyBtn = document.getElementById('btnCopiarForm');
   } catch {}
   function getRadioGroupValue(block){ const sel = block.querySelector('input[type="radio"]:checked'); if (!sel) return ''; const lab = block.querySelector(`label[for="${sel.id}"]`); return (lab?.textContent || sel.value || '').trim(); }
   function cleanQ(s){ try { return String(s||'').replace(/\([^)]*escolh[^)]*\)/ig,'').trim(); } catch (e) { return s||''; } }
+  // Normalização de perguntas para rótulos assertivos no texto copiado
+  function normalizeCopyLabel(raw){
+    try {
+      let s = String(raw||'').trim();
+      if (!s) return s;
+      s = s.replace(/\s*\?+\s*$/, '');
+      const up = s.toUpperCase();
+      const norm = up.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const maps = [
+        ['DESEJA ACRESCENTAR INFORMACOES ADICIONAIS SOBRE A VISITA TECNICA', 'INFORMAÇÕES ADICIONAIS SOBRE VISITA TÉCNICA INSERIDA:'],
+        ['FOI NECESSARIO AJUDA DE ALGUEM DO SETOR INTERNO', 'AJUDA DE ALGUÉM DO SETOR INTERNO:'],
+        ['FOI NECESSARIO A TROCA DE EQUIPAMENTO', 'TROCA DE EQUIPAMENTO:'],
+        ['QUAL EQUIPAMENTO DA ETECC FOI RETIRADO', 'EQUIPAMENTO DA ETECC RETIRADO:'],
+        ['QUAL EQUIPAMENTO FOI INSERIDO', 'EQUIPAMENTO INSERIDO:'],
+        ['ALEM DOS EQUIPAMENTOS COM MAC LISTADOS ACIMA, HA OUTROS EQUIPAMENTOS DA ETECC NO LOCAL', 'OUTROS EQUIPAMENTOS DA ETECC NO LOCAL:'],
+        ['O CLIENTE ESTA CIENTE DA NECESSIDADE DE UMA TOMADA NO LOCAL', 'CLIENTE CIENTE SOBRE NECESSIDADE DE TOMADA:'],
+        ['A SUPERVISAO TECNICA FOI COMUNICADA PREVIAMENTE SOBRE ESTA AUSENCIA', 'SUPERVISÃO TÉCNICA COMUNICADA PREVIAMENTE SOBRE ESTA AUSÊNCIA:'],
+        ['O CABEAMENTO E NA MESMA RESIDENCIA', 'CABEAMENTO NA MESMA RESIDÊNCIA:'],
+        ['FOTO DA FRENTE DA CASA ANEXADA NO MK', 'FOTO DA FRENTE DA CASA ANEXADA NO MK:'],
+        ['A ORDEM DE SERVICO FOI GERADA (PELO ATENDENTE) COM AS INFORMACOES NECESSARIAS', 'ORDEM DE SERVIÇO GERADA COM AS INFORMAÇÕES NECESSÁRIAS:'],
+        ['A FIRMWARE DO ROTEADOR/ONT ESTA ATUALIZADA', 'FIRMWARE DO ROTEADOR/ONT ATUALIZADA:'],
+        ['OS EQUIPAMENTOS ESTAO EM LOCAL ADEQUADO', 'EQUIPAMENTOS EM LOCAL ADEQUADO:'],
+        ['CLIENTE CIENTE DA NECESSIDADE DE MUDANCA DE LOCAL', 'CLIENTE CIENTE DA NECESSIDADE DE MUDANÇA DE LOCAL:'],
+        ['CLIENTE DE ACORDO COM A ORIENTACAO PASSADA', 'CLIENTE DE ACORDO COM A ORIENTAÇÃO PASSADA:'],
+        ['FOTO DA MEDICAO DO SINAL ANEXADA', 'FOTO DA MEDIÇÃO DO SINAL ANEXADA:'],
+        ['AS FOTOS DOS EQUIPAMENTOS NO LOCAL E DO SERVICO REALIZADO FORAM ANEXADAS', 'FOTOS DOS EQUIPAMENTOS NO LOCAL E DO SERVIÇO REALIZADO ANEXADAS:'],
+        ['QUANTOS CABOS DE REDE FORAM PASSADOS', 'QUANTIDADE DE CABOS DE REDE PASSADOS:'],
+        ['QUAL LOCAL', 'LOCAL:'],
+        ['QUAL FOI O DNS UTILIZADO', 'DNS UTILIZADO:'],
+        ['FOI SOLICITADO ALGUMA INDICACAO PARA O CLIENTE', 'INDICAÇÃO SOLICITADA PARA O CLIENTE:'],
+        ['O CLIENTE TEVE ALGUMA INDICACAO PARA PASSAR', 'INDICAÇÃO PASSADA PELO CLIENTE:'],
+        ['QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL', 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:']
+      ];
+      for (const [needle, repl] of maps){ if (norm.includes(needle)) return repl; }
+      let out = up;
+      if (!/[:：]$/.test(out)) out += ':';
+      return out;
+    } catch { return String(raw||'').toUpperCase(); }
+  }
   function collectMacRows(list){ const rows = Array.from(list.querySelectorAll('.mac-row input')); return rows.map(i => (i.value||'').trim()).filter(Boolean); }
   function formatSinalFibraCopy(v){ try { if (typeof formatSinalFibraForCopy === 'function') return formatSinalFibraForCopy(v); } catch {} return v; }
   const copyState = (typeof collectCurrentFormState === 'function') ? collectCurrentFormState(container) : {};
@@ -7464,11 +7503,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
     };
     const printQuestionOnce = (q) => {
       try {
-        let k = String(q || '').toUpperCase();
+        let k = normalizeCopyLabel(q || '');
         if (!k) return false;
-        if (k === 'QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL:' || k === 'QUAL O OUTRO EQUIPAMENTO DA ETECC QUE FICOU NO LOCAL') {
-          k = 'MAC DOS EQUIPAMENTOS QUE JÁ ESTAVAM NO LOCAL:';
-        }
         if (__printedQ.has(k)) return false;
         __printedQ.add(k);
         secOut.push(k);
@@ -8224,7 +8260,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
         const bLabel = (block.querySelector('.form-label')?.textContent || '').trim();
         let val = (ta.value || '').trim();
         if (!val) val = (ta.id === 'descricao_os') ? 'O técnico não preencheu este campo.' : 'O técnico não preencheu este campo.';
-        const q = bLabel ? bLabel.toUpperCase() : '';
+        const q = bLabel ? normalizeCopyLabel(bLabel) : '';
         const a = toSentence(val);
         if (q) { secOut.push(q); secOut.push(a); secOut.push(''); } else { secOut.push(a); secOut.push(''); }
         return;
@@ -8241,7 +8277,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
             val = 'O técnico não preencheu este campo.';
           }
         }
-        const q = lab ? lab.toUpperCase() : '';
+        const q = lab ? normalizeCopyLabel(lab) : '';
         if (!((inp.value || '').trim()) && isVisible(inp) && inp.id === 'clienteNome') {
           val = 'O técnico não preencheu este campo.';
         }
