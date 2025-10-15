@@ -7393,7 +7393,7 @@ const copyBtn = document.getElementById('btnCopiarForm');
     try {
       const isDesc = /DESCRIÇÃO DA O\.S/i.test(headerTitle || '');
       if (isDesc && __mapsLink){
-        secOut.push('Localização do atendimento: ' + __mapsLink);
+        secOut.push('LOCALIZAÇÃO DO ATENDIMENTO: ' + __mapsLink);
         secOut.push('');
       }
     } catch {}
@@ -7544,39 +7544,42 @@ const copyBtn = document.getElementById('btnCopiarForm');
           if (isNestedConfRot) return;
           // Evitar duplicidade: se este .choices pertence a um sub-bloco interno, não processe aqui
           try { const ownerBlk = choices.closest && choices.closest('.form-block'); if (ownerBlk && ownerBlk !== block) { return; } } catch {}
-          const cbs = Array.from(choices.querySelectorAll('input[type="checkbox"]'));
-          const anyChecked = cbs.some(cb => cb && cb.checked);
-          if (!anyChecked){
-            const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
-            const q = cleanQ(qlbl).toUpperCase();
-            if (q) printQuestionOnce(q);
-            secOut.push('O técnico não preencheu este campo.');
-            secOut.push('');
-            return;
-          }
-          // Quando houver itens marcados, listar cada item marcado em sequência
-          try {
-            const isEquipChoices = cbs.some(cb => {
-              const meta = ((cb.name||cb.id||'')+'').toLowerCase();
-              return meta.startsWith('tq_') || meta.startsWith('eq_sel_') || meta.startsWith('ins_sel_') || meta.startsWith('ret_') || meta.startsWith('ficou_') || meta.startsWith('estao_');
-            });
-            if (!isEquipChoices){
+          const belongsToWanEntry = !!(choices.closest && choices.closest('[data-wan-item="1"]'));
+          if (!belongsToWanEntry){
+            const cbs = Array.from(choices.querySelectorAll('input[type="checkbox"]'));
+            const anyChecked = cbs.some(cb => cb && cb.checked);
+            if (!anyChecked){
               const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
               const q = cleanQ(qlbl).toUpperCase();
               if (q) printQuestionOnce(q);
-              const selected = cbs.filter(cb => cb && cb.checked);
-              selected.forEach(cb => {
-                let text = '';
-                try {
-                  const lab = cb.closest('label');
-                  text = (lab?.querySelector('span')?.textContent || lab?.textContent || '').trim();
-                } catch {}
-                if (text) secOut.push(`- ${text}`);
-              });
+              secOut.push('O técnico não preencheu este campo.');
               secOut.push('');
               return;
             }
-          } catch {}
+            // Quando houver itens marcados, listar cada item marcado em sequência
+            try {
+              const isEquipChoices = cbs.some(cb => {
+                const meta = ((cb.name||cb.id||'')+'').toLowerCase();
+                return meta.startsWith('tq_') || meta.startsWith('eq_sel_') || meta.startsWith('ins_sel_') || meta.startsWith('ret_') || meta.startsWith('ficou_') || meta.startsWith('estao_');
+              });
+              if (!isEquipChoices){
+                const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
+                const q = cleanQ(qlbl).toUpperCase();
+                if (q) printQuestionOnce(q);
+                const selected = cbs.filter(cb => cb && cb.checked);
+                selected.forEach(cb => {
+                  let text = '';
+                  try {
+                    const lab = cb.closest('label');
+                    text = (lab?.querySelector('span')?.textContent || lab?.textContent || '').trim();
+                  } catch {}
+                  if (text) secOut.push(`- ${text}`);
+                });
+                secOut.push('');
+                return;
+              }
+            } catch {}
+          }
         }
       } catch {}
       // Testes de Velocidade: suporte a múltiplos itens no mesmo bloco
