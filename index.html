@@ -81,7 +81,7 @@
       </div>
       <div class="loading-text">
         <div class="loading-subtitle">Carregando aplicativo...</div>
-        <div class="loading-version">Versão <span id="loadingVersion">4.6.0</span></div>
+        <div class="loading-version">Versão <span id="loadingVersion">4.6.1</span></div>
       </div>
     </div>
   </div>
@@ -301,7 +301,7 @@
         </a>
         <div class="menu-item" style="opacity: 0.6; cursor: default;">
           <i class="fa-solid fa-code-branch"></i>
-          <span>Versão <span id="currentVersion">4.6.0</span></span>
+          <span>Versão <span id="currentVersion">4.6.1</span></span>
         </div>
         <a class="menu-item" id="menuForceUpdate" href="#">
           <i class="fa-solid fa-arrows-rotate"></i>
@@ -361,7 +361,7 @@
 
   <!-- PWA Service Worker -->
   <script>
-    let currentAppVersion = '4.6.0';
+    let currentAppVersion = '4.6.1';
     let versionData = null;
 
     // Sistema de carregamento
@@ -448,20 +448,38 @@
       button.disabled = true;
       button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...';
 
+      // Limpeza seletiva local: preserva rascunhos e nome do usuário
+      try {
+        const KEEP_KEYS = new Set(['unificado.userName','unificado.v2.history','theme']);
+        const KEEP_PREFIXES = ['unificado.v2.snap.', 'unificado.formstate.'];
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          try { keys.push(localStorage.key(i)); } catch {}
+        }
+        keys.forEach(k => {
+          try {
+            const keep = KEEP_KEYS.has(k) || KEEP_PREFIXES.some(p => (k||'').indexOf(p) === 0);
+            if (!keep) localStorage.removeItem(k);
+          } catch {}
+        });
+      } catch (e) {}
+
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
+          // Recarrega automaticamente quando o novo SW assumir o controle
+          try {
+            let _reloaded = false;
+            const _onCtrl = () => { if (_reloaded) return; _reloaded = true; try { window.location.hash = '#/'; } catch(e){} window.location.reload(); };
+            navigator.serviceWorker.addEventListener('controllerchange', _onCtrl, { once: true });
+          } catch (e) {}
           if (registration.waiting) {
             registration.waiting.postMessage({type: 'SKIP_WAITING'});
           }
-          setTimeout(() => {
-            try {
-              var url = window.location.pathname + '#/';
-              window.location.replace(url);
-            } catch (e) { window.location.hash = '#/'; window.location.reload(); }
-          }, 1000);
+          // Fallback de segurança caso o evento controllerchange não ocorra
+          setTimeout(() => { try { window.location.hash = '#/'; } catch(e){} window.location.reload(); }, 2000);
         });
       } else {
-        setTimeout(() => { try { var url = window.location.pathname + '#/'; window.location.replace(url); } catch(e){ window.location.hash = '#/'; window.location.reload(); } }, 1000);
+        setTimeout(() => { try { window.location.hash = '#/'; } catch(e){} window.location.reload(); }, 500);
       }
     }
 
@@ -501,7 +519,7 @@
         if (!canProceed) return; // Para aqui se precisar de atualização forçada
 
         // Registrar SW
-        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.6.0'))
+        navigator.serviceWorker.register('/sw.js?v=' + (currentAppVersion || '4.6.1'))
           .then(registration => {
             console.log('SW registrado com sucesso:', registration);
             try { window.__swReg = registration; } catch (e) {}
@@ -593,8 +611,21 @@
         var mfu = document.getElementById('menuForceUpdate');
         if (mfu) mfu.addEventListener('click', function(e){
           e.preventDefault();
-          // 1) Limpar completamente o localStorage
-          try { localStorage.clear(); } catch (e) {}
+          // 1) Limpar seletivamente o localStorage (preservando rascunhos e nome do usuário)
+          try {
+            const KEEP_KEYS = new Set(['unificado.userName','unificado.v2.history','theme']);
+            const KEEP_PREFIXES = ['unificado.v2.snap.', 'unificado.formstate.'];
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              try { keys.push(localStorage.key(i)); } catch {}
+            }
+            keys.forEach(k => {
+              try {
+                const keep = KEEP_KEYS.has(k) || KEEP_PREFIXES.some(p => (k||'').indexOf(p) === 0);
+                if (!keep) localStorage.removeItem(k);
+              } catch {}
+            });
+          } catch (e) {}
           // 2) Limpar caches do Service Worker
           try {
             if (window.caches && caches.keys) {
@@ -630,10 +661,8 @@
                 catch (e) { return Promise.resolve(); }
               }).finally(function(){
                 // 5) Recarregar e retornar à tela inicial sem parâmetros
-                try {
-                  var url = window.location.pathname + '#/';
-                  window.location.replace(url);
-                } catch (e) { try { window.location.hash = '#/'; } catch(e2){} location.reload(); }
+                try { window.location.hash = '#/'; } catch(e2){}
+                location.reload();
               });
               return;
             }
