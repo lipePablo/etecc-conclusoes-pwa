@@ -7605,37 +7605,59 @@ const copyBtn = document.getElementById('btnCopiarForm');
           if (!belongsToWanEntry){
             const cbs = Array.from(choices.querySelectorAll('input[type="checkbox"]'));
             const anyChecked = cbs.some(cb => cb && cb.checked);
-            if (!anyChecked){
-              const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
-              const q = cleanQ(qlbl).toUpperCase();
-              if (q) printQuestionOnce(q);
-              secOut.push('O técnico não preencheu este campo.');
-              secOut.push('');
-              return;
-            }
-            // Quando houver itens marcados, listar cada item marcado em sequência
-            try {
-              const isEquipChoices = cbs.some(cb => {
-                const meta = ((cb.name||cb.id||'')+'').toLowerCase();
-                return meta.startsWith('tq_') || meta.startsWith('eq_sel_') || meta.startsWith('ins_sel_') || meta.startsWith('ret_') || meta.startsWith('ficou_') || meta.startsWith('estao_');
+            const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
+            const header = cleanQ(qlbl).toUpperCase();
+            if (header) printQuestionOnce(header);
+            if (anyChecked){
+              cbs.filter(cb => cb && cb.checked).forEach(cb => {
+                let text = '';
+                try {
+                  const lab = cb.closest('label');
+                  text = (lab?.querySelector('span')?.textContent || lab?.textContent || '').trim();
+                } catch {}
+                if (text) secOut.push(`- ${text}`);
               });
-              if (!isEquipChoices){
-                const qlbl = (block.querySelector('.form-label')?.textContent || '').trim();
-                const q = cleanQ(qlbl).toUpperCase();
-                if (q) printQuestionOnce(q);
-                const selected = cbs.filter(cb => cb && cb.checked);
-                selected.forEach(cb => {
-                  let text = '';
-                  try {
-                    const lab = cb.closest('label');
-                    text = (lab?.querySelector('span')?.textContent || lab?.textContent || '').trim();
-                  } catch {}
-                  if (text) secOut.push(`- ${text}`);
-                });
-                secOut.push('');
-                return;
+            } else {
+              secOut.push('O técnico não preencheu este campo.');
+            }
+            const textInputs = Array.from(block.querySelectorAll('input[type="text"]')).filter(inp => !choices.contains(inp));
+            let appendedExtra = false;
+            if (textInputs.length) { secOut.push(''); appendedExtra = true; }
+            try {
+              const ta2 = block.querySelector('textarea');
+              if (ta2) {
+                const v = (ta2.value||'').trim();
+                if (v) { secOut.push(toSentence(v)); secOut.push(''); appendedExtra = true; }
+                try { block.__handledTextInputs = block.__handledTextInputs || new Set(); block.__handledTextInputs.add(ta2); } catch {}
               }
             } catch {}
+            try {
+              textInputs.forEach(inp => {
+                const inputId = String(inp.id || '').trim();
+                let lab = (block.querySelector(`label[for="${inputId}"]`)?.textContent || '').trim();
+                if (!lab) {
+                  try {
+                    const lbl = Array.from(inp.labels || []).map(el => (el.textContent || '').trim()).find(Boolean);
+                    if (lbl) lab = lbl;
+                  } catch {}
+                }
+                if (!lab && inputId.toLowerCase() === 'nav_ativos') lab = 'Ativos testados';
+                const val = (inp.value || '').trim();
+                if (!lab && !val) return;
+                const q = lab ? normalizeCopyLabel(lab) : '';
+                if (q) secOut.push(q);
+                secOut.push(val ? toSentence(val) : 'O técnico não preencheu este campo.');
+                secOut.push('');
+                appendedExtra = true;
+                try {
+                  block.__handledTextInputs = block.__handledTextInputs || new Set();
+                  block.__handledTextInputs.add(inp);
+                } catch {}
+              });
+            } catch {}
+            if (!appendedExtra) secOut.push('');
+            try { block.__choicesPrinted = true; } catch {}
+            return;
           }
         }
       } catch {}
@@ -7819,11 +7841,11 @@ const copyBtn = document.getElementById('btnCopiarForm');
           }
         }
       } catch {}
-      // Se PINGS/TRACERTS já foram impressos neste bloco, evitar impressão genérica duplicada
+      // Se PINGS/TRACERTS já foram impressos neste bloco, evitar apenas duplicar os próprios blocos de velocidade
       try {
         if (__lentStructuredPrinted) {
           const hasVel = !!(block.querySelector('.vel-down') || block.querySelector('#vel_down') || block.querySelector('.vel-up') || block.querySelector('#vel_up') || block.querySelector('.vel-ping') || block.querySelector('#vel_ping'));
-          if (!hasVel) { return; }
+          if (hasVel) { return; }
         }
       } catch {}
       const d = block.querySelector('.vel-down') || block.querySelector('#vel_down');
@@ -7847,6 +7869,34 @@ const copyBtn = document.getElementById('btnCopiarForm');
         secOut.push('');
         return;
       }
+      // Blocos de múltipla escolha (choices): copiar itens selecionados (e observação do bloco, se houver textarea)
+      try {
+        const choices = block.querySelector('.choices');
+        if (choices) {
+          // Evitar duplicidade: ignorar choices pertencentes aos blocos de WAN (verificações de cabos)
+          try {
+            const isWan = !!(choices.closest('[data-wan-item="1"], [data-wan-list="1"], [data-wan-card="1"], [data-wan-first-choices]'));
+            if (isWan) { try { block.__choicesPrinted = true; } catch {} return; }
+          } catch {}
+          const bLabel = (block.querySelector('.form-label')?.textContent || '').trim();
+          const opts = Array.from(choices.querySelectorAll('input[type="checkbox"]')).filter(el => el && el.checked);
+          const labels = opts.map(el => {
+            try { const lab = choices.querySelector('label[for="'+el.id+'"] span, label[for="'+el.id+'"]'); return (lab?.textContent||'').trim(); } catch { return ''; }
+          }).filter(Boolean);
+          const header = cleanQ(bLabel).toUpperCase();
+          if (header) printQuestionOnce(header);
+          if (labels.length) { labels.forEach(t => secOut.push('- ' + t)); }
+          else { secOut.push('O técnico não preencheu este campo.'); }
+          // Se houver textarea dentro do mesmo bloco (observações), imprime abaixo
+          try {
+            const ta2 = block.querySelector('textarea');
+            if (ta2) { const v = (ta2.value||'').trim(); if (v) { secOut.push(''); secOut.push(toSentence(v)); } }
+          } catch {}
+          secOut.push('');
+          try { block.__choicesPrinted = true; } catch {}
+          // Continua sem retornar, para que outros campos do mesmo bloco (ex.: inputs de texto únicos) também sejam considerados nos trechos seguintes
+        }
+      } catch {}
       const seg = block.querySelector('.segmented');
       if (seg){
         // Evitar duplicidade: se este .segmented pertence a um sub-bloco interno, não processe aqui
@@ -8277,7 +8327,8 @@ const copyBtn = document.getElementById('btnCopiarForm');
         return;
       }
       const ta = block.querySelector('textarea');
-      if (ta){
+      const isLentArea = !!(block.querySelector('[data-lent-ping-list="1"], [data-ping-item], [data-lent-tracert-list="1"], [data-tracert-item]'));
+      if (ta && !block.__choicesPrinted && !isLentArea){
         const bLabel = (block.querySelector('.form-label')?.textContent || '').trim();
         let val = (ta.value || '').trim();
         if (!val) val = (ta.id === 'descricao_os') ? 'O técnico não preencheu este campo.' : 'O técnico não preencheu este campo.';
@@ -8286,8 +8337,22 @@ const copyBtn = document.getElementById('btnCopiarForm');
         if (q) { secOut.push(q); secOut.push(a); secOut.push(''); } else { secOut.push(a); secOut.push(''); }
         return;
       }
+      // Evita duplicidade: blocos WAN já são impressos de forma estruturada
+      try { if (block.querySelector('[data-wan-list="1"], [data-wan-item], [data-wan-card]')) { return; } } catch {}
       const inputs = Array.from(block.querySelectorAll('input[type="text"]'));
       inputs.forEach(inp => {
+        // Evitar duplicidade: não imprimir campos internos dos blocos de PING/TRACERT (já impressos em formato estruturado)
+        try {
+          const nm = (inp.getAttribute('name') || inp.id || '').toLowerCase();
+          if (/^(ping_|tracert_)/.test(nm) || inp.closest('[data-ping-item],[data-tracert-item],[data-lent-ping-list],[data-lent-tracert-list]')) return;
+        } catch {}
+        try {
+          if (block.__handledTextInputs && typeof block.__handledTextInputs.has === 'function' && block.__handledTextInputs.has(inp)) return;
+        } catch {}
+        try {
+          const handled = block.__handledTextInputs;
+          if (handled && typeof handled.has === 'function' && handled.has(inp)) return;
+        } catch {}
         let val = (inp.value || '').trim();
         if (inp.id === 'sinal_fibra' || inp.hasAttribute('data-sinal-fibra')) val = formatSinalFibraCopy(val);
         const lab = (block.querySelector(`label[for="${inp.id}"]`)?.textContent || block.querySelector('.form-label')?.textContent || '').trim();

@@ -469,17 +469,27 @@
           // Recarrega automaticamente quando o novo SW assumir o controle
           try {
             let _reloaded = false;
-            const _onCtrl = () => { if (_reloaded) return; _reloaded = true; try { window.location.hash = '#/'; } catch(e){} window.location.reload(); };
+            const _onCtrl = () => {
+              if (_reloaded) return; _reloaded = true;
+              try { window.location.replace(window.location.origin + window.location.pathname + '#/'); }
+              catch(e){ try { window.location.hash = '#/'; } catch(_){} window.location.reload(); }
+            };
             navigator.serviceWorker.addEventListener('controllerchange', _onCtrl, { once: true });
           } catch (e) {}
           if (registration.waiting) {
             registration.waiting.postMessage({type: 'SKIP_WAITING'});
           }
           // Fallback de segurança caso o evento controllerchange não ocorra
-          setTimeout(() => { try { window.location.hash = '#/'; } catch(e){} window.location.reload(); }, 2000);
+          setTimeout(() => {
+            try { window.location.replace(window.location.origin + window.location.pathname + '#/'); }
+            catch(e){ try { window.location.hash = '#/'; } catch(_){} window.location.reload(); }
+          }, 2500);
         });
       } else {
-        setTimeout(() => { try { window.location.hash = '#/'; } catch(e){} window.location.reload(); }, 500);
+        setTimeout(() => {
+          try { window.location.replace(window.location.origin + window.location.pathname + '#/'); }
+          catch(e){ try { window.location.hash = '#/'; } catch(_){} window.location.reload(); }
+        }, 500);
       }
     }
 
@@ -661,8 +671,8 @@
                 catch (e) { return Promise.resolve(); }
               }).finally(function(){
                 // 5) Recarregar e retornar à tela inicial sem parâmetros
-                try { window.location.hash = '#/'; } catch(e2){}
-                location.reload();
+                try { window.location.replace(window.location.origin + window.location.pathname + '#/'); }
+                catch(e2){ try { window.location.hash = '#/'; } catch(_){} location.reload(); }
               });
               return;
             }
