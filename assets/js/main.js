@@ -2888,6 +2888,8 @@ function setTopbarMode(internal){
         + '  <div class="form-block">\n'
         + '    <label class="form-label">Selecione o informado pelo cliente:</label>\n'
         + '    <div class="segmented segmented--stack" role="radiogroup" aria-label="Motivo do cancelamento">\n'
+        + '      <input type="radio" id="mot_inv" name="motivo" value="inviabilidade">\n'
+        + '      <label for="mot_inv">Inviabilidade técnica</label>\n'
         + '      <input type="radio" id="mot_fin" name="motivo" value="financeira">\n'
         + '      <label for="mot_fin">Condição financeira</label>\n'
         + '      <input type="radio" id="mot_mud" name="motivo" value="mudanca">\n'
@@ -2903,6 +2905,11 @@ function setTopbarMode(internal){
         + '      <input type="radio" id="mot_outros" name="motivo" value="outros">\n'
         + '      <label for="mot_outros">Outros</label>\n'
         + '    </div>\n'
+        + '  </div>\n'
+        + '  <div class="form-block" data-when-field="motivo" data-when-equals="inviabilidade" data-clear-on-hide="1">\n'
+        + '    <label class="form-label" for="mot_inv_desc">Descreva qual foi a inviabilidade técnica:</label>\n'
+        + '    <textarea id="mot_inv_desc" name="mot_inv_desc" class="form-input--underline auto-expand" placeholder="Digite..." rows="2" data-min-height="80"></textarea>\n'
+        + '    <div class="textarea-counter">0 caracteres</div>\n'
         + '  </div>\n'
         + '  <div class="form-block" data-when-field="motivo" data-when-equals="troca-provedor" data-clear-on-hide="1">\n'
         + '    <label class="form-label" for="mot_troca_ident">Informe como foi identificado este motivo:</label>\n'
@@ -7635,13 +7642,14 @@ const copyBtn = document.getElementById('btnCopiarForm');
               textInputs.forEach(inp => {
                 const inputId = String(inp.id || '').trim();
                 let lab = (block.querySelector(`label[for="${inputId}"]`)?.textContent || '').trim();
-                if (!lab) {
+                if (inputId.toLowerCase() === 'nav_ativos') {
+                  lab = 'Ativos testados';
+                } else if (!lab) {
                   try {
                     const lbl = Array.from(inp.labels || []).map(el => (el.textContent || '').trim()).find(Boolean);
                     if (lbl) lab = lbl;
                   } catch {}
                 }
-                if (!lab && inputId.toLowerCase() === 'nav_ativos') lab = 'Ativos testados';
                 const val = (inp.value || '').trim();
                 if (!lab && !val) return;
                 const q = lab ? normalizeCopyLabel(lab) : '';
